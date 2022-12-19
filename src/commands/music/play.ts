@@ -25,7 +25,6 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     }
-    await interaction.deferReply({ ephemeral: true });
     const song = interaction.options.getString('song') ?? '';
     const res = await getPlayer().search(song, {
       requestedBy: interaction.member?.user as User,

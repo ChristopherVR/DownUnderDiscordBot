@@ -11,11 +11,11 @@ const handleSlashCommand = async (c: Client, interaction: ChatInputCommandIntera
       return;
     }
 
-    if (!interaction.deferred) {
-      await interaction.deferReply({
-        ephemeral: true,
-      });
-    }
+    // if (!interaction.deferred) {
+    //   await interaction.deferReply({
+    //     ephemeral: true,
+    //   });
+    // }
 
     slashCommand.run(c, interaction);
   } catch {

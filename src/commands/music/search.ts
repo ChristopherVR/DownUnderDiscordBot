@@ -1,5 +1,16 @@
 import { QueryType } from 'discord-player';
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, Client, EmbedBuilder, User } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ApplicationCommandOptionType,
+  ButtonBuilder,
+  ButtonStyle,
+  ChatInputCommandInteraction,
+  Client,
+  EmbedBuilder,
+  Events,
+  MessageActionRowComponentBuilder,
+  User,
+} from 'discord.js';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 
@@ -42,7 +53,7 @@ export const Search: PlayerCommand = {
       metadata: interaction.channel,
       leaveOnEnd: false,
     });
-    const maxTracks = res.tracks.slice(0, 10);
+    const maxTracks = res.tracks.slice(0, 5);
 
     const embed = new EmbedBuilder()
       .setColor('#ff0000')
@@ -61,13 +72,50 @@ export const Search: PlayerCommand = {
         iconURL: interaction.member?.avatar ?? undefined,
       });
 
-    await interaction.reply({ embeds: [embed] });
+    const firstButton = new ButtonBuilder()
+      .setLabel('1')
+      .setCustomId(JSON.stringify({ ffb: '1' }))
+      .setStyle(ButtonStyle.Primary);
+
+    const secondButton = new ButtonBuilder()
+      .setLabel('2')
+      .setCustomId(JSON.stringify({ ffb: '2' }))
+      .setStyle(ButtonStyle.Primary);
+
+    const thirdButton = new ButtonBuilder()
+      .setLabel('3')
+      .setCustomId(JSON.stringify({ ffb: '3' }))
+      .setStyle(ButtonStyle.Primary);
+
+    const fourthButton = new ButtonBuilder()
+      .setLabel('4')
+      .setCustomId(JSON.stringify({ ffb: '4' }))
+      .setStyle(ButtonStyle.Primary);
+
+    const lastButton = new ButtonBuilder()
+      .setLabel('5')
+      .setCustomId(JSON.stringify({ ffb: '5' }))
+      .setStyle(ButtonStyle.Primary);
+
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+      firstButton,
+      secondButton,
+      thirdButton,
+      fourthButton,
+      lastButton,
+    );
+    await interaction.reply({ embeds: [embed], components: [row] });
 
     const collector = interaction.channel?.createMessageCollector({
       time: 15000,
       max: 1,
       //   errors: ['time'],
       filter: (m) => m.author.id === interaction.member?.user.id,
+    });
+
+    interaction.client.on(Events.InteractionCreate, (inter) => {
+      if (!inter.isButton()) return;
+      console.log(inter);
     });
 
     if (!collector) {
@@ -77,6 +125,7 @@ export const Search: PlayerCommand = {
       });
     } else {
       collector.on('collect', async (query, collection) => {
+        console.log(query, collection);
         const content = collection.first()?.content;
         if (!interaction.guildId) {
           console.log('GuildId is undefined');

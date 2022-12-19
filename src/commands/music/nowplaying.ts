@@ -2,11 +2,14 @@ import {
   ActionRowBuilder,
   ApplicationCommandType,
   ButtonBuilder,
+  ButtonStyle,
   ChatInputCommandInteraction,
   Client,
   Colors,
   EmbedBuilder,
+  Events,
   MessageActionRowComponentBuilder,
+  MessageComponentInteraction,
 } from 'discord.js';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
@@ -47,27 +50,27 @@ export const NowPlaying: PlayerCommand = {
     const saveButton = new ButtonBuilder()
       .setLabel('Save this track')
       .setCustomId(JSON.stringify({ ffb: 'savetrack' }))
-      .setStyle(Colors.Red);
+      .setStyle(ButtonStyle.Success);
 
     const volumeup = new ButtonBuilder()
       .setLabel('Volume up')
       .setCustomId(JSON.stringify({ ffb: 'volumeup' }))
-      .setStyle(Colors.Blue);
+      .setStyle(ButtonStyle.Secondary);
 
     const volumedown = new ButtonBuilder()
       .setLabel('Volume Down')
       .setCustomId(JSON.stringify({ ffb: 'volumedown' }))
-      .setStyle(Colors.Blue);
+      .setStyle(ButtonStyle.Secondary);
 
     const loop = new ButtonBuilder()
       .setLabel('Loop')
       .setCustomId(JSON.stringify({ ffb: 'loop' }))
-      .setStyle(Colors.Red);
+      .setStyle(ButtonStyle.Secondary);
 
     const resumepause = new ButtonBuilder()
       .setLabel('Resume & Pause')
       .setCustomId(JSON.stringify({ ffb: 'resume&pause' }))
-      .setStyle(Colors.Green);
+      .setStyle(ButtonStyle.Primary);
 
     const embed = new EmbedBuilder()
       .setAuthor({
@@ -93,6 +96,12 @@ export const NowPlaying: PlayerCommand = {
       loop,
       volumeup,
     );
+
+    client.on(Events.InteractionCreate, (inter) => {
+      if (!inter.isButton()) return;
+      console.log(inter);
+    });
+
     return await interaction.reply({ embeds: [embed], components: [row] });
   },
 };
