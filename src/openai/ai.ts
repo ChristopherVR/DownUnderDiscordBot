@@ -1,11 +1,10 @@
 import { Configuration, OpenAIApi } from 'openai';
-import { env } from 'process';
 
-const configuration = new Configuration({
-  apiKey: env.OPEN_AI_TOKEN,
-});
-const openai = new OpenAIApi(configuration);
 export const ask = async (prompt: string | undefined): Promise<string | undefined> => {
+  const configuration = new Configuration({
+    apiKey: process.env.OPEN_AI_TOKEN,
+  });
+  const openai = new OpenAIApi(configuration);
   const response = await openai.createCompletion({
     model: 'text-davinci-002',
     prompt,
