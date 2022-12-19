@@ -3,15 +3,18 @@ import { Commands } from '../../commands';
 import { cast } from '../helpers/cast';
 
 const handleSlashCommand = async (c: Client, interaction: ChatInputCommandInteraction): Promise<void> => {
-  const slashCommand = Commands.find((cc) => cc.name === interaction.commandName);
-  if (!slashCommand) {
-    await interaction.followUp({ content: 'An error has occurred' });
-    return;
+  try {
+    // await interaction.deferReply();
+    const slashCommand = Commands.find((cc) => cc.name === interaction.commandName);
+    if (!slashCommand) {
+      await interaction.followUp({ content: 'An error has occurred' });
+      return;
+    }
+
+    slashCommand.run(c, interaction);
+  } catch {
+    console.log('Ahhh shiiiii boiiii');
   }
-
-  await interaction.deferReply();
-
-  slashCommand.run(c, interaction);
 };
 
 export default (client: Client): void => {

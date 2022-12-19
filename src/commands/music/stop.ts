@@ -23,6 +23,7 @@ export const Stop: PlayerCommand = {
         ephemeral: true,
       });
 
+    queue.clear();
     queue.destroy();
 
     return await interaction.reply({

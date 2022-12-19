@@ -24,7 +24,6 @@ export const PlayNext: PlayerCommand = {
         ephemeral: true,
       });
     }
-    await interaction.deferReply();
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue?.playing)

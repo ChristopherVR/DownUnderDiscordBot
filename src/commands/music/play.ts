@@ -25,7 +25,7 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     }
-    await interaction.deferReply();
+    await interaction.deferReply({ ephemeral: true });
     const song = interaction.options.getString('song') ?? '';
     const res = await getPlayer().search(song, {
       requestedBy: interaction.member?.user as User,
@@ -59,7 +59,7 @@ export const Play: PlayerCommand = {
         const channel = interaction.guild?.members.cache.get(userId)?.voice.channel;
 
         if (!channel) {
-          console.log('GuildId is undefined');
+          console.log('channel is undefined');
           return await interaction.reply({
             content: `Unable to handle your request. Please try again later.`,
             ephemeral: true,
@@ -86,6 +86,7 @@ export const Play: PlayerCommand = {
     }
 
     if (!queue.playing) await queue.play();
+    console.log('Song is being played');
   },
 };
 
