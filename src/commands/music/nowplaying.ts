@@ -9,7 +9,6 @@ import {
   EmbedBuilder,
   Events,
   MessageActionRowComponentBuilder,
-  MessageComponentInteraction,
 } from 'discord.js';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
