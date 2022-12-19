@@ -72,30 +72,15 @@ export const Search: PlayerCommand = {
         iconURL: interaction.member?.avatar ?? undefined,
       });
 
-    const firstButton = new ButtonBuilder()
-      .setLabel('1')
-      .setCustomId(JSON.stringify({ ffb: '1' }))
-      .setStyle(ButtonStyle.Primary);
+    const firstButton = new ButtonBuilder().setLabel('1').setCustomId('1').setStyle(ButtonStyle.Primary);
 
-    const secondButton = new ButtonBuilder()
-      .setLabel('2')
-      .setCustomId(JSON.stringify({ ffb: '2' }))
-      .setStyle(ButtonStyle.Primary);
+    const secondButton = new ButtonBuilder().setLabel('2').setCustomId('2').setStyle(ButtonStyle.Primary);
 
-    const thirdButton = new ButtonBuilder()
-      .setLabel('3')
-      .setCustomId(JSON.stringify({ ffb: '3' }))
-      .setStyle(ButtonStyle.Primary);
+    const thirdButton = new ButtonBuilder().setLabel('3').setCustomId('3').setStyle(ButtonStyle.Primary);
 
-    const fourthButton = new ButtonBuilder()
-      .setLabel('4')
-      .setCustomId(JSON.stringify({ ffb: '4' }))
-      .setStyle(ButtonStyle.Primary);
+    const fourthButton = new ButtonBuilder().setLabel('4').setCustomId('4').setStyle(ButtonStyle.Primary);
 
-    const lastButton = new ButtonBuilder()
-      .setLabel('5')
-      .setCustomId(JSON.stringify({ ffb: '5' }))
-      .setStyle(ButtonStyle.Primary);
+    const lastButton = new ButtonBuilder().setLabel('5').setCustomId('5').setStyle(ButtonStyle.Primary);
 
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
       firstButton,
@@ -113,9 +98,55 @@ export const Search: PlayerCommand = {
       filter: (m) => m.author.id === interaction.member?.user.id,
     });
 
-    interaction.client.on(Events.InteractionCreate, (inter) => {
+    const playSong = async (content: string) => {
+      const value = parseInt(content ?? '', 10);
+      if (!value || value <= 0 || value > maxTracks.length) {
+        await interaction.followUp({
+          content: `Invalid response, try a value between **1** and **${maxTracks.length}** or **cancel**... try again ? ❌`,
+          ephemeral: true,
+        });
+      } else {
+        collector?.stop();
+
+        try {
+          if (!queue.connection) {
+            const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
+
+            if (!channel) {
+              console.log('channel is undefined');
+              await interaction.reply({
+                content: `Unable to handle your request. Please try again later.`,
+                ephemeral: true,
+              });
+            } else {
+              await queue.connect(channel);
+            }
+          }
+        } catch {
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          getPlayer().deleteQueue(interaction.guildId!);
+          await interaction.followUp({
+            content: `I can't join the voice channel ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+            ephemeral: true,
+          });
+          return;
+        }
+
+        await interaction.followUp(`Loading your search... 🎧`);
+
+        if (queue.destroyed) {
+          const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
+          queue.connect(channel!);
+        }
+        queue.addTrack(res.tracks[Number(content) - 1]);
+
+        if (!queue.playing) await queue.play();
+      }
+    };
+
+    interaction.client.on(Events.InteractionCreate, async (inter) => {
       if (!inter.isButton()) return;
-      console.log(inter);
+      await playSong(inter.customId);
     });
 
     if (!collector) {
@@ -140,44 +171,7 @@ export const Search: PlayerCommand = {
           });
           collector.stop();
         } else {
-          const value = parseInt(content ?? '', 10);
-          if (!value || value <= 0 || value > maxTracks.length) {
-            await interaction.followUp({
-              content: `Invalid response, try a value between **1** and **${maxTracks.length}** or **cancel**... try again ? ❌`,
-              ephemeral: true,
-            });
-          } else {
-            collector.stop();
-
-            try {
-              if (!queue.connection) {
-                const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
-
-                if (!channel) {
-                  console.log('GuildId is undefined');
-                  await interaction.reply({
-                    content: `Unable to handle your request. Please try again later.`,
-                    ephemeral: true,
-                  });
-                } else {
-                  await queue.connect(channel);
-                }
-              }
-            } catch {
-              getPlayer().deleteQueue(interaction.guildId);
-              await interaction.followUp({
-                content: `I can't join the voice channel ${interaction.member?.user.id ?? ''}... try again ? ❌`,
-                ephemeral: true,
-              });
-              return;
-            }
-
-            await interaction.followUp(`Loading your search... 🎧`);
-
-            queue.addTrack(res.tracks[Number(content) - 1]);
-
-            if (!queue.playing) await queue.play();
-          }
+          await playSong(content ?? '');
         }
       });
 
@@ -192,5 +186,4 @@ export const Search: PlayerCommand = {
     }
   },
 };
-
 export default Search;
