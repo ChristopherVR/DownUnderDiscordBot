@@ -47,7 +47,7 @@ export const PlayNext: PlayerCommand = {
 
     if (res.playlist)
       return await interaction.editReply({
-        content: `This command dose not support playlist's ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: `This command does not support playlists ${interaction.member?.user.id ?? ''}... try again ? ❌`,
         // ephemeral: true,
       });
 

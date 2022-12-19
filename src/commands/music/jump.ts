@@ -66,7 +66,7 @@ export const Jump: PlayerCommand = {
       const trackname = queue.tracks[index].title;
       if (!trackname)
         return await interaction.reply({
-          content: `This track dose not seem to exist ${interaction.member?.user.id ?? ''}...  try again ?❌`,
+          content: `This track does not seem to exist ${interaction.member?.user.id ?? ''}...  try again ?❌`,
           ephemeral: true,
         });
       queue.skipTo(index);
