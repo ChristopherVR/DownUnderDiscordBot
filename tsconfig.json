@@ -1,16 +1,22 @@
 {
-	"compilerOptions": {
-		"esModuleInterop": true,
-		"lib": ["es2020"],
-		"module": "es2022",
-		"preserveConstEnums": true,
-		"moduleResolution": "node",
-		"strict": true,
-		"sourceMap": true,
-		"target": "es2022",
-		"types": ["node"],
-		"outDir": "dist"
-	},
-	"include": ["src/**/*"],
-	"exclude": ["node_modules"]
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "CommonJS",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "declaration": true,
+    "lib": ["ESNext"],
+    "preserveConstEnums": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "removeComments": true,
+    "strict": true,
+    "sourceMap": true,
+    "types": ["node"],
+    "newLine": "LF"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

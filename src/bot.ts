@@ -42,6 +42,6 @@ const client = new Client({
 ready(client);
 interactionCreate(client);
 
-await client.login(token);
+client.login(token);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (global as any).player = new Player(client);
