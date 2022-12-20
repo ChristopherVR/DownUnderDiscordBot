@@ -4,37 +4,46 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ChatInputCommandInteraction,
-  Client,
   Colors,
   EmbedBuilder,
-  Events,
   MessageActionRowComponentBuilder,
 } from 'discord.js';
+import i18next from 'i18next';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const NowPlaying: PlayerCommand = {
-  name: 'nowplaying',
-  description: 'view what is playing!',
+  name: i18next.t('global:nowplaying'),
+  description: i18next.t('global:viewWhatIsPlaying'),
+  nameLocalizations: getLocalizations('global:nowplaying'),
+  descriptionLocalizations: getLocalizations('global:viewWhatIsPlaying'),
   voiceChannel: true,
 
   type: ApplicationCommandType.ChatInput,
 
-  run: async (client: Client, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
+      const genericError = i18next.t('global:genericError', {
+        lng: interaction.locale,
+      });
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue)
+    if (!queue) {
+      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `No music currently playing ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
+    }
 
     const track = queue.current;
 
@@ -47,43 +56,71 @@ export const NowPlaying: PlayerCommand = {
     const progress = queue.createProgressBar();
 
     const saveButton = new ButtonBuilder()
-      .setLabel('Save this track')
+      .setLabel(
+        i18next.t('global:saveThisTrack', {
+          lng: interaction.locale,
+        }),
+      )
       .setCustomId(JSON.stringify({ ffb: 'savetrack' }))
       .setStyle(ButtonStyle.Success);
 
     const volumeup = new ButtonBuilder()
-      .setLabel('Volume up')
+      .setLabel(
+        i18next.t('global:volumeUp', {
+          lng: interaction.locale,
+        }),
+      )
       .setCustomId(JSON.stringify({ ffb: 'volumeup' }))
       .setStyle(ButtonStyle.Secondary);
 
     const volumedown = new ButtonBuilder()
-      .setLabel('Volume Down')
+      .setLabel(
+        i18next.t('global:volumeDown', {
+          lng: interaction.locale,
+        }),
+      )
       .setCustomId(JSON.stringify({ ffb: 'volumedown' }))
       .setStyle(ButtonStyle.Secondary);
 
     const loop = new ButtonBuilder()
-      .setLabel('Loop')
+      .setLabel(
+        i18next.t('global:loop', {
+          lng: interaction.locale,
+        }),
+      )
       .setCustomId(JSON.stringify({ ffb: 'loop' }))
       .setStyle(ButtonStyle.Secondary);
 
     const resumepause = new ButtonBuilder()
-      .setLabel('Resume & Pause')
+      .setLabel(
+        i18next.t('global:resumeAndPause', {
+          lng: interaction.locale,
+        }),
+      )
       .setCustomId(JSON.stringify({ ffb: 'resume&pause' }))
       .setStyle(ButtonStyle.Primary);
+
+    const volDurationDesc = i18next.t('global:nowPlayingDescription', {
+      lng: interaction.locale,
+      volume: queue.volume,
+      duration: trackDuration,
+      progress,
+      mode: methods[queue.repeatMode],
+      user: track.requestedBy.username,
+    });
 
     const embed = new EmbedBuilder()
       .setAuthor({
         name: track.title,
-        iconURL: client.user?.displayAvatarURL({ size: 1024 }),
+        iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }),
       })
       .setThumbnail(track.thumbnail)
-      .setDescription(
-        `Volume **${queue.volume}**%\nDuration **${trackDuration}**\nProgress ${progress}\nLoop mode **${
-          methods[queue.repeatMode]
-        }**\nRequested by ${track.requestedBy.username}`,
-      )
+      .setDescription(volDurationDesc)
       .setFooter({
-        text: 'Music comes first - Made with heart by ChristopherVR ❤️',
+        text: i18next.t('global:defaultFooter', {
+          lng: interaction.locale,
+        }),
+
         iconURL: interaction.member?.avatar ?? undefined,
       })
       .setColor(Colors.Default)
@@ -95,12 +132,6 @@ export const NowPlaying: PlayerCommand = {
       loop,
       volumeup,
     );
-
-    client.on(Events.InteractionCreate, (inter) => {
-      if (!inter.isButton()) return;
-      console.log(inter);
-    });
-
     return await interaction.reply({ embeds: [embed], components: [row] });
   },
 };

@@ -1,79 +1,116 @@
-import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction, Client } from 'discord.js';
+import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
+import i18next from 'i18next';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const Jump: PlayerCommand = {
-  name: 'jump',
-  description: 'Jumps to particular track in queue',
+  name: i18next.t('global:jump'),
+  description: i18next.t('global:jumpDesc'),
+  nameLocalizations: getLocalizations('global:jump'),
+  descriptionLocalizations: getLocalizations('global:jumpDesc'),
   voiceChannel: true,
   options: [
     {
-      name: 'song',
-      description: 'the name/url of the track you want to jump to',
+      name: i18next.t('global:song'),
+      description: i18next.t('global:nameUrlToRemoveFromQueue'),
+      nameLocalizations: getLocalizations('global:song'),
+      descriptionLocalizations: getLocalizations('global:nameUrlToRemoveFromQueue'),
       type: ApplicationCommandOptionType.String,
       required: false,
     },
     {
-      name: 'number',
-      description: 'the place in the queue the song is in',
+      name: i18next.t('global:number'),
+      description: i18next.t('global:placeSongIsInQueue'),
+      nameLocalizations: getLocalizations('global:number'),
+      descriptionLocalizations: getLocalizations('global:placeSongIsInQueue'),
       type: ApplicationCommandOptionType.Number,
       required: false,
     },
   ],
   type: ApplicationCommandType.ChatInput,
-  run: async (client: Client, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
     const track = interaction.options.getString('song');
     const number = interaction.options.getNumber('number');
     if (!interaction.guildId) {
+      const genericError = i18next.t('global:genericError', {
+        lng: interaction.locale,
+      });
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue?.playing)
+    if (!queue?.playing) {
+      const loc = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `No music currently playing ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: loc,
         ephemeral: true,
       });
-    if (!track && !number)
+    }
+
+    if (!track && !number) {
+      const loc = i18next.t('global:haveToUseOneOfTheOptions', {
+        lng: interaction.locale,
+      });
       await interaction.reply({
-        content: `You have to use one of the options to jump to a song ${
-          interaction.member?.user.id ?? ''
-        }... try again ? ❌`,
+        content: loc,
         ephemeral: true,
       });
+    }
 
     if (track) {
       // eslint-disable-next-line no-restricted-syntax
       for (const song of queue.tracks) {
         if (song.title === track || song.url === track) {
           queue.skipTo(song);
-          return interaction.reply({ content: `skiped to ${track} ✅` });
+
+          const loc = i18next.t('global:skippedTo', {
+            lng: interaction.locale,
+            track,
+          });
+          return interaction.reply({ content: loc });
         }
       }
+
+      const loc = i18next.t('global:couldNotFindTrack', {
+        lng: interaction.locale,
+        track,
+      });
       return await interaction.reply({
-        content: `could not find ${track} ${
-          interaction.member?.user.id ?? ''
-        }... try using the url or the full name of the song ? ❌`,
+        content: loc,
         ephemeral: true,
       });
     }
     if (number) {
       const index = number - 1;
       const trackname = queue.tracks[index].title;
-      if (!trackname)
+      if (!trackname) {
+        const loc = i18next.t('global:trackDoesNotExist', {
+          lng: interaction.locale,
+        });
         return await interaction.reply({
-          content: `This track does not seem to exist ${interaction.member?.user.id ?? ''}...  try again ?❌`,
+          content: loc,
           ephemeral: true,
         });
-      queue.skipTo(index);
-      return await interaction.reply({ content: `Jumped to ${trackname}  ✅` });
-    }
+      }
 
-    return await interaction.reply({ content: 'Unable to process this request... try again later.' });
+      queue.skipTo(index);
+      const loc = i18next.t('global:jumpedTo', {
+        lng: interaction.locale,
+        track: trackname,
+      });
+      return await interaction.reply({ content: loc });
+    }
+    const genericError = i18next.t('global:genericError', {
+      lng: interaction.locale,
+    });
+    return await interaction.reply({ content: genericError });
   },
 };
 

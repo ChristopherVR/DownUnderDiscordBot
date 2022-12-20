@@ -1,36 +1,48 @@
 import { QueryType } from 'discord-player';
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, Client, User } from 'discord.js';
+import { ApplicationCommandOptionType, ChatInputCommandInteraction, User } from 'discord.js';
+import i18next from 'i18next';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const PlayNext: PlayerCommand = {
-  name: 'playnext',
-  description: 'song you want to playnext',
+  name: i18next.t('global:playnext'),
+  description: i18next.t('global:songToPlayNext'),
+  nameLocalizations: getLocalizations('global:playnext'),
+  descriptionLocalizations: getLocalizations('global:songToPlayNext'),
   voiceChannel: true,
   options: [
     {
-      name: 'song',
-      description: 'the song you want to playnext',
+      name: i18next.t('global:playnext'),
+      description: i18next.t('global:songToPlayNext'),
+      nameLocalizations: getLocalizations('global:playnext'),
+      descriptionLocalizations: getLocalizations('global:songToPlayNext'),
       type: ApplicationCommandOptionType.String,
       required: true,
     },
   ],
 
-  run: async (client: Client, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
+      const genericError = i18next.t('global:genericError', {
+        lng: interaction.locale,
+      });
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue?.playing)
-      return await interaction.editReply({
-        content: `No music currently playing ${interaction.member?.user.id ?? ''}... try again ? ❌`,
-        // ephemeral: true,
+    if (!queue?.playing) {
+      const loc = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
       });
+      return await interaction.editReply({
+        content: loc,
+      });
+    }
 
     const song = interaction.options.getString('song') ?? '';
 
@@ -39,22 +51,30 @@ export const PlayNext: PlayerCommand = {
       searchEngine: QueryType.AUTO,
     });
 
-    if (!res?.tracks?.length)
-      return await interaction.editReply({
-        content: `No results found ${interaction.member?.user.id ?? ''}... try again ? ❌`,
-        // ephemeral: true,
+    if (!res?.tracks?.length) {
+      const noResultsFound = i18next.t('global:noResultsFound', {
+        lng: interaction.locale,
       });
+      return await interaction.editReply({
+        content: noResultsFound,
+      });
+    }
 
-    if (res.playlist)
-      return await interaction.editReply({
-        content: `This command does not support playlists ${interaction.member?.user.id ?? ''}... try again ? ❌`,
-        // ephemeral: true,
+    if (res.playlist) {
+      const playlistsNotSupported = i18next.t('global:playlistsNotSupported', {
+        lng: interaction.locale,
       });
+      return await interaction.editReply({
+        content: playlistsNotSupported,
+      });
+    }
 
     queue.insert(res.tracks[0], 0);
-
+    const trackInsertedIntoQueue = i18next.t('global:trackInsertedIntoQueue', {
+      lng: interaction.locale,
+    });
     return await interaction.editReply({
-      content: `Track has been inserted into the queue... it will play next 🎧`,
+      content: trackInsertedIntoQueue,
     });
   },
 };

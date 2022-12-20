@@ -1,14 +1,23 @@
-import { ApplicationCommandType, Client, CommandInteraction } from 'discord.js';
-import { ask } from '../openai/ai';
+import { ApplicationCommandType, CommandInteraction } from 'discord.js';
+import i18next from 'i18next';
 import { Command } from '../types';
+import getLocalizations from './i18n/discordLocalization';
 
 export const Meme: Command<CommandInteraction> = {
-  name: 'meme',
-  description: 'Returns a response using OpenAI',
+  name: i18next.t('global:meme'),
+  nameLocalizations: getLocalizations('global:meme'),
+  description: i18next.t('global:memeDesc'),
+  descriptionLocalizations: getLocalizations('global:memeDesc'),
   type: ApplicationCommandType.ChatInput,
-  run: async (client: Client, interaction: CommandInteraction) => {
-    const answer = (await ask(interaction.options.data[0].value?.toString())) ?? ''; // prompt GPT-3
-    await interaction.channel?.send(answer);
+  run: async (interaction: CommandInteraction) => {
+    const genericError = i18next.t('global:playlistsNotSupported', {
+      lng: interaction.locale,
+    });
+
+    return await interaction.reply({
+      content: genericError,
+      ephemeral: true,
+    });
   },
 };
 

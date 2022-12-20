@@ -1,38 +1,56 @@
-import { ApplicationCommandType, ChatInputCommandInteraction, Client } from 'discord.js';
+import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
+import i18next from 'i18next';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const Clear: PlayerCommand = {
-  name: 'clear',
-  description: 'clear all the music in the queue',
+  name: i18next.t('global:clear'),
+  description: i18next.t('global:clearAllInQueue'),
+  nameLocalizations: getLocalizations('global:clear'),
+  descriptionLocalizations: getLocalizations('global:clearAllInQueue'),
   voiceChannel: true,
   type: ApplicationCommandType.ChatInput,
-  run: async (client: Client, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
+      const genericError = i18next.t('global:genericError', {
+        lng: interaction.locale,
+      });
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
 
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue?.playing)
+    if (!queue?.playing) {
+      const loc = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `No music currently playing ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: loc,
         ephemeral: true,
       });
+    }
 
-    if (!queue.tracks[0])
+    if (!queue.tracks[0]) {
+      const loc = i18next.t('global:noTrackInQueue', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `No music in the queue after the current one ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: loc,
         ephemeral: true,
       });
+    }
 
     queue.clear();
 
-    return await interaction.reply(`The queue has just been cleared 🗑️`);
+    const loc = i18next.t('global:queueHasBeenCleared', {
+      lng: interaction.locale,
+    });
+    return await interaction.reply(loc);
   },
 };
 

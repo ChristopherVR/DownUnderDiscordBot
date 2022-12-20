@@ -1,39 +1,57 @@
-import { ChatInputCommandInteraction, Client } from 'discord.js';
+import { ChatInputCommandInteraction } from 'discord.js';
+import i18next from 'i18next';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const Resume: PlayerCommand = {
-  name: 'resume',
-  description: 'play the track',
+  name: i18next.t('global:resume'),
+  description: i18next.t('global:playTheTrack'),
+  nameLocalizations: getLocalizations('global:resume'),
+  descriptionLocalizations: getLocalizations('global:playTheTrack'),
   voiceChannel: true,
-  run: async (client: Client, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
+    const genericError = i18next.t('global:genericError', {
+      lng: interaction.locale,
+    });
     if (!interaction.guildId) {
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue)
+    if (!queue) {
+      const loc = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `No music currently playing ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: loc,
         ephemeral: true,
       });
+    }
 
-    if (!queue.connection.paused)
+    if (!queue.connection.paused) {
+      const trackAlreadyRunning = i18next.t('global:trackAlreadyRunning', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `The track is already running, ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: trackAlreadyRunning,
         ephemeral: true,
       });
+    }
 
     const success = queue.setPaused(false);
 
+    const currentMusicResumed = i18next.t('global:currentMusicResumed', {
+      lng: interaction.locale,
+      title: queue.current.title,
+    });
+
     return await interaction.reply({
-      content: success
-        ? `Current music ${queue.current.title} resumed ✅`
-        : `Something went wrong ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+      content: success ? currentMusicResumed : genericError,
     });
   },
 };

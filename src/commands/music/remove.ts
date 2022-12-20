@@ -1,30 +1,41 @@
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, Client } from 'discord.js';
+import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
+import i18next from 'i18next';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const Remove: PlayerCommand = {
-  name: 'remove',
-  description: 'remove a song from the queue',
+  name: i18next.t('global:remove'),
+  description: i18next.t('global:removeSongFromQueue'),
+  nameLocalizations: getLocalizations('global:remove'),
+  descriptionLocalizations: getLocalizations('global:removeSongFromQueue'),
   voiceChannel: true,
   options: [
     {
-      name: 'song',
-      description: 'the name/url of the track you want to remove',
+      name: i18next.t('global:song'),
+      description: i18next.t('global:nameUrlToRemoveFromQueue'),
+      nameLocalizations: getLocalizations('global:song'),
+      descriptionLocalizations: getLocalizations('global:nameUrlToRemoveFromQueue'),
       type: ApplicationCommandOptionType.String,
       required: false,
     },
     {
-      name: 'number',
-      description: 'the place in the queue the song is in',
+      name: i18next.t('global:number'),
+      description: i18next.t('global:placeSongIsInQueue'),
+      nameLocalizations: getLocalizations('global:number'),
+      descriptionLocalizations: getLocalizations('global:placeSongIsInQueue'),
       type: ApplicationCommandOptionType.Number,
       required: false,
     },
   ],
-  run: async (client: Client, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
+    const genericError = i18next.t('global:genericError', {
+      lng: interaction.locale,
+    });
     if (!interaction.guildId) {
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
@@ -33,34 +44,47 @@ export const Remove: PlayerCommand = {
 
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue?.playing)
+    if (!queue?.playing) {
+      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `No music currently playing ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
-    if (!track && !number)
-      await interaction.reply({
-        content: `You have to use one of the options to remove a song ${
-          interaction.member?.user.id ?? ''
-        }... try again ? ❌`,
+    }
+
+    if (!track && !number) {
+      const useValidOptionToRemoveSong = i18next.t('global:useValidOptionToRemoveSong', {
+        lng: interaction.locale,
+      });
+      return await interaction.reply({
+        content: useValidOptionToRemoveSong,
         ephemeral: true,
       });
+    }
 
     if (track) {
       // eslint-disable-next-line no-restricted-syntax
       for (const song of queue.tracks) {
         if (song.title === track || song.url === track) {
+          const removedSongFromQueue = i18next.t('global:removedSongFromQueue', {
+            lng: interaction.locale,
+            track,
+          });
           queue.remove(song);
           return interaction.reply({
-            content: `removed ${track} from the queue ✅`,
+            content: removedSongFromQueue,
           });
         }
       }
 
+      const couldNotFindTrack = i18next.t('global:couldNotFindTrack', {
+        lng: interaction.locale,
+        track,
+      });
       return await interaction.reply({
-        content: `could not find ${track} ${
-          interaction.member?.user.id ?? ''
-        }... try using the url or the full name of the song ? ❌`,
+        content: couldNotFindTrack,
         ephemeral: true,
       });
     }
@@ -69,20 +93,28 @@ export const Remove: PlayerCommand = {
       const index = number - 1;
       const trackname = queue.tracks[index].title;
 
-      if (!trackname)
+      if (!trackname) {
+        const trackDoesNotExist = i18next.t('global:trackDoesNotExist', {
+          lng: interaction.locale,
+          track,
+        });
         return await interaction.reply({
-          content: `This track dose not seem to exist ${interaction.member?.user.id ?? ''}...  try again ?❌`,
+          content: trackDoesNotExist,
           ephemeral: true,
         });
+      }
 
       queue.remove(index);
-
+      const removedSongFromQueue = i18next.t('global:removedSongFromQueue', {
+        lng: interaction.locale,
+        track,
+      });
       return await interaction.reply({
-        content: `removed ${trackname} from the queue ✅`,
+        content: removedSongFromQueue,
       });
     }
 
-    return await interaction.reply({ content: 'Unable to process this request... try again later.' });
+    return await interaction.reply({ content: genericError });
   },
 };
 

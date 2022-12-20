@@ -1,89 +1,113 @@
 import { QueueRepeatMode } from 'discord-player';
-import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction, Client } from 'discord.js';
+import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
+import i18next from 'i18next';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const Loop: PlayerCommand = {
-  name: 'loop',
-  description: "enable or disable looping of song's or the whole queue",
+  name: i18next.t('global:loop'),
+  description: i18next.t('global:enableDisableLoopDescription'),
+  nameLocalizations: getLocalizations('global:loop'),
+  descriptionLocalizations: getLocalizations('global:enableDisableLoopDescription'),
   voiceChannel: true,
   options: [
     {
-      name: 'action',
-      description: 'what action you want to preform on the loop',
+      name: i18next.t('global:action'),
+      description: i18next.t('global:whatActionToPerform'),
+      nameLocalizations: getLocalizations('global:action'),
+      descriptionLocalizations: getLocalizations('global:whatActionToPerform'),
       type: ApplicationCommandOptionType.String,
       required: true,
       choices: [
-        { name: 'Queue', value: 'enable_loop_queue' },
-        { name: 'Disable', value: 'disable_loop' },
-        { name: 'Song', value: 'enable_loop_song' },
+        { name: i18next.t('global:queue'), value: 'enable_loop_queue' },
+        { name: i18next.t('global:disable'), value: 'disable_loop' },
+        { name: i18next.t('global:song'), value: 'enable_loop_song' },
       ],
     },
   ],
   type: ApplicationCommandType.ChatInput,
 
-  run: async (client: Client, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
       console.log('GuildId is undefined');
+      const genericError = i18next.t('global:genericError', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue?.playing)
+    if (!queue?.playing) {
+      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `No music currently playing ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
+    }
+    const genericError = i18next.t('global:genericError', {
+      lng: interaction.locale,
+    });
     switch (interaction.options.data.map((x) => x.value).toString()) {
       case 'enable_loop_queue': {
-        if (queue.repeatMode === 1)
+        if (queue.repeatMode === 1) {
+          const disableCurrentLoop = i18next.t('global:disableCurrentLoop', {
+            lng: interaction.locale,
+          });
+
           return await interaction.reply({
-            content: `You must first disable the current music in the loop mode (/loop Disable) ${
-              interaction.member?.user.id ?? ''
-            }... try again ? ❌`,
+            content: disableCurrentLoop,
             ephemeral: true,
           });
+        }
 
         const success = queue.setRepeatMode(QueueRepeatMode.QUEUE);
 
+        const loc = i18next.t('global:songRepeatMode', {
+          lng: interaction.locale,
+        });
+
+        // songRepeatMode
         return await interaction.reply({
-          content: success
-            ? `Repeat mode **enabled** the whole queue will be repeated endlessly 🔁`
-            : `Something went wrong ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+          content: success ? loc : genericError,
         });
       }
       case 'disable_loop': {
         const success = queue.setRepeatMode(QueueRepeatMode.OFF);
 
         return await interaction.reply({
-          content: success
-            ? `Repeat mode **disabled**`
-            : `Something went wrong ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+          content: success ? `Repeat mode **disabled**` : genericError,
         });
       }
       case 'enable_loop_song': {
-        if (queue.repeatMode === 2)
+        if (queue.repeatMode === 2) {
+          const locc = i18next.t('global:disableCurrentLoop', {
+            lng: interaction.locale,
+          });
           return await interaction.reply({
-            content: `You must first disable the current music in the loop mode (/loop Disable) ${
-              interaction.member?.user.id ?? ''
-            }... try again ? ❌`,
+            content: locc,
             ephemeral: true,
           });
+        }
 
         const success = queue.setRepeatMode(QueueRepeatMode.TRACK);
 
+        const locc = i18next.t('global:songRepeatMode', {
+          lng: interaction.locale,
+        });
+
         return await interaction.reply({
-          content: success
-            ? `Repeat mode **enabled** the current song will be repeated endlessly (you can end the loop with /loop disable)`
-            : `Something went wrong ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+          content: success ? locc : genericError,
         });
       }
       default: {
         return await interaction.reply({
-          content: `Something went wrong ${interaction.member?.user.username ?? ''}... try again ? ❌`,
+          content: genericError,
         });
       }
     }

@@ -1,53 +1,80 @@
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, Client } from 'discord.js';
+import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
+import i18next from 'i18next';
 import { PlayerCommand } from '../../types';
 import { ms } from '../helpers/ms';
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const Seek: PlayerCommand = {
-  name: 'seek',
-  description: 'skip back or foward in a song',
+  name: i18next.t('global:seek'),
+  description: i18next.t('global:skipBackAndForth'),
+  nameLocalizations: getLocalizations('global:seek'),
+  descriptionLocalizations: getLocalizations('global:skipBackAndForth'),
   voiceChannel: true,
   options: [
     {
-      name: 'time',
-      description: 'time that you want to skip to',
+      name: i18next.t('global:time'),
+      description: i18next.t('global:timeToSkip'),
+      nameLocalizations: getLocalizations('global:time'),
+      descriptionLocalizations: getLocalizations('global:timeToSkip'),
       type: ApplicationCommandOptionType.String,
       required: true,
     },
   ],
-  run: async (client: Client, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
+      const genericError = i18next.t('global:genericError', {
+        lng: interaction.locale,
+      });
+
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue?.playing)
+    if (!queue?.playing) {
+      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
+      });
+
       return await interaction.reply({
-        content: `No music currently playing... try again ? ❌`,
+        content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
+    }
 
     const timeToMS = ms(interaction.options.getString('time'));
 
-    if (timeToMS >= queue.current.durationMS)
+    if (timeToMS >= queue.current.durationMS) {
+      const indicatedTimeIsTooHigh = i18next.t('global:indicatedTimeIsTooHigh', {
+        lng: interaction.locale,
+      });
+      const validSkipHint = i18next.t('global:validSkipHint', {
+        lng: interaction.locale,
+      });
+
       return await interaction.reply({
-        content: `The indicated time is higher than the total time of the current song ${
-          interaction.member?.user.id ?? ''
-        }... try again ? ❌\n*Try for example a valid time like **5s, 10s, 20 seconds, 1m**...*`,
+        content: `${indicatedTimeIsTooHigh}\n${validSkipHint}`,
         ephemeral: true,
       });
+    }
 
     await queue.seek(timeToMS);
 
     const longMs = ms(timeToMS, {
       long: true,
     });
+
+    const timeSetInCurrentTrack = i18next.t('global:timeSetInCurrentTrack', {
+      lng: interaction.locale,
+      time: longMs,
+    });
+
     return await interaction.reply({
-      content: `Time set on the current song **${longMs}** ✅`,
+      content: timeSetInCurrentTrack,
     });
   },
 };

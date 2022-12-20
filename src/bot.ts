@@ -2,6 +2,7 @@ import { Player } from 'discord-player';
 import { Client, GatewayIntentBits } from 'discord.js';
 import * as dotenv from 'dotenv'; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
 import { createServer } from 'http2';
+import i18next from 'i18next';
 import interactionCreate from './commands/bot/interactionCreate';
 import ready from './commands/bot/ready';
 
@@ -41,6 +42,11 @@ const client = new Client({
 
 ready(client);
 interactionCreate(client);
+
+client.on('ready', () => {
+  const value = i18next.t('activity:default');
+  client.user?.setActivity(value);
+});
 
 client.login(token);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

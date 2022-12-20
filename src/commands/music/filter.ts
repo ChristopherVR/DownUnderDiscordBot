@@ -1,17 +1,24 @@
 import { ApplicationCommandType, ChatInputCommandInteraction, ApplicationCommandOptionType } from 'discord.js';
 import { QueueFilters, AudioFilters } from 'discord-player';
-import { ClientExtended, PlayerCommand } from '../../types';
+import i18next from 'i18next';
+import { PlayerCommand } from '../../types';
 
 import { getPlayer } from '../helpers/player';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const Filter: PlayerCommand = {
-  name: 'filter',
-  description: 'add a filter to your track',
+  name: i18next.t('global:filter'),
+  description: i18next.t('global:addFilterToTrack'),
+  nameLocalizations: getLocalizations('global:filter'),
+  descriptionLocalizations: getLocalizations('global:addFilterToTrack'),
+
   voiceChannel: true,
   options: [
     {
-      name: 'filter',
-      description: 'filter you want to add',
+      name: i18next.t('global:filter'),
+      description: i18next.t('global:filterYouWantToAdd'),
+      nameLocalizations: getLocalizations('global:filter'),
+      descriptionLocalizations: getLocalizations('global:filterYouWantToAdd'),
       type: ApplicationCommandOptionType.String,
       required: true,
       choices: [
@@ -22,21 +29,28 @@ export const Filter: PlayerCommand = {
     },
   ],
   type: ApplicationCommandType.ChatInput,
-  run: async (client: ClientExtended, interaction: ChatInputCommandInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
+      const genericError = i18next.t('global:genericError', {
+        lng: interaction.locale,
+      });
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: genericError,
         ephemeral: true,
       });
     }
     const queue = getPlayer().getQueue(interaction.guildId);
 
-    if (!queue?.playing)
+    if (!queue?.playing) {
+      const loc = i18next.t('global:noMusicCurrentlyPlaying', {
+        lng: interaction.locale,
+      });
       return await interaction.reply({
-        content: `No music currently playing ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: loc,
         ephemeral: true,
       });
+    }
 
     const actualFilter = queue.getFiltersEnabled()[0];
 
@@ -46,24 +60,39 @@ export const Filter: PlayerCommand = {
 
     const filter = filters.find((x) => x.toLowerCase() === infilter.toLowerCase());
 
-    if (!filter)
+    if (!filter) {
+      const loc = i18next.t('global:filterDoesNotExist', {
+        lng: interaction.locale,
+      });
+
+      const listAvailableFiltersLoc = i18next.t('global:filterCurrentlyActive', {
+        lng: interaction.locale,
+        filters: filters.map((x) => `**${x}**`).join(', '),
+      });
+      const filterActiveLoc = i18next.t('global:filterCurrentlyActive', {
+        lng: interaction.locale,
+        activeFilter: actualFilter,
+      });
+
       return await interaction.reply({
-        content: `This filter doesn't exist ${interaction.member?.user.id ?? ''}... try again ? ❌\n${
-          actualFilter ? `Filter currently active ${actualFilter}.\n` : ''
-        }List of available filters ${filters.map((x) => `**${x}**`).join(', ')}.`,
+        content: `${loc}\n${actualFilter ? filterActiveLoc : ''}\n${filters.length ? listAvailableFiltersLoc : ''}.`,
         ephemeral: true,
       });
+    }
 
     const filtersUpdated: Record<string, unknown> = {};
 
     filtersUpdated[filter] = !queue.getFiltersEnabled().includes(filter);
 
     await queue.setFilters(filtersUpdated);
-
+    const loc = i18next.t('global:filterIsNow', {
+      lng: interaction.locale,
+      filter,
+      // TODO: Handle this better
+      status: queue.getFiltersEnabled().includes(filter) ? i18next.t('global:enabled') : i18next.t('global:disabled'),
+    });
     return await interaction.reply({
-      content: `The filter ${filter} is now **${
-        queue.getFiltersEnabled().includes(filter) ? 'enabled' : 'disabled'
-      }** ✅\n*Reminder the longer the music is, the longer this will take.*`,
+      content: loc,
     });
   },
 };

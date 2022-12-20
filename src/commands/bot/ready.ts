@@ -8,7 +8,6 @@ export default (client: Client): void => {
     }
     await client.application.commands.set(Commands);
 
-    // eslint-disable-next-line no-console
     console.log('Führer online. Get in loser, time to invade poland!');
   });
 };
