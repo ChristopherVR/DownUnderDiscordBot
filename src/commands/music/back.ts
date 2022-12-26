@@ -1,18 +1,18 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Back: PlayerCommand = {
-  name: i18next.t('global:back'),
-  description: i18next.t('global:backToPreviousSong'),
+  name: localizedString('global:back'),
+  description: localizedString('global:backToPreviousSong'),
   nameLocalizations: getLocalizations('global:back'),
   descriptionLocalizations: getLocalizations('global:backToPreviousSong'),
   voiceChannel: true,
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: ChatInputCommandInteraction) => {
-    const genericError = i18next.t('global:genericError', {
+    const genericError = localizedString('global:genericError', {
       lng: interaction.locale,
     });
     if (!interaction.guildId) {
@@ -26,7 +26,7 @@ export const Back: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue?.playing) {
-      const loc = i18next.t('global:noMusicCurrentlyPlaying', {
+      const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -36,7 +36,7 @@ export const Back: PlayerCommand = {
     }
 
     if (!queue.previousTracks[1]) {
-      const loc = i18next.t('global:noMusicPlayedPreviously', {
+      const loc = localizedString('global:noMusicPlayedPreviously', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -46,7 +46,7 @@ export const Back: PlayerCommand = {
     }
 
     await queue.back();
-    const loc = i18next.t('global:playingPreviousTrack', {
+    const loc = localizedString('global:playingPreviousTrack', {
       lng: interaction.locale,
     });
     return await interaction.reply({ content: loc });

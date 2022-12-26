@@ -1,18 +1,18 @@
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Save: PlayerCommand = {
-  name: i18next.t('global:save'),
-  description: i18next.t('global:saveThisTrack'),
+  name: localizedString('global:save'),
+  description: localizedString('global:saveThisTrack'),
   nameLocalizations: getLocalizations('global:save'),
   descriptionLocalizations: getLocalizations('global:saveThisTrack'),
   voiceChannel: true,
   run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       console.log('GuildId is undefined');
@@ -24,7 +24,7 @@ export const Save: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue) {
-      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -42,25 +42,28 @@ export const Save: PlayerCommand = {
             .setURL(queue.current.url)
             .addFields(
               {
-                name: `:hourglass: ${i18next.t('global:duration', { lng: interaction.locale })}`,
+                name: `:hourglass: ${localizedString('global:duration', { lng: interaction.locale })}`,
                 value: `\`${queue.current.duration}\``,
                 inline: true,
               },
               {
-                name: i18next.t('global:songBy', { lng: interaction.locale }),
+                name: localizedString('global:songBy', { lng: interaction.locale }),
                 value: `\`${queue.current.author}\``,
                 inline: true,
               },
               {
-                name: `${i18next.t('global:views', { lng: interaction.locale })} :eyes:`,
+                name: `${localizedString('global:views', { lng: interaction.locale })} :eyes:`,
                 value: `\`${Number(queue.current.views).toLocaleString()}\``,
                 inline: true,
               },
-              { name: i18next.t('global:songUrl', { lng: interaction.locale }), value: `\`${queue.current.url}\`` },
+              {
+                name: localizedString('global:songUrl', { lng: interaction.locale }),
+                value: `\`${queue.current.url}\``,
+              },
             )
             .setThumbnail(queue.current.thumbnail)
             .setFooter({
-              text: `${i18next.t('global:fromTheServer', { lng: interaction.locale })} ${
+              text: `${localizedString('global:fromTheServer', { lng: interaction.locale })} ${
                 interaction.guild?.name ?? ''
               }`,
               iconURL: interaction.guild?.iconURL() ?? undefined,
@@ -68,7 +71,7 @@ export const Save: PlayerCommand = {
         ],
       });
 
-      const titleOfMusicPmSend = i18next.t('global:generictitleOfMusicPmSendError', {
+      const titleOfMusicPmSend = localizedString('global:generictitleOfMusicPmSendError', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -76,7 +79,7 @@ export const Save: PlayerCommand = {
         ephemeral: true,
       });
     } catch {
-      const unableToSendPrivateMessag = i18next.t('global:unableToSendPrivateMessag', {
+      const unableToSendPrivateMessag = localizedString('global:unableToSendPrivateMessag', {
         lng: interaction.locale,
       });
       return await interaction.reply({

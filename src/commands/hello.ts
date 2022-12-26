@@ -1,12 +1,12 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../i18n';
 import { Command } from '../types';
 import getLocalizations from './i18n/discordLocalization';
 
 const Hello: Command<ChatInputCommandInteraction> = {
-  name: i18next.t('global:hello'),
+  name: localizedString('global:hello'),
   nameLocalizations: getLocalizations('global:hello'),
-  description: i18next.t('global:helloDesc'),
+  description: localizedString('global:helloDesc'),
   descriptionLocalizations: getLocalizations('global:helloDesc'),
 
   type: ApplicationCommandType.ChatInput,

@@ -1,16 +1,16 @@
 import { ApplicationCommandType, CommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../i18n';
 import { Command } from '../types';
 import getLocalizations from './i18n/discordLocalization';
 
 export const Meme: Command<CommandInteraction> = {
-  name: i18next.t('global:meme'),
+  name: localizedString('global:meme'),
   nameLocalizations: getLocalizations('global:meme'),
-  description: i18next.t('global:memeDesc'),
+  description: localizedString('global:memeDesc'),
   descriptionLocalizations: getLocalizations('global:memeDesc'),
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: CommandInteraction) => {
-    const genericError = i18next.t('global:playlistsNotSupported', {
+    const genericError = localizedString('global:playlistsNotSupported', {
       lng: interaction.locale,
     });
 

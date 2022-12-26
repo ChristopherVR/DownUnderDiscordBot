@@ -22,7 +22,10 @@ import { Volume } from './commands/music/volume';
 import { Queue } from './commands/music/queue';
 import Hello from './commands/hello';
 
-const playerCommands = [
+export const getCommands = () => [
+  Hello,
+  Ask,
+  Meme,
   Back,
   Clear,
   Controller,
@@ -44,6 +47,5 @@ const playerCommands = [
   Stop,
   Volume,
 ];
-export const Commands = [Hello, Ask, Meme, ...playerCommands];
 
-export default Commands;
+export default getCommands;

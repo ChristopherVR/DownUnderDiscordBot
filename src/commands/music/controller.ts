@@ -9,21 +9,21 @@ import {
   ChatInputCommandInteraction,
   MessageActionRowComponentBuilder,
 } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Controller: PlayerCommand = {
-  name: i18next.t('global:controller'),
-  description: i18next.t('global:setControllerChannel'),
+  name: localizedString('global:controller'),
+  description: localizedString('global:setControllerChannel'),
   nameLocalizations: getLocalizations('global:controller'),
   descriptionLocalizations: getLocalizations('global:setControllerChannel'),
   voiceChannel: false,
   permissions: PermissionsBitField.Flags.ManageMessages,
   options: [
     {
-      name: i18next.t('global:controller'),
-      description: i18next.t('global:setTheChannelYouWantToSendTo'),
+      name: localizedString('global:controller'),
+      description: localizedString('global:setTheChannelYouWantToSendTo'),
       descriptionLocalizations: getLocalizations('global:setTheChannelYouWantToSendTo'),
       nameLocalizations: getLocalizations('global:channel'),
       type: ApplicationCommandOptionType.Channel,
@@ -33,7 +33,7 @@ export const Controller: PlayerCommand = {
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guild) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       console.log('GuildId is undefined');
@@ -45,7 +45,7 @@ export const Controller: PlayerCommand = {
     const { channel } = interaction;
     // const channel = interaction.options.getChannel('channel');
     if (!channel) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       console.log('channel is undefined');
@@ -55,7 +55,7 @@ export const Controller: PlayerCommand = {
       });
     }
     if (channel.type !== 0) {
-      const loc = i18next.t('global:haveToSendToTextChannel', {
+      const loc = localizedString('global:haveToSendToTextChannel', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -66,7 +66,7 @@ export const Controller: PlayerCommand = {
 
     if (!interaction.member) {
       console.log('member is undefined');
-      const loc = i18next.t('global:genericError', {
+      const loc = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -77,7 +77,7 @@ export const Controller: PlayerCommand = {
 
     const back = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:back', {
+        localizedString('global:back', {
           lng: interaction.locale,
         }),
       )
@@ -86,7 +86,7 @@ export const Controller: PlayerCommand = {
 
     const skip = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:skip', {
+        localizedString('global:skip', {
           lng: interaction.locale,
         }),
       )
@@ -95,7 +95,7 @@ export const Controller: PlayerCommand = {
 
     const resumepause = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:resumeAndPause', {
+        localizedString('global:resumeAndPause', {
           lng: interaction.locale,
         }),
       )
@@ -104,7 +104,7 @@ export const Controller: PlayerCommand = {
 
     const save = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:save', {
+        localizedString('global:save', {
           lng: interaction.locale,
         }),
       )
@@ -113,7 +113,7 @@ export const Controller: PlayerCommand = {
 
     const volumeup = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:volumeUp', {
+        localizedString('global:volumeUp', {
           lng: interaction.locale,
         }),
       )
@@ -122,7 +122,7 @@ export const Controller: PlayerCommand = {
 
     const volumedown = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:volumeDown', {
+        localizedString('global:volumeDown', {
           lng: interaction.locale,
         }),
       )
@@ -131,7 +131,7 @@ export const Controller: PlayerCommand = {
 
     const loop = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:loop', {
+        localizedString('global:loop', {
           lng: interaction.locale,
         }),
       )
@@ -140,7 +140,7 @@ export const Controller: PlayerCommand = {
 
     const np = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:nowPlaying', {
+        localizedString('global:nowPlaying', {
           lng: interaction.locale,
         }),
       )
@@ -149,7 +149,7 @@ export const Controller: PlayerCommand = {
 
     const queuebutton = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:queue', {
+        localizedString('global:queue', {
           lng: interaction.locale,
         }),
       )
@@ -158,20 +158,20 @@ export const Controller: PlayerCommand = {
 
     const embed = new EmbedBuilder()
       .setTitle(
-        i18next.t('global:controlMusicWithButtonsBelow', {
+        localizedString('global:controlMusicWithButtonsBelow', {
           lng: interaction.locale,
         }),
       )
       .setImage(interaction.guild.iconURL({ size: 4096 }))
       .setColor('#36393e')
       .setFooter({
-        text: i18next.t('global:defaultFooter', {
+        text: localizedString('global:defaultFooter', {
           lng: interaction.locale,
         }),
         iconURL: interaction.member.avatar ?? undefined,
       });
 
-    const loc = i18next.t('global:genericError', {
+    const loc = localizedString('global:genericError', {
       lng: interaction.locale,
       name: channel.name,
     });

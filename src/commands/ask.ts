@@ -1,20 +1,20 @@
 import { ApplicationCommandType, ChatInputCommandInteraction, ApplicationCommandOptionType } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../i18n';
 import { ask } from '../openai/ai';
 import { Command } from '../types';
 import getLocalizations from './i18n/discordLocalization';
 
 export const Ask: Command<ChatInputCommandInteraction> = {
-  name: i18next.t('global:ask'),
+  name: localizedString('global:ask'),
   nameLocalizations: getLocalizations('global:ask'),
-  description: i18next.t('global:returnsResponseUsingOpenAi'),
+  description: localizedString('global:returnsResponseUsingOpenAi'),
   descriptionLocalizations: getLocalizations('global:returnsResponseUsingOpenAi'),
   type: ApplicationCommandType.ChatInput,
   options: [
     {
-      name: i18next.t('global:input'),
+      name: localizedString('global:input'),
       nameLocalizations: getLocalizations('global:input'),
-      description: i18next.t('global:textToSearchFor'),
+      description: localizedString('global:textToSearchFor'),
       descriptionLocalizations: getLocalizations('global:textToSearchFor'),
       type: ApplicationCommandOptionType.String,
       required: true,

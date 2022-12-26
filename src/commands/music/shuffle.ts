@@ -1,19 +1,19 @@
 import { ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Shuffle: PlayerCommand = {
-  name: i18next.t('global:shuffle'),
-  description: i18next.t('global:shuffleTheTrack'),
+  name: localizedString('global:shuffle'),
+  description: localizedString('global:shuffleTheTrack'),
   nameLocalizations: getLocalizations('global:shuffle'),
   descriptionLocalizations: getLocalizations('global:shuffleTheTrack'),
   voiceChannel: true,
 
   run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       console.log('GuildId is undefined');
@@ -25,7 +25,7 @@ export const Shuffle: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue?.playing) {
-      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -35,7 +35,7 @@ export const Shuffle: PlayerCommand = {
     }
 
     if (!queue.tracks[0]) {
-      const noTrackInQueue = i18next.t('global:noTrackInQueue', {
+      const noTrackInQueue = localizedString('global:noTrackInQueue', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -45,7 +45,7 @@ export const Shuffle: PlayerCommand = {
     }
 
     queue.shuffle();
-    const queueShuffled = i18next.t('global:queueShuffled', {
+    const queueShuffled = localizedString('global:queueShuffled', {
       lng: interaction.locale,
       count: queue.tracks.length,
     });

@@ -1,27 +1,27 @@
 import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Jump: PlayerCommand = {
-  name: i18next.t('global:jump'),
-  description: i18next.t('global:jumpDesc'),
+  name: localizedString('global:jump'),
+  description: localizedString('global:jumpDesc'),
   nameLocalizations: getLocalizations('global:jump'),
   descriptionLocalizations: getLocalizations('global:jumpDesc'),
   voiceChannel: true,
   options: [
     {
-      name: i18next.t('global:song'),
-      description: i18next.t('global:nameUrlToRemoveFromQueue'),
+      name: localizedString('global:song'),
+      description: localizedString('global:nameUrlToRemoveFromQueue'),
       nameLocalizations: getLocalizations('global:song'),
       descriptionLocalizations: getLocalizations('global:nameUrlToRemoveFromQueue'),
       type: ApplicationCommandOptionType.String,
       required: false,
     },
     {
-      name: i18next.t('global:number'),
-      description: i18next.t('global:placeSongIsInQueue'),
+      name: localizedString('global:number'),
+      description: localizedString('global:placeSongIsInQueue'),
       nameLocalizations: getLocalizations('global:number'),
       descriptionLocalizations: getLocalizations('global:placeSongIsInQueue'),
       type: ApplicationCommandOptionType.Number,
@@ -33,7 +33,7 @@ export const Jump: PlayerCommand = {
     const track = interaction.options.getString('song');
     const number = interaction.options.getNumber('number');
     if (!interaction.guildId) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       console.log('GuildId is undefined');
@@ -45,7 +45,7 @@ export const Jump: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue?.playing) {
-      const loc = i18next.t('global:noMusicCurrentlyPlaying', {
+      const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -55,7 +55,7 @@ export const Jump: PlayerCommand = {
     }
 
     if (!track && !number) {
-      const loc = i18next.t('global:haveToUseOneOfTheOptions', {
+      const loc = localizedString('global:haveToUseOneOfTheOptions', {
         lng: interaction.locale,
       });
       await interaction.reply({
@@ -70,7 +70,7 @@ export const Jump: PlayerCommand = {
         if (song.title === track || song.url === track) {
           queue.skipTo(song);
 
-          const loc = i18next.t('global:skippedTo', {
+          const loc = localizedString('global:skippedTo', {
             lng: interaction.locale,
             track,
           });
@@ -78,7 +78,7 @@ export const Jump: PlayerCommand = {
         }
       }
 
-      const loc = i18next.t('global:couldNotFindTrack', {
+      const loc = localizedString('global:couldNotFindTrack', {
         lng: interaction.locale,
         track,
       });
@@ -91,7 +91,7 @@ export const Jump: PlayerCommand = {
       const index = number - 1;
       const trackname = queue.tracks[index].title;
       if (!trackname) {
-        const loc = i18next.t('global:trackDoesNotExist', {
+        const loc = localizedString('global:trackDoesNotExist', {
           lng: interaction.locale,
         });
         return await interaction.reply({
@@ -101,13 +101,13 @@ export const Jump: PlayerCommand = {
       }
 
       queue.skipTo(index);
-      const loc = i18next.t('global:jumpedTo', {
+      const loc = localizedString('global:jumpedTo', {
         lng: interaction.locale,
         track: trackname,
       });
       return await interaction.reply({ content: loc });
     }
-    const genericError = i18next.t('global:genericError', {
+    const genericError = localizedString('global:genericError', {
       lng: interaction.locale,
     });
     return await interaction.reply({ content: genericError });

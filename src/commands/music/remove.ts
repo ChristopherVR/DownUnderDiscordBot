@@ -1,27 +1,27 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Remove: PlayerCommand = {
-  name: i18next.t('global:remove'),
-  description: i18next.t('global:removeSongFromQueue'),
+  name: localizedString('global:remove'),
+  description: localizedString('global:removeSongFromQueue'),
   nameLocalizations: getLocalizations('global:remove'),
   descriptionLocalizations: getLocalizations('global:removeSongFromQueue'),
   voiceChannel: true,
   options: [
     {
-      name: i18next.t('global:song'),
-      description: i18next.t('global:nameUrlToRemoveFromQueue'),
+      name: localizedString('global:song'),
+      description: localizedString('global:nameUrlToRemoveFromQueue'),
       nameLocalizations: getLocalizations('global:song'),
       descriptionLocalizations: getLocalizations('global:nameUrlToRemoveFromQueue'),
       type: ApplicationCommandOptionType.String,
       required: false,
     },
     {
-      name: i18next.t('global:number'),
-      description: i18next.t('global:placeSongIsInQueue'),
+      name: localizedString('global:number'),
+      description: localizedString('global:placeSongIsInQueue'),
       nameLocalizations: getLocalizations('global:number'),
       descriptionLocalizations: getLocalizations('global:placeSongIsInQueue'),
       type: ApplicationCommandOptionType.Number,
@@ -29,7 +29,7 @@ export const Remove: PlayerCommand = {
     },
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
-    const genericError = i18next.t('global:genericError', {
+    const genericError = localizedString('global:genericError', {
       lng: interaction.locale,
     });
     if (!interaction.guildId) {
@@ -45,7 +45,7 @@ export const Remove: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue?.playing) {
-      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -55,7 +55,7 @@ export const Remove: PlayerCommand = {
     }
 
     if (!track && !number) {
-      const useValidOptionToRemoveSong = i18next.t('global:useValidOptionToRemoveSong', {
+      const useValidOptionToRemoveSong = localizedString('global:useValidOptionToRemoveSong', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -68,7 +68,7 @@ export const Remove: PlayerCommand = {
       // eslint-disable-next-line no-restricted-syntax
       for (const song of queue.tracks) {
         if (song.title === track || song.url === track) {
-          const removedSongFromQueue = i18next.t('global:removedSongFromQueue', {
+          const removedSongFromQueue = localizedString('global:removedSongFromQueue', {
             lng: interaction.locale,
             track,
           });
@@ -79,7 +79,7 @@ export const Remove: PlayerCommand = {
         }
       }
 
-      const couldNotFindTrack = i18next.t('global:couldNotFindTrack', {
+      const couldNotFindTrack = localizedString('global:couldNotFindTrack', {
         lng: interaction.locale,
         track,
       });
@@ -94,7 +94,7 @@ export const Remove: PlayerCommand = {
       const trackname = queue.tracks[index].title;
 
       if (!trackname) {
-        const trackDoesNotExist = i18next.t('global:trackDoesNotExist', {
+        const trackDoesNotExist = localizedString('global:trackDoesNotExist', {
           lng: interaction.locale,
           track,
         });
@@ -105,7 +105,7 @@ export const Remove: PlayerCommand = {
       }
 
       queue.remove(index);
-      const removedSongFromQueue = i18next.t('global:removedSongFromQueue', {
+      const removedSongFromQueue = localizedString('global:removedSongFromQueue', {
         lng: interaction.locale,
         track,
       });

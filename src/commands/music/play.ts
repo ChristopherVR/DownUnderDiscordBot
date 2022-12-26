@@ -10,21 +10,21 @@ import {
   MessageActionRowComponentBuilder,
   User,
 } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Play: PlayerCommand = {
-  name: i18next.t('global:play'),
-  description: i18next.t('global:playTrackOrPlaylistByProviding'),
+  name: localizedString('global:play'),
+  description: localizedString('global:playTrackOrPlaylistByProviding'),
   nameLocalizations: getLocalizations('global:play'),
   descriptionLocalizations: getLocalizations('global:playTrackOrPlaylistByProviding'),
   voiceChannel: true,
   options: [
     {
-      name: i18next.t('global:linkOrQuery'),
-      description: i18next.t('global:theSongToSearch'),
+      name: localizedString('global:linkOrQuery'),
+      description: localizedString('global:theSongToSearch'),
       nameLocalizations: getLocalizations('global:linkOrQuery'),
       descriptionLocalizations: getLocalizations('global:theSongToSearch'),
       type: ApplicationCommandOptionType.String,

@@ -1,12 +1,12 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Pause: PlayerCommand = {
-  name: i18next.t('global:pause'),
-  description: i18next.t('global:pauseTheCurrentTrack'),
+  name: localizedString('global:pause'),
+  description: localizedString('global:pauseTheCurrentTrack'),
   nameLocalizations: getLocalizations('global:pause'),
   descriptionLocalizations: getLocalizations('global:pauseTheCurrentTrack'),
   voiceChannel: true,
@@ -15,7 +15,7 @@ export const Pause: PlayerCommand = {
 
   run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       console.log('GuildId is undefined');
@@ -27,7 +27,7 @@ export const Pause: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue) {
-      const noMusicLoc = i18next.t('global:noMusicCurrentlyPlaying', {
+      const noMusicLoc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
 
@@ -38,7 +38,7 @@ export const Pause: PlayerCommand = {
     }
 
     if (queue.connection.paused) {
-      const trackIsPaused = i18next.t('global:trackIsPaused', {
+      const trackIsPaused = localizedString('global:trackIsPaused', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -49,12 +49,12 @@ export const Pause: PlayerCommand = {
 
     const success = queue.setPaused(true);
 
-    const loc = i18next.t('global:currentTrackPaused', {
+    const loc = localizedString('global:currentTrackPaused', {
       lng: interaction.locale,
       title: queue.current.title,
     });
 
-    const genericError = i18next.t('global:genericError', {
+    const genericError = localizedString('global:genericError', {
       lng: interaction.locale,
       title: queue.current.title,
     });

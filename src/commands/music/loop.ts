@@ -1,28 +1,28 @@
 import { QueueRepeatMode } from 'discord-player';
 import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Loop: PlayerCommand = {
-  name: i18next.t('global:loop'),
-  description: i18next.t('global:enableDisableLoopDescription'),
+  name: localizedString('global:loop'),
+  description: localizedString('global:enableDisableLoopDescription'),
   nameLocalizations: getLocalizations('global:loop'),
   descriptionLocalizations: getLocalizations('global:enableDisableLoopDescription'),
   voiceChannel: true,
   options: [
     {
-      name: i18next.t('global:action'),
-      description: i18next.t('global:whatActionToPerform'),
+      name: localizedString('global:action'),
+      description: localizedString('global:whatActionToPerform'),
       nameLocalizations: getLocalizations('global:action'),
       descriptionLocalizations: getLocalizations('global:whatActionToPerform'),
       type: ApplicationCommandOptionType.String,
       required: true,
       choices: [
-        { name: i18next.t('global:queue'), value: 'enable_loop_queue' },
-        { name: i18next.t('global:disable'), value: 'disable_loop' },
-        { name: i18next.t('global:song'), value: 'enable_loop_song' },
+        { name: localizedString('global:queue'), value: 'enable_loop_queue' },
+        { name: localizedString('global:disable'), value: 'disable_loop' },
+        { name: localizedString('global:song'), value: 'enable_loop_song' },
       ],
     },
   ],
@@ -31,7 +31,7 @@ export const Loop: PlayerCommand = {
   run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
       console.log('GuildId is undefined');
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -42,7 +42,7 @@ export const Loop: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue?.playing) {
-      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -50,13 +50,13 @@ export const Loop: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const genericError = i18next.t('global:genericError', {
+    const genericError = localizedString('global:genericError', {
       lng: interaction.locale,
     });
     switch (interaction.options.data.map((x) => x.value).toString()) {
       case 'enable_loop_queue': {
         if (queue.repeatMode === 1) {
-          const disableCurrentLoop = i18next.t('global:disableCurrentLoop', {
+          const disableCurrentLoop = localizedString('global:disableCurrentLoop', {
             lng: interaction.locale,
           });
 
@@ -68,7 +68,7 @@ export const Loop: PlayerCommand = {
 
         const success = queue.setRepeatMode(QueueRepeatMode.QUEUE);
 
-        const loc = i18next.t('global:songRepeatMode', {
+        const loc = localizedString('global:songRepeatMode', {
           lng: interaction.locale,
         });
 
@@ -86,7 +86,7 @@ export const Loop: PlayerCommand = {
       }
       case 'enable_loop_song': {
         if (queue.repeatMode === 2) {
-          const locc = i18next.t('global:disableCurrentLoop', {
+          const locc = localizedString('global:disableCurrentLoop', {
             lng: interaction.locale,
           });
           return await interaction.reply({
@@ -97,7 +97,7 @@ export const Loop: PlayerCommand = {
 
         const success = queue.setRepeatMode(QueueRepeatMode.TRACK);
 
-        const locc = i18next.t('global:songRepeatMode', {
+        const locc = localizedString('global:songRepeatMode', {
           lng: interaction.locale,
         });
 

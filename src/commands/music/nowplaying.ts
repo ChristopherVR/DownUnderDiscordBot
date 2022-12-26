@@ -8,14 +8,14 @@ import {
   EmbedBuilder,
   MessageActionRowComponentBuilder,
 } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const NowPlaying: PlayerCommand = {
-  name: i18next.t('global:nowplaying'),
-  description: i18next.t('global:viewWhatIsPlaying'),
+  name: localizedString('global:nowplaying'),
+  description: localizedString('global:viewWhatIsPlaying'),
   nameLocalizations: getLocalizations('global:nowplaying'),
   descriptionLocalizations: getLocalizations('global:viewWhatIsPlaying'),
   voiceChannel: true,
@@ -24,7 +24,7 @@ export const NowPlaying: PlayerCommand = {
 
   run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       console.log('GuildId is undefined');
@@ -36,7 +36,7 @@ export const NowPlaying: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue) {
-      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -57,7 +57,7 @@ export const NowPlaying: PlayerCommand = {
 
     const saveButton = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:saveThisTrack', {
+        localizedString('global:saveThisTrack', {
           lng: interaction.locale,
         }),
       )
@@ -66,7 +66,7 @@ export const NowPlaying: PlayerCommand = {
 
     const volumeup = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:volumeUp', {
+        localizedString('global:volumeUp', {
           lng: interaction.locale,
         }),
       )
@@ -75,7 +75,7 @@ export const NowPlaying: PlayerCommand = {
 
     const volumedown = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:volumeDown', {
+        localizedString('global:volumeDown', {
           lng: interaction.locale,
         }),
       )
@@ -84,7 +84,7 @@ export const NowPlaying: PlayerCommand = {
 
     const loop = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:loop', {
+        localizedString('global:loop', {
           lng: interaction.locale,
         }),
       )
@@ -93,14 +93,14 @@ export const NowPlaying: PlayerCommand = {
 
     const resumepause = new ButtonBuilder()
       .setLabel(
-        i18next.t('global:resumeAndPause', {
+        localizedString('global:resumeAndPause', {
           lng: interaction.locale,
         }),
       )
       .setCustomId(JSON.stringify({ ffb: 'resume&pause' }))
       .setStyle(ButtonStyle.Primary);
 
-    const volDurationDesc = i18next.t('global:nowPlayingDescription', {
+    const volDurationDesc = localizedString('global:nowPlayingDescription', {
       lng: interaction.locale,
       volume: queue.volume,
       duration: trackDuration,
@@ -117,7 +117,7 @@ export const NowPlaying: PlayerCommand = {
       .setThumbnail(track.thumbnail)
       .setDescription(volDurationDesc)
       .setFooter({
-        text: i18next.t('global:defaultFooter', {
+        text: localizedString('global:defaultFooter', {
           lng: interaction.locale,
         }),
 

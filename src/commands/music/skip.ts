@@ -1,18 +1,18 @@
 import { ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Skip: PlayerCommand = {
-  name: i18next.t('global:skip'),
-  description: i18next.t('global:stopTrack'),
+  name: localizedString('global:skip'),
+  description: localizedString('global:stopTrack'),
   nameLocalizations: getLocalizations('global:skip'),
   descriptionLocalizations: getLocalizations('global:stopTrack'),
   voiceChannel: true,
 
   run: async (interaction: ChatInputCommandInteraction) => {
-    const genericError = i18next.t('global:genericError', {
+    const genericError = localizedString('global:genericError', {
       lng: interaction.locale,
     });
     if (!interaction.guildId) {
@@ -26,7 +26,7 @@ export const Skip: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue?.playing) {
-      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
       return await interaction.reply({
@@ -36,7 +36,7 @@ export const Skip: PlayerCommand = {
     }
 
     const success = queue.skip();
-    const currentTrackSkipped = i18next.t('global:genericError', {
+    const currentTrackSkipped = localizedString('global:genericError', {
       lng: interaction.locale,
       track: queue.current.title,
     });

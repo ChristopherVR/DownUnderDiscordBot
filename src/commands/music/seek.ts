@@ -1,20 +1,20 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import { ms } from '../helpers/ms';
 import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Seek: PlayerCommand = {
-  name: i18next.t('global:seek'),
-  description: i18next.t('global:skipBackAndForth'),
+  name: localizedString('global:seek'),
+  description: localizedString('global:skipBackAndForth'),
   nameLocalizations: getLocalizations('global:seek'),
   descriptionLocalizations: getLocalizations('global:skipBackAndForth'),
   voiceChannel: true,
   options: [
     {
-      name: i18next.t('global:time'),
-      description: i18next.t('global:timeToSkip'),
+      name: localizedString('global:time'),
+      description: localizedString('global:timeToSkip'),
       nameLocalizations: getLocalizations('global:time'),
       descriptionLocalizations: getLocalizations('global:timeToSkip'),
       type: ApplicationCommandOptionType.String,
@@ -23,7 +23,7 @@ export const Seek: PlayerCommand = {
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
 
@@ -36,7 +36,7 @@ export const Seek: PlayerCommand = {
     const queue = getPlayer().getQueue(interaction.guildId);
 
     if (!queue?.playing) {
-      const noMusicCurrentlyPlaying = i18next.t('global:noMusicCurrentlyPlaying', {
+      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
 
@@ -49,10 +49,10 @@ export const Seek: PlayerCommand = {
     const timeToMS = ms(interaction.options.getString('time'));
 
     if (timeToMS >= queue.current.durationMS) {
-      const indicatedTimeIsTooHigh = i18next.t('global:indicatedTimeIsTooHigh', {
+      const indicatedTimeIsTooHigh = localizedString('global:indicatedTimeIsTooHigh', {
         lng: interaction.locale,
       });
-      const validSkipHint = i18next.t('global:validSkipHint', {
+      const validSkipHint = localizedString('global:validSkipHint', {
         lng: interaction.locale,
       });
 
@@ -68,7 +68,7 @@ export const Seek: PlayerCommand = {
       long: true,
     });
 
-    const timeSetInCurrentTrack = i18next.t('global:timeSetInCurrentTrack', {
+    const timeSetInCurrentTrack = localizedString('global:timeSetInCurrentTrack', {
       lng: interaction.locale,
       time: longMs,
     });

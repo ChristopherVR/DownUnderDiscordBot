@@ -1,18 +1,18 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import i18next from 'i18next';
+import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Search: PlayerCommand = {
-  name: i18next.t('global:search'),
-  description: i18next.t('global:providerDesc'),
+  name: localizedString('global:search'),
+  description: localizedString('global:providerDesc'),
   nameLocalizations: getLocalizations('global:search'),
   descriptionLocalizations: getLocalizations('global:providerDesc'),
   voiceChannel: true,
   options: [
     {
-      name: i18next.t('global:provider'),
-      description: i18next.t('global:providerDesc'),
+      name: localizedString('global:provider'),
+      description: localizedString('global:providerDesc'),
       nameLocalizations: getLocalizations('global:provider'),
       descriptionLocalizations: getLocalizations('global:providerDesc'),
       type: ApplicationCommandOptionType.String,
@@ -39,7 +39,7 @@ export const Search: PlayerCommand = {
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
     if (!interaction.guildId) {
-      const genericError = i18next.t('global:genericError', {
+      const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
       });
       console.log('GuildId is undefined');
@@ -49,7 +49,7 @@ export const Search: PlayerCommand = {
       });
     }
 
-    const notYetSupported = i18next.t('global:notYetSupported', {
+    const notYetSupported = localizedString('global:notYetSupported', {
       lng: interaction.locale,
     });
 
