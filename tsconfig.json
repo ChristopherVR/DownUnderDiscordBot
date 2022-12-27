@@ -15,7 +15,8 @@
     "strict": true,
     "sourceMap": true,
     "types": ["node"],
-    "newLine": "LF"
+    "newLine": "LF",
+    "noImplicitAny": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

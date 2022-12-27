@@ -1,7 +1,7 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import { getPlayer } from '../helpers/player';
+
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Remove: PlayerCommand = {
@@ -42,7 +42,7 @@ export const Remove: PlayerCommand = {
     const number = interaction.options.getNumber('number');
     const track = interaction.options.getString('song');
 
-    const queue = getPlayer().getQueue(interaction.guildId);
+    const queue = global.player.getQueue(interaction.guildId);
 
     if (!queue?.playing) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {

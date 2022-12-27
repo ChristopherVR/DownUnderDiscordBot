@@ -1,14 +1,14 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import { getPlayer } from '../helpers/player';
+
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Volume: PlayerCommand = {
   name: localizedString('global:volume'),
   nameLocalizations: getLocalizations('global:volume'),
-  description: localizedString('global:adjust'),
-  descriptionLocalizations: getLocalizations('global:adjust'),
+  description: localizedString('global:adjustVolume'),
+  descriptionLocalizations: getLocalizations('global:adjustVolume'),
   voiceChannel: true,
   options: [
     {
@@ -33,7 +33,7 @@ export const Volume: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = getPlayer().getQueue(interaction.guildId);
+    const queue = global.player.getQueue(interaction.guildId);
 
     if (!queue) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {

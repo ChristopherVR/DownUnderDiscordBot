@@ -3,7 +3,6 @@ import { QueueFilters, AudioFilters } from 'discord-player';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 
-import { getPlayer } from '../helpers/player';
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Filter: PlayerCommand = {
@@ -40,7 +39,7 @@ export const Filter: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = getPlayer().getQueue(interaction.guildId);
+    const queue = global.player.getQueue(interaction.guildId);
 
     if (!queue?.playing) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {

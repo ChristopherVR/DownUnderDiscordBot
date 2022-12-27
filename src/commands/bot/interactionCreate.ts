@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, Client, Interaction } from 'discord.js';
 import { getCommands } from '../../commands';
 import { cast } from '../helpers/cast';
 
-const handleSlashCommand = async (_c: Client, interaction: ChatInputCommandInteraction): Promise<void> => {
+const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   try {
     const slashCommand = getCommands().find((cc) => cc.name === interaction.commandName);
     if (!slashCommand) {
@@ -10,15 +10,15 @@ const handleSlashCommand = async (_c: Client, interaction: ChatInputCommandInter
       return;
     }
     await slashCommand.run(interaction);
-  } catch {
-    console.log('An error occurred trying to handle the command.');
+  } catch (er) {
+    console.log('An error occurred trying to handle the command.', er);
   }
 };
 
 export default (client: Client): void => {
   client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.isCommand() || interaction.isContextMenuCommand()) {
-      await handleSlashCommand(client, cast<ChatInputCommandInteraction>(interaction));
+      await handleSlashCommand(cast<ChatInputCommandInteraction>(interaction));
     }
   });
 };

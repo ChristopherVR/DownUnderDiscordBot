@@ -10,7 +10,7 @@ import {
 } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import { getPlayer } from '../helpers/player';
+
 import getLocalizations from '../i18n/discordLocalization';
 
 export const NowPlaying: PlayerCommand = {
@@ -33,7 +33,7 @@ export const NowPlaying: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = getPlayer().getQueue(interaction.guildId);
+    const queue = global.player.getQueue(interaction.guildId);
 
     if (!queue) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {

@@ -22,7 +22,7 @@ export const Ask: Command<ChatInputCommandInteraction> = {
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
     const input = interaction.options.getString('input') ?? '';
-    const answer = (await ask(input)) ?? ''; // prompt GPT-3
+    const answer = await ask(input); // prompt GPT-3
     await interaction.channel?.send(answer);
   },
 };

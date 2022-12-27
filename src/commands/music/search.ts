@@ -19,19 +19,19 @@ export const Search: PlayerCommand = {
       required: true,
       choices: [
         {
-          name: 'bandcamp',
+          name: 'Bandcamp',
           value: 'bandcamp',
         },
         {
-          name: 'deezer',
+          name: 'Deezer',
           value: 'deezer',
         },
         {
-          name: 'soundcloud',
+          name: 'Soundcloud',
           value: 'soundcloud',
         },
         {
-          name: 'vimeo',
+          name: 'Vimeo',
           value: 'vimeo',
         },
       ],

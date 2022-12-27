@@ -2,7 +2,7 @@ import { QueueRepeatMode } from 'discord-player';
 import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import { getPlayer } from '../helpers/player';
+
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Loop: PlayerCommand = {
@@ -39,7 +39,7 @@ export const Loop: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = getPlayer().getQueue(interaction.guildId);
+    const queue = global.player.getQueue(interaction.guildId);
 
     if (!queue?.playing) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
@@ -55,7 +55,7 @@ export const Loop: PlayerCommand = {
     });
     switch (interaction.options.data.map((x) => x.value).toString()) {
       case 'enable_loop_queue': {
-        if (queue.repeatMode === 1) {
+        if (queue.repeatMode === QueueRepeatMode.TRACK) {
           const disableCurrentLoop = localizedString('global:disableCurrentLoop', {
             lng: interaction.locale,
           });
@@ -85,7 +85,7 @@ export const Loop: PlayerCommand = {
         });
       }
       case 'enable_loop_song': {
-        if (queue.repeatMode === 2) {
+        if (queue.repeatMode === QueueRepeatMode.QUEUE) {
           const locc = localizedString('global:disableCurrentLoop', {
             lng: interaction.locale,
           });

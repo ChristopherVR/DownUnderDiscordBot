@@ -12,7 +12,8 @@ import {
 } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import { getPlayer } from '../helpers/player';
+import cast from '../helpers/cast';
+
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Play: PlayerCommand = {
@@ -36,25 +37,33 @@ export const Play: PlayerCommand = {
     if (!interaction.guildId) {
       console.log('GuildId is undefined');
       return await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: localizedString('global:genericError', {
+          lng: interaction.locale,
+        }),
         ephemeral: true,
       });
     }
-    const song = interaction.options.getString('song') ?? '';
+    const song = interaction.options.getString(localizedString('global:linkOrQuery')) ?? '';
 
-    const res = await getPlayer().search(song, {
-      requestedBy: interaction.member as unknown as User,
+    console.log(song);
+    const res = await global.player.search(song, {
+      requestedBy: cast<User>(interaction.member),
       searchEngine: QueryType.AUTO,
     });
 
-    if (!res?.tracks?.length)
+    if (!res?.tracks?.length) {
+      console.log('Something went wrong trying to find tracks. Object: ', res);
       return await interaction.reply({
-        content: `No results found ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+        content: localizedString('global:genericError', {
+          lng: interaction.locale,
+          user: interaction.member?.user.username,
+        }),
         ephemeral: true,
       });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const queue = getPlayer().createQueue(interaction.guild!, {
+    const queue = global.player.createQueue(interaction.guild!, {
       metadata: interaction.channel,
       leaveOnEnd: false,
     });
@@ -63,32 +72,37 @@ export const Play: PlayerCommand = {
     const embed = new EmbedBuilder()
       .setColor('#ff0000')
       .setAuthor({
-        name: `Results for ${song}`,
+        name: localizedString('global:resultsFor', { song }),
         iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }),
       })
       .setDescription(
         `${maxTracks
           .map((track, i) => `**${i + 1}**. ${track.title} | ${track.author}`)
-          .join('\n')}\n\nSelect choice between **1** and **${maxTracks.length}** or **cancel** ⬇️`,
+          .join('\n')}\n\n${localizedString('global:selectAChoiceBetween', {
+          count: maxTracks.length,
+        })}`,
       )
       .setTimestamp()
       .setFooter({
-        text: 'Music comes first - Made with heart by ChristopherVR ❤️',
+        text: localizedString('global:defaultFooter'),
         iconURL: interaction.member?.avatar ?? undefined,
       });
 
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-      ...[...Array(5).keys()].map((y) =>
-        new ButtonBuilder().setLabel(y.toString()).setCustomId(y.toString()).setStyle(ButtonStyle.Primary),
-      ),
-      new ButtonBuilder().setLabel('Cancel').setCustomId('cancel').setStyle(ButtonStyle.Secondary),
+      ...[...Array(4).keys()].map((y) => {
+        const label = (1 + y).toString();
+        return new ButtonBuilder().setLabel(label).setCustomId(label).setStyle(ButtonStyle.Primary);
+      }),
+      new ButtonBuilder()
+        .setLabel(localizedString('global:cancel'))
+        .setCustomId('cancel')
+        .setStyle(ButtonStyle.Secondary),
     );
     await interaction.reply({ embeds: [embed], components: [row] });
 
     const collector = interaction.channel?.createMessageCollector({
       time: 15000,
       max: 1,
-      //   errors: ['time'],
       filter: (m) => m.author.id === interaction.member?.user.id,
     });
 
@@ -96,7 +110,7 @@ export const Play: PlayerCommand = {
       const value = parseInt(content ?? '', 10);
       if (!value || value <= 0 || value > maxTracks.length) {
         await interaction.followUp({
-          content: `Invalid response, try a value between **1** and **${maxTracks.length}** or **cancel**... try again ? ❌`,
+          content: localizedString('global:invalidResponseForSong', { max: maxTracks.length }),
           ephemeral: true,
         });
       } else {
@@ -109,7 +123,7 @@ export const Play: PlayerCommand = {
             if (!channel) {
               console.log('channel is undefined');
               await interaction.reply({
-                content: `Unable to handle your request. Please try again later.`,
+                content: localizedString('global:genericError'),
                 ephemeral: true,
               });
             } else {
@@ -118,22 +132,22 @@ export const Play: PlayerCommand = {
           }
         } catch {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          getPlayer().deleteQueue(interaction.guildId!);
+          global.player.deleteQueue(interaction.guildId!);
           await interaction.followUp({
-            content: `I can't join the voice channel ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+            content: localizedString('global:unableToJoinVoiceChannel'),
             ephemeral: true,
           });
           return;
         }
 
-        await interaction.followUp(`Loading your search... 🎧`);
+        await interaction.followUp(localizedString('global:loadingYourSearch'));
 
         if (queue.destroyed) {
           const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
           if (!channel) {
             console.log('channel is undefined');
             await interaction.reply({
-              content: `Unable to handle your request. Please try again later.`,
+              content: localizedString('global:genericError'),
               ephemeral: true,
             });
           } else {
@@ -152,23 +166,23 @@ export const Play: PlayerCommand = {
     });
 
     if (!collector) {
+      console.log('Collector is undefined');
       await interaction.reply({
-        content: `Unable to handle your request. Please try again later.`,
+        content: localizedString('global:genericError'),
         ephemeral: true,
       });
     } else {
       collector.on('collect', async (query, collection) => {
-        console.log(query, collection);
         const content = collection.first()?.content;
         if (!interaction.guildId) {
           console.log('GuildId is undefined');
           await interaction.reply({
-            content: `Unable to handle your request. Please try again later.`,
+            content: localizedString('global:genericError'),
             ephemeral: true,
           });
         } else if (typeof query !== 'string' && content?.toLowerCase() === 'cancel') {
           await interaction.followUp({
-            content: `Search cancelled ✅`,
+            content: localizedString('global:searchCancelled'),
             ephemeral: true,
           });
           collector.stop();
@@ -180,7 +194,9 @@ export const Play: PlayerCommand = {
       collector.on('end', async (_, msg: string) => {
         if (msg === 'time') {
           await interaction.followUp({
-            content: `Search timed out ${interaction.member?.user.id ?? ''}... try again ? ❌`,
+            content: localizedString('global:searchTimedOut', {
+              user: interaction.member?.user.username,
+            }),
             ephemeral: true,
           });
         }

@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import { getPlayer } from '../helpers/player';
+
 import getLocalizations from '../i18n/discordLocalization';
 
 export const Resume: PlayerCommand = {
@@ -21,7 +21,7 @@ export const Resume: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = getPlayer().getQueue(interaction.guildId);
+    const queue = global.player.getQueue(interaction.guildId);
 
     if (!queue) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {

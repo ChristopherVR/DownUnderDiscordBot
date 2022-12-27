@@ -2,7 +2,8 @@ import { QueryType } from 'discord-player';
 import { ApplicationCommandOptionType, ChatInputCommandInteraction, User } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import { getPlayer } from '../helpers/player';
+import cast from '../helpers/cast';
+
 import getLocalizations from '../i18n/discordLocalization';
 
 export const PlayNext: PlayerCommand = {
@@ -33,7 +34,7 @@ export const PlayNext: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = getPlayer().getQueue(interaction.guildId);
+    const queue = global.player.getQueue(interaction.guildId);
 
     if (!queue?.playing) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
@@ -46,8 +47,8 @@ export const PlayNext: PlayerCommand = {
 
     const song = interaction.options.getString('song') ?? '';
 
-    const res = await getPlayer().search(song, {
-      requestedBy: interaction.member as unknown as User,
+    const res = await global.player.search(song, {
+      requestedBy: cast<User>(interaction.member),
       searchEngine: QueryType.AUTO,
     });
 

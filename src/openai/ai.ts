@@ -1,11 +1,11 @@
 import { Configuration, OpenAIApi } from 'openai';
 
-export const ask = async (prompt: string | undefined): Promise<string | undefined> => {
+export const ask = async (prompt: string | undefined): Promise<string> => {
   const configuration = new Configuration({
     apiKey: process.env.OPEN_AI_TOKEN,
   });
-  const openai = new OpenAIApi(configuration);
-  const response = await openai.createCompletion({
+  const openAI = new OpenAIApi(configuration);
+  const response = await openAI.createCompletion({
     model: 'text-davinci-002',
     prompt,
     temperature: 0.7,
@@ -14,7 +14,7 @@ export const ask = async (prompt: string | undefined): Promise<string | undefine
     frequency_penalty: 0,
     presence_penalty: 0,
   });
-  const answer = response.data.choices[0].text;
+  const answer = response.data.choices[0].text ?? '';
   return answer;
 };
 

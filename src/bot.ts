@@ -1,12 +1,11 @@
 import { Player } from 'discord-player';
 import { Client, GatewayIntentBits } from 'discord.js';
-import * as dotenv from 'dotenv'; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
-import express from 'express';
-import path from 'path';
-import { initInstance, localizedString } from './i18n';
+import * as dotenv from 'dotenv';
+import { localizedString } from './i18n';
+import initInstance from './i18nSetup';
+import { initSetup } from './setup';
 
 dotenv.config();
-
 const token = process.env.CLIENT_TOKEN;
 const init = async () => {
   await initInstance();
@@ -25,29 +24,10 @@ const init = async () => {
     const value = localizedString('activity:default');
     client.user?.setActivity(value);
   });
-  client.login(token);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (global as any).player = new Player(client);
+  await client.login(token);
+  global.player = new Player(client);
 };
-const hostname = '127.0.0.1';
-const port = 3000;
 
-const server = express();
+const setup = async () => await initSetup(init);
 
-server.set('title', 'Nein Discord Bot');
-server.use('/locales', express.static(`${__dirname}/locales`));
-server.set('port', port);
-server.set('ipaddr', hostname);
-server.use('/components', express.static(`${__dirname}/components`));
-server.use('/js', express.static(`${__dirname}/js`));
-server.use('/icons', express.static(`${__dirname}/icons`));
-server.set('views', `${__dirname}/views`);
-
-server.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '/index.html'));
-});
-
-server.listen(port, hostname, async () => {
-  await init();
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
+setup();

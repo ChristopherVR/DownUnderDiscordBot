@@ -8,6 +8,7 @@ import {
   ButtonStyle,
   ChatInputCommandInteraction,
   MessageActionRowComponentBuilder,
+  ChannelType,
 } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
@@ -43,7 +44,6 @@ export const Controller: PlayerCommand = {
       });
     }
     const { channel } = interaction;
-    // const channel = interaction.options.getChannel('channel');
     if (!channel) {
       const genericError = localizedString('global:genericError', {
         lng: interaction.locale,
@@ -54,7 +54,7 @@ export const Controller: PlayerCommand = {
         ephemeral: true,
       });
     }
-    if (channel.type !== 0) {
+    if (channel.type !== ChannelType.GuildText) {
       const loc = localizedString('global:haveToSendToTextChannel', {
         lng: interaction.locale,
       });
