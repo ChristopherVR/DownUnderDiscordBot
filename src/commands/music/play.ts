@@ -77,7 +77,7 @@ export const Play: PlayerCommand = {
     const embed = new EmbedBuilder()
       .setColor('#ff0000')
       .setAuthor({
-        name: localizedString('global:resultsFor', { song, lng: interaction.locale }),
+        name: localizedString('global:resultsFor', { track: song, lng: interaction.locale }),
         iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }),
       })
       .setDescription(
@@ -85,7 +85,7 @@ export const Play: PlayerCommand = {
           .map((track, i) => `**${i + 1}**. ${track.title} | ${track.author}`)
           .join('\n')}\n\n${localizedString('global:selectAChoiceBetween', {
           lng: interaction.locale,
-          count: maxTracks.length,
+          count: maxTracks.length - 1,
         })}`,
       )
       .setTimestamp()
@@ -113,19 +113,58 @@ export const Play: PlayerCommand = {
     });
 
     const playSong = async (content: string) => {
-      const value = parseInt(content ?? '', 10);
-      if (!value || value <= 0 || value > maxTracks.length) {
-        await interaction.followUp({
-          content: localizedString('global:invalidResponseForSong', { max: maxTracks.length, lng: interaction.locale }),
-          ephemeral: true,
-        });
-      } else {
+      if (content === 'cancel') {
+        // await interaction.reply({
+        //   content: localizedString('global:searchCancelled', { lng: interaction.locale }),
+        //   ephemeral: true,
+        // });
         collector?.stop();
+        if (queue.connection) {
+          queue.destroy(true);
+        }
+        await interaction.deleteReply();
+      } else {
+        const value = parseInt(content, 10);
+        console.log('Song track to play - ', value);
+        if (!(value >= 0 || value < maxTracks.length || content !== 'cancel')) {
+          await interaction.followUp({
+            content: localizedString('global:invalidResponseForSong', {
+              max: maxTracks.length - 1,
+              lng: interaction.locale,
+            }),
+            ephemeral: true,
+          });
+        } else {
+          collector?.stop();
 
-        try {
-          if (!queue.connection) {
+          try {
+            if (!queue.connection) {
+              const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
+
+              if (!channel) {
+                console.log('channel is undefined');
+                await interaction.reply({
+                  content: localizedString('global:connectToVoiceChannelToUseBot', { lng: interaction.locale }),
+                  ephemeral: true,
+                });
+              } else {
+                await queue.connect(channel);
+              }
+            }
+          } catch {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            global.player.deleteQueue(interaction.guildId!);
+            await interaction.followUp({
+              content: localizedString('global:unableToJoinVoiceChannel', { lng: interaction.locale }),
+              ephemeral: true,
+            });
+            return;
+          }
+
+          await interaction.followUp(localizedString('global:loadingYourSearch', { lng: interaction.locale }));
+
+          if (queue.destroyed) {
             const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
-
             if (!channel) {
               console.log('channel is undefined');
               await interaction.reply({
@@ -136,33 +175,10 @@ export const Play: PlayerCommand = {
               await queue.connect(channel);
             }
           }
-        } catch {
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          global.player.deleteQueue(interaction.guildId!);
-          await interaction.followUp({
-            content: localizedString('global:unableToJoinVoiceChannel', { lng: interaction.locale }),
-            ephemeral: true,
-          });
-          return;
+          queue.addTrack(res.tracks[Number(content) - 1]);
+
+          if (!queue.playing) await queue.play();
         }
-
-        await interaction.followUp(localizedString('global:loadingYourSearch', { lng: interaction.locale }));
-
-        if (queue.destroyed) {
-          const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
-          if (!channel) {
-            console.log('channel is undefined');
-            await interaction.reply({
-              content: localizedString('global:genericError', { lng: interaction.locale }),
-              ephemeral: true,
-            });
-          } else {
-            await queue.connect(channel);
-          }
-        }
-        queue.addTrack(res.tracks[Number(content) - 1]);
-
-        if (!queue.playing) await queue.play();
       }
     };
 
@@ -178,25 +194,6 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     } else {
-      collector.on('collect', async (query, collection) => {
-        const content = collection.first()?.content;
-        if (!interaction.guildId) {
-          console.log('GuildId is undefined');
-          await interaction.reply({
-            content: localizedString('global:genericError', { lng: interaction.locale }),
-            ephemeral: true,
-          });
-        } else if (typeof query !== 'string' && content?.toLowerCase() === 'cancel') {
-          await interaction.followUp({
-            content: localizedString('global:searchCancelled', { lng: interaction.locale }),
-            ephemeral: true,
-          });
-          collector.stop();
-        } else {
-          await playSong(content ?? '');
-        }
-      });
-
       collector.on('end', async (_, msg: string) => {
         if (msg === 'time') {
           await interaction.followUp({
