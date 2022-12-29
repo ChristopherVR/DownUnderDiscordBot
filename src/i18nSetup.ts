@@ -1,6 +1,8 @@
-/* eslint-disable import/no-import-module-exports */
 import i18next from 'i18next';
 import HttpApi, { HttpBackendOptions } from 'i18next-http-backend';
+
+const hostname = process.env.HOST;
+const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 const instance = i18next.use(HttpApi).createInstance();
 export const initInstance = async () =>
@@ -24,7 +26,7 @@ export const initInstance = async () =>
           cache: 'default',
         },
         // for all available options read the backend's repository readme file
-        loadPath: `http://localhost:3000/locales/{{lng}}/{{ns}}.json`,
+        loadPath: `http://${hostname}:${port}/locales/{{lng}}/{{ns}}.json`,
         // loadPath: '/locales/{{lng}}/{{ns}}.json',
       },
     },
