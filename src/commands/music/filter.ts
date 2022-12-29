@@ -89,8 +89,12 @@ export const Filter: PlayerCommand = {
       filter,
       // TODO: Handle this better
       status: queue.getFiltersEnabled().includes(filter)
-        ? localizedString('global:enabled')
-        : localizedString('global:disabled'),
+        ? localizedString('global:enabled', {
+            lng: interaction.locale,
+          })
+        : localizedString('global:disabled', {
+            lng: interaction.locale,
+          }),
     });
     return await interaction.reply({
       content: loc,

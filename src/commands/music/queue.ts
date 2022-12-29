@@ -51,13 +51,14 @@ export const Queue: PlayerCommand = {
 
     const nextSongs =
       songs > 5
-        ? localizedString('global:queueAndOtherSongsInPlaylist', { count: songs - 5 })
-        : localizedString('global:inPlaylistNrSongs', { songs });
+        ? localizedString('global:queueAndOtherSongsInPlaylist', { count: songs - 5, lng: interaction.locale })
+        : localizedString('global:inPlaylistNrSongs', { songs, lng: interaction.locale });
 
     const tracks = queue.tracks.map(
       (track, i) =>
         `**${i + 1}** - ${track.title} | ${track.author} ${localizedString('global:requestedBy', {
           by: track.requestedBy.username,
+          lng: interaction.locale,
         })}`,
     );
 

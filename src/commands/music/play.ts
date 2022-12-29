@@ -43,7 +43,12 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const song = interaction.options.getString(localizedString('global:linkOrQuery')) ?? '';
+    const song =
+      interaction.options.getString(
+        localizedString('global:linkOrQuery', {
+          lng: interaction.locale,
+        }),
+      ) ?? '';
 
     console.log(song);
     const res = await global.player.search(song, {
@@ -72,19 +77,20 @@ export const Play: PlayerCommand = {
     const embed = new EmbedBuilder()
       .setColor('#ff0000')
       .setAuthor({
-        name: localizedString('global:resultsFor', { song }),
+        name: localizedString('global:resultsFor', { song, lng: interaction.locale }),
         iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }),
       })
       .setDescription(
         `${maxTracks
           .map((track, i) => `**${i + 1}**. ${track.title} | ${track.author}`)
           .join('\n')}\n\n${localizedString('global:selectAChoiceBetween', {
+          lng: interaction.locale,
           count: maxTracks.length,
         })}`,
       )
       .setTimestamp()
       .setFooter({
-        text: localizedString('global:defaultFooter'),
+        text: localizedString('global:defaultFooter', { lng: interaction.locale }),
         iconURL: interaction.member?.avatar ?? undefined,
       });
 
@@ -94,7 +100,7 @@ export const Play: PlayerCommand = {
         return new ButtonBuilder().setLabel(label).setCustomId(label).setStyle(ButtonStyle.Primary);
       }),
       new ButtonBuilder()
-        .setLabel(localizedString('global:cancel'))
+        .setLabel(localizedString('global:cancel', { lng: interaction.locale }))
         .setCustomId('cancel')
         .setStyle(ButtonStyle.Secondary),
     );
@@ -110,7 +116,7 @@ export const Play: PlayerCommand = {
       const value = parseInt(content ?? '', 10);
       if (!value || value <= 0 || value > maxTracks.length) {
         await interaction.followUp({
-          content: localizedString('global:invalidResponseForSong', { max: maxTracks.length }),
+          content: localizedString('global:invalidResponseForSong', { max: maxTracks.length, lng: interaction.locale }),
           ephemeral: true,
         });
       } else {
@@ -123,7 +129,7 @@ export const Play: PlayerCommand = {
             if (!channel) {
               console.log('channel is undefined');
               await interaction.reply({
-                content: localizedString('global:genericError'),
+                content: localizedString('global:genericError', { lng: interaction.locale }),
                 ephemeral: true,
               });
             } else {
@@ -134,20 +140,20 @@ export const Play: PlayerCommand = {
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           global.player.deleteQueue(interaction.guildId!);
           await interaction.followUp({
-            content: localizedString('global:unableToJoinVoiceChannel'),
+            content: localizedString('global:unableToJoinVoiceChannel', { lng: interaction.locale }),
             ephemeral: true,
           });
           return;
         }
 
-        await interaction.followUp(localizedString('global:loadingYourSearch'));
+        await interaction.followUp(localizedString('global:loadingYourSearch', { lng: interaction.locale }));
 
         if (queue.destroyed) {
           const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
           if (!channel) {
             console.log('channel is undefined');
             await interaction.reply({
-              content: localizedString('global:genericError'),
+              content: localizedString('global:genericError', { lng: interaction.locale }),
               ephemeral: true,
             });
           } else {
@@ -168,7 +174,7 @@ export const Play: PlayerCommand = {
     if (!collector) {
       console.log('Collector is undefined');
       await interaction.reply({
-        content: localizedString('global:genericError'),
+        content: localizedString('global:genericError', { lng: interaction.locale }),
         ephemeral: true,
       });
     } else {
@@ -177,12 +183,12 @@ export const Play: PlayerCommand = {
         if (!interaction.guildId) {
           console.log('GuildId is undefined');
           await interaction.reply({
-            content: localizedString('global:genericError'),
+            content: localizedString('global:genericError', { lng: interaction.locale }),
             ephemeral: true,
           });
         } else if (typeof query !== 'string' && content?.toLowerCase() === 'cancel') {
           await interaction.followUp({
-            content: localizedString('global:searchCancelled'),
+            content: localizedString('global:searchCancelled', { lng: interaction.locale }),
             ephemeral: true,
           });
           collector.stop();
@@ -196,6 +202,7 @@ export const Play: PlayerCommand = {
           await interaction.followUp({
             content: localizedString('global:searchTimedOut', {
               user: interaction.member?.user.username,
+              lng: interaction.locale,
             }),
             ephemeral: true,
           });
