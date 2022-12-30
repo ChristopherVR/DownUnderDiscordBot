@@ -1,5 +1,6 @@
 import { Locale, LocalizationMap } from 'discord.js';
 import { localizedString } from '../../i18n';
+import { defaultLanguage } from '../constants/localization';
 
 const getLocalizations = (key: string): LocalizationMap | undefined => {
   const localizations: { [x: string]: string }[] = [];
@@ -9,10 +10,9 @@ const getLocalizations = (key: string): LocalizationMap | undefined => {
 
     const loc = localizedString(key, {
       lng: y,
-      fallbackLng: 'en-US',
+      fallbackLng: defaultLanguage,
     });
 
-    // console.log('The key ', key, ' for the locale value for ', y, ' is ', loc);
     if (loc) {
       localizations.push({
         [y]: loc,
@@ -24,8 +24,6 @@ const getLocalizations = (key: string): LocalizationMap | undefined => {
     return undefined;
   }
   const localizationMap: LocalizationMap = Object.assign({}, ...localizations);
-
-  // console.log('the localization map looks like follow', localizationMap);
   return localizationMap;
 };
 

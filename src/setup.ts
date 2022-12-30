@@ -1,3 +1,4 @@
+import { Awaitable } from 'discord.js';
 import * as dotenv from 'dotenv';
 import express from 'express';
 import path from 'path';
@@ -5,7 +6,7 @@ import path from 'path';
 dotenv.config();
 
 // eslint-disable-next-line import/prefer-default-export
-export const initSetup = async (cb: () => Promise<void>) => {
+export const initServer = async (cb: () => Promise<void> | Awaitable<void>) => {
   const hostname = process.env.HOST;
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   if (!hostname || !port) {

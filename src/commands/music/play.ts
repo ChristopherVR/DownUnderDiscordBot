@@ -112,6 +112,7 @@ export const Play: PlayerCommand = {
       filter: (m) => m.author.id === interaction.member?.user.id,
     });
 
+    // eslint-disable-next-line consistent-return
     const playSong = async (content: string) => {
       if (content === 'cancel') {
         // await interaction.reply({
@@ -119,9 +120,10 @@ export const Play: PlayerCommand = {
         //   ephemeral: true,
         // });
         collector?.stop();
-        if (queue.connection) {
+        if (queue.connection && !queue.destroyed) {
           queue.destroy(true);
         }
+        console.log('Deleting reply');
         await interaction.deleteReply();
       } else {
         const value = parseInt(content, 10);
@@ -143,22 +145,20 @@ export const Play: PlayerCommand = {
 
               if (!channel) {
                 console.log('channel is undefined');
-                await interaction.reply({
+                return await interaction.reply({
                   content: localizedString('global:connectToVoiceChannelToUseBot', { lng: interaction.locale }),
                   ephemeral: true,
                 });
-              } else {
-                await queue.connect(channel);
               }
+              await queue.connect(channel);
             }
           } catch {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             global.player.deleteQueue(interaction.guildId!);
-            await interaction.followUp({
+            return await interaction.followUp({
               content: localizedString('global:unableToJoinVoiceChannel', { lng: interaction.locale }),
               ephemeral: true,
             });
-            return;
           }
 
           await interaction.followUp(localizedString('global:loadingYourSearch', { lng: interaction.locale }));

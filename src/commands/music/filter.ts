@@ -96,6 +96,7 @@ export const Filter: PlayerCommand = {
             lng: interaction.locale,
           }),
     });
+
     return await interaction.reply({
       content: loc,
     });

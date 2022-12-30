@@ -1,11 +1,10 @@
 import { Player } from 'discord-player';
 import { Client, GatewayIntentBits } from 'discord.js';
-import * as dotenv from 'dotenv';
+
 import { localizedString } from './i18n';
 import initInstance from './i18nSetup';
-import { initSetup } from './setup';
+import { initServer } from './setup';
 
-dotenv.config();
 const token = process.env.CLIENT_TOKEN;
 const init = async () => {
   await initInstance();
@@ -28,6 +27,6 @@ const init = async () => {
   global.player = new Player(client);
 };
 
-const setup = async () => await initSetup(init);
+const setup = async () => await initServer(init);
 
 setup();
