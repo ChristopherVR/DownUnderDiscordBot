@@ -167,17 +167,33 @@ export const Play: PlayerCommand = {
             const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
             if (!channel) {
               console.log('channel is undefined');
-              await interaction.reply({
+              return await interaction.reply({
                 content: localizedString('global:genericError', { lng: interaction.locale }),
                 ephemeral: true,
               });
-            } else {
-              await queue.connect(channel);
             }
+            await queue.connect(channel);
           }
-          queue.addTrack(res.tracks[Number(content) - 1]);
 
-          if (!queue.playing) await queue.play();
+          const track = res.tracks[Number(content) - 1];
+          queue.addTrack(track);
+
+          if (!queue.playing) {
+            console.log('track started');
+            await queue.play();
+            const em = new EmbedBuilder()
+              .setAuthor({ name: 'Added To Queue' })
+              .setDescription(`[${track.title}](${track.url})`)
+              .setColor('Random');
+
+            // localizedString('global:songAddedToQueue', { lng: interaction.locale, song })
+            await interaction.followUp({
+              embeds: [em],
+            });
+            console.log('track played');
+          } else {
+            console.warn('The queue is already playing a song.');
+          }
         }
       }
     };

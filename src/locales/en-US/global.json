@@ -103,6 +103,7 @@
   "volumeDown": "Volume Down",
   "loop": "loop",
   "resumeAndPause": "Resume & Pause",
+  "songAddedToQueue": "{{ song }} has been added to the queue.",
   "nowPlayingDescription": "Volume **{{volume}}**\nDuration **{{duration}}**\nProgress {{progress}}\nLoop mode **{{mode}}**\nRequested by {{ user }}.",
   "enableDisableLoopDescription": "Enable or disable looping of a track, or the whole queue.",
   "whatActionToPerfomOnLoop": "The action to perform on the loop.",
