@@ -1,5 +1,5 @@
 <p align="center"> 
-  <img src="NeinDiscordBot/public/logo512.png" alt="NeinDiscordBot" width="80px" height="80px">
+  <img src="https://github.com/devicons/devicon/blob/master/icons/discordjs/discordjs-plain.svg" alt="NeinDiscordBot" width="80px" height="80px">
 </p>
 <h1 align="center"> NeinDiscordBot is a Discord Music player bot </h1>
 <h3 align="center"> TypeScript, DiscordJS & NodeJS is used for this project. This bot was mainly created for educational reasons. </h3>  
