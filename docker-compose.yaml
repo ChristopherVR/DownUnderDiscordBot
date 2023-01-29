@@ -1,0 +1,8 @@
+name: nein-discord
+
+services:
+  nein:
+    image: ${DOCKER_REGISTRY}nein:${TAG}
+    build:
+      context: .
+      dockerfile: /Dockerfile

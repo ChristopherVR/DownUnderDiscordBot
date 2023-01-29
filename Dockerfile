@@ -1,6 +1,4 @@
-FROM node:alpine as base
-# Alpine images missing dependencies
-RUN apk add --no-cache git
+FROM node:latest as base
 
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
