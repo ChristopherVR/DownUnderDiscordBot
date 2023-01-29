@@ -10,7 +10,7 @@
     "prepublishOnly": "yarn build",
     "release": "standard-version",
     "release:first": "standard-version --first-release",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch --verbose false"
   },
   "keywords": [],
