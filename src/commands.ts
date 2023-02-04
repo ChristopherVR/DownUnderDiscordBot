@@ -23,9 +23,6 @@ import { Queue } from './commands/music/queue';
 import Hello from './commands/hello';
 
 export const getCommands = () => [
-  Hello,
-  Ask,
-  Meme,
   Back,
   Clear,
   Controller,
@@ -46,6 +43,9 @@ export const getCommands = () => [
   Skip,
   Stop,
   Volume,
+  Hello,
+  Ask,
+  Meme,
 ];
 
 export default getCommands;
