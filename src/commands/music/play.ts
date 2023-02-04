@@ -4,11 +4,8 @@ import {
   ApplicationCommandOptionType,
   ButtonBuilder,
   ButtonStyle,
-  CacheType,
   ChatInputCommandInteraction,
   EmbedBuilder,
-  Events,
-  Interaction,
   MessageActionRowComponentBuilder,
   User,
 } from 'discord.js';
