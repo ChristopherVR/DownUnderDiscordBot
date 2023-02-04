@@ -145,18 +145,6 @@ Example playing a track
 * **Volume**: Adjusts the player's volume.
 * **Queue**: Lists the tracks in the current queue.
 * **Hello**: Returns a greeting.
-
-
-An example .env file would look like this:
-```
-CLIENT_TOKEN=SomeRandomToken
-OPEN_AI_TOKEN=SomeRandomToken
-PORT=3000
-HOST=localhost
-EXTERNAL_DNS_NAME_OR_IP=localhost
-DOCKER_REGISTRY=127.0.0.1
-TAG=latest
-```
 </p>
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
