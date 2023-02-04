@@ -12,7 +12,7 @@ const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Pro
     }
     await slashCommand.run(interaction);
   } catch (er) {
-    console.log('An error occurred trying to handle the command.', er);
+    console.log('An error occurred trying to handle the command. Exception: ', er);
   }
 };
 
