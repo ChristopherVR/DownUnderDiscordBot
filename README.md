@@ -33,7 +33,7 @@
 * 🟦 Typescript
 * 🔥 Slash commands
 * 💪 Event & Command handlers
-
+* ✈️ Localization
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/rainbow.png)
 
 <!-- PREREQUISITES -->
