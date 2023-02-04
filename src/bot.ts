@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable global-require */
 import { Player } from 'discord-player';
 import { Client, GatewayIntentBits } from 'discord.js';
 
@@ -13,12 +15,13 @@ const init = async () => {
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates],
   });
 
-  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
-  const ready = require('./commands/bot/ready').default;
-  ready(client);
-  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
-  const interactionCreate = require('./commands/bot/interactionCreate').default;
-  interactionCreate(client);
+  const registerOnReadyListener: (c: Client) => void = require('./commands/bot/ready').default;
+  registerOnReadyListener(client);
+
+  const registerInteractionCreateListener: (c: Client) => void = require('./commands/bot/interactionCreate').default;
+
+  registerInteractionCreateListener(client);
+
   client.on('ready', () => {
     const value = localizedString('activity:default');
     client.user?.setActivity(value);
