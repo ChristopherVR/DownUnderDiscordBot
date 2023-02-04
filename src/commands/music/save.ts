@@ -71,7 +71,7 @@ export const Save: PlayerCommand = {
         ],
       });
 
-      const titleOfMusicPmSend = localizedString('global:generictitleOfMusicPmSendError', {
+      const titleOfMusicPmSend = localizedString('global:titleOfMusicPmSend', {
         lng: interaction.locale,
       });
       return await interaction.reply({
