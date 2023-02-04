@@ -18,6 +18,6 @@
     "newLine": "LF",
     "noImplicitAny": false
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/index.html", "src/locales/**/*.json"],
   "exclude": ["node_modules", "dist"]
 }
