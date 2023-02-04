@@ -43,14 +43,22 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const song =
-      interaction.options.getString(
-        localizedString('global:linkOrQuery', {
-          lng: interaction.locale,
-        }),
-      ) ?? '';
+    const song = interaction.options.getString(
+      localizedString('global:linkOrQuery', {
+        lng: interaction.locale,
+      }),
+    );
 
-    console.log(song);
+    if (!song) {
+      return await interaction.reply({
+        content: localizedString('global:genericError', {
+          lng: interaction.locale,
+          user: interaction.member?.user.username,
+        }),
+        ephemeral: true,
+      });
+    }
+
     const res = await global.player.search(song, {
       requestedBy: cast<User>(interaction.member),
       searchEngine: QueryType.AUTO,
@@ -67,8 +75,17 @@ export const Play: PlayerCommand = {
       });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const queue = global.player.createQueue(interaction.guild!, {
+    if (!interaction.guild) {
+      console.log('Guild not available on interaction.');
+      return await interaction.reply({
+        content: localizedString('global:genericError', {
+          lng: interaction.locale,
+          user: interaction.member?.user.username,
+        }),
+        ephemeral: true,
+      });
+    }
+    const queue = global.player.createQueue(interaction.guild, {
       metadata: interaction.channel,
       leaveOnEnd: false,
     });
@@ -152,9 +169,9 @@ export const Play: PlayerCommand = {
               }
               await queue.connect(channel);
             }
-          } catch {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            global.player.deleteQueue(interaction.guildId!);
+          } catch (ex) {
+            console.log('An error occurred. Exception thrown: ', ex);
+            if (interaction.guildId) global.player.deleteQueue(interaction.guildId);
             return await interaction.followUp({
               content: localizedString('global:unableToJoinVoiceChannel', { lng: interaction.locale }),
               ephemeral: true,
@@ -182,11 +199,10 @@ export const Play: PlayerCommand = {
             console.log('track started');
             await queue.play();
             const em = new EmbedBuilder()
-              .setAuthor({ name: 'Added To Queue' })
+              .setAuthor({ name: localizedString('global:songAddedToQueue', { lng: interaction.locale, song }) })
               .setDescription(`[${track.title}](${track.url})`)
               .setColor('Random');
 
-            // localizedString('global:songAddedToQueue', { lng: interaction.locale, song })
             await interaction.followUp({
               embeds: [em],
             });
