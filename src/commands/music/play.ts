@@ -4,9 +4,11 @@ import {
   ApplicationCommandOptionType,
   ButtonBuilder,
   ButtonStyle,
+  CacheType,
   ChatInputCommandInteraction,
   EmbedBuilder,
   Events,
+  Interaction,
   MessageActionRowComponentBuilder,
   User,
 } from 'discord.js';
@@ -85,10 +87,13 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.createQueue(interaction.guild, {
-      metadata: interaction.channel,
-      leaveOnEnd: false,
-    });
+
+    const queue =
+      global.player.getQueue(interaction.guild) ??
+      global.player.createQueue(interaction.guild, {
+        metadata: interaction.channel,
+        leaveOnEnd: false,
+      });
     const maxTracks = res.tracks.slice(0, 5);
 
     const embed = new EmbedBuilder()
@@ -123,100 +128,14 @@ export const Play: PlayerCommand = {
     );
     await interaction.reply({ embeds: [embed], components: [row] });
 
-    const collector = interaction.channel?.createMessageCollector({
+    const collector = interaction.channel?.createMessageComponentCollector({
       time: 15000,
       max: 1,
-      filter: (m) => m.author.id === interaction.member?.user.id,
-    });
-
-    // eslint-disable-next-line consistent-return
-    const playSong = async (content: string) => {
-      if (content === 'cancel') {
-        // await interaction.reply({
-        //   content: localizedString('global:searchCancelled', { lng: interaction.locale }),
-        //   ephemeral: true,
-        // });
-        collector?.stop();
-        if (queue.connection && !queue.destroyed) {
-          queue.destroy(true);
-        }
-        console.log('Deleting reply');
-        await interaction.deleteReply();
-      } else {
-        const value = parseInt(content, 10);
-        console.log('Song track to play - ', value);
-        if (!(value >= 0 || value < maxTracks.length || content !== 'cancel')) {
-          await interaction.followUp({
-            content: localizedString('global:invalidResponseForSong', {
-              max: maxTracks.length - 1,
-              lng: interaction.locale,
-            }),
-            ephemeral: true,
-          });
-        } else {
-          collector?.stop();
-
-          try {
-            if (!queue.connection) {
-              const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
-
-              if (!channel) {
-                console.log('channel is undefined');
-                return await interaction.reply({
-                  content: localizedString('global:connectToVoiceChannelToUseBot', { lng: interaction.locale }),
-                  ephemeral: true,
-                });
-              }
-              await queue.connect(channel);
-            }
-          } catch (ex) {
-            console.log('An error occurred. Exception thrown: ', ex);
-            if (interaction.guildId) global.player.deleteQueue(interaction.guildId);
-            return await interaction.followUp({
-              content: localizedString('global:unableToJoinVoiceChannel', { lng: interaction.locale }),
-              ephemeral: true,
-            });
-          }
-
-          await interaction.followUp(localizedString('global:loadingYourSearch', { lng: interaction.locale }));
-
-          if (queue.destroyed) {
-            const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
-            if (!channel) {
-              console.log('channel is undefined');
-              return await interaction.reply({
-                content: localizedString('global:genericError', { lng: interaction.locale }),
-                ephemeral: true,
-              });
-            }
-            await queue.connect(channel);
-          }
-
-          const track = res.tracks[Number(content) - 1];
-          queue.addTrack(track);
-
-          if (!queue.playing) {
-            console.log('track started');
-            await queue.play();
-            const em = new EmbedBuilder()
-              .setAuthor({ name: localizedString('global:songAddedToQueue', { lng: interaction.locale, song }) })
-              .setDescription(`[${track.title}](${track.url})`)
-              .setColor('Random');
-
-            await interaction.followUp({
-              embeds: [em],
-            });
-            console.log('track played');
-          } else {
-            console.warn('The queue is already playing a song.');
-          }
-        }
-      }
-    };
-
-    interaction.client.on(Events.InteractionCreate, async (inter) => {
-      if (!inter.isButton()) return;
-      await playSong(inter.customId);
+      filter: (m) => {
+        console.log('Author id', m.member.id);
+        console.log('User Id', interaction.user.id);
+        return m.member.id === interaction.user.id;
+      },
     });
 
     if (!collector) {
@@ -226,6 +145,99 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     } else {
+      const playSong = async (content: string) => {
+        if (content === 'cancel') {
+          await interaction.reply({
+            content: localizedString('global:searchCancelled', { lng: interaction.locale }),
+            ephemeral: true,
+          });
+          collector?.stop();
+          if (queue.connection && !queue.destroyed) {
+            queue.destroy(true);
+          }
+          console.log('Deleting reply');
+          await interaction.deleteReply();
+        } else {
+          const value = parseInt(content, 10);
+          console.log('Song track to play - ', value);
+          if (!(value >= 0 || value < maxTracks.length || content !== 'cancel')) {
+            await interaction.followUp({
+              content: localizedString('global:invalidResponseForSong', {
+                max: maxTracks.length - 1,
+                lng: interaction.locale,
+              }),
+              ephemeral: true,
+            });
+          } else {
+            collector?.stop();
+
+            try {
+              if (!queue.connection) {
+                const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
+
+                if (!channel) {
+                  console.log('channel is undefined');
+                  await interaction.followUp({
+                    content: localizedString('global:connectToVoiceChannelToUseBot', { lng: interaction.locale }),
+                    ephemeral: true,
+                  });
+                  return;
+                }
+                await queue.connect(channel);
+              }
+            } catch (ex) {
+              console.log('An error occurred. Exception thrown: ', ex);
+              if (interaction.guildId) global.player.deleteQueue(interaction.guildId);
+              await interaction.followUp({
+                content: localizedString('global:unableToJoinVoiceChannel', { lng: interaction.locale }),
+                ephemeral: true,
+              });
+              return;
+            }
+
+            await interaction.followUp(localizedString('global:loadingYourSearch', { lng: interaction.locale }));
+
+            if (queue.destroyed) {
+              const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
+              if (!channel) {
+                console.log('channel is undefined');
+                await interaction.reply({
+                  content: localizedString('global:genericError', { lng: interaction.locale }),
+                  ephemeral: true,
+                });
+                return;
+              }
+              await queue.connect(channel);
+            }
+
+            const track = res.tracks[Number(content) - 1];
+            queue.addTrack(track);
+
+            if (!queue.playing) {
+              console.log('track started');
+              await queue.play();
+              const em = new EmbedBuilder()
+                .setAuthor({ name: localizedString('global:songAddedToQueue', { lng: interaction.locale, song }) })
+                .setDescription(`[${track.title}](${track.url})`)
+                .setColor('Random');
+
+              await interaction.followUp({
+                embeds: [em],
+              });
+              console.log('track played');
+            } else {
+              console.warn('The queue is already playing a song.');
+            }
+          }
+        }
+      };
+      collector.on('collect', (inter) => {
+        if ('customId' in inter && typeof inter.customId === 'string') {
+          playSong(inter.customId);
+        } else {
+          console.log('custom id does not exist on interaction: ', inter);
+        }
+      });
       collector.on('end', async (_, msg: string) => {
         if (msg === 'time') {
           await interaction.followUp({
@@ -238,6 +250,14 @@ export const Play: PlayerCommand = {
         }
       });
     }
+
+    // const interFunc = (inter: Interaction<CacheType>) => {
+    //   if (!inter.isButton() || inter.user.bot) return;
+    //   console.log('BUTTON THAT TRIGGERED THIS LISTENENER: ', inter);
+    // };
+
+    // interaction.client.off(Events.InteractionCreate, interFunc);
+    // interaction.client.on(Events.InteractionCreate, interFunc);
   },
 };
 export default Play;

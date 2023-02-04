@@ -3,7 +3,7 @@
   "cantJoinVoiceChannel": "Failed to join the voice channel  $t(tryAgainLater)",
   "genericError": "Unable to handle your request. Please try again later.",
   "searchCancelled": "Search cancelled",
-  "searchTimedOut": "Search timed out $t(tryAgainLater)",
+  "searchTimedOut": "Search timed out. Please try again later",
   "tryAgainLater": "... try again later ❌",
   "invalidResponseForSong": "Invalid response, try a value between **1** and **{{max}}** or **cancel**.",
   "defaultFooter": "Most intelligent bot in the word, made by ChristopherVR ❤️",
