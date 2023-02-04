@@ -6,6 +6,7 @@ const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Pro
   try {
     const slashCommand = getCommands().find((cc) => cc.name === interaction.commandName);
     if (!slashCommand) {
+      console.log('Unable to find slash command with name - ', interaction.commandName);
       await interaction.followUp({ content: 'An error has occurred' });
       return;
     }
