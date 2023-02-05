@@ -2,6 +2,7 @@ import { Awaitable } from 'discord.js';
 import * as dotenv from 'dotenv';
 import express from 'express';
 import path from 'path';
+import { rateLimit } from 'express-rate-limit';
 
 dotenv.config();
 
@@ -23,6 +24,13 @@ export const initServer = async (cb: () => Promise<void> | Awaitable<void>) => {
   server.use('/js', express.static(`${__dirname}/js`));
   server.use('/icons', express.static(`${__dirname}/icons`));
   server.set('views', `${__dirname}/views`);
+
+  server.use(
+    rateLimit({
+      windowMs: 1 * 60 * 1000, // 1 minute,
+      max: 5,
+    }),
+  );
 
   server.get('/', (_req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
