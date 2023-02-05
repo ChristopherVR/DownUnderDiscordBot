@@ -158,6 +158,7 @@ export const Play: PlayerCommand = {
           const value = parseInt(content, 10);
           console.log('Song track to play - ', value);
           if (!(value >= 0 || value < maxTracks.length || content !== 'cancel')) {
+            await interaction.deleteReply();
             await interaction.followUp({
               content: localizedString('global:invalidResponseForSong', {
                 max: maxTracks.length - 1,
@@ -174,10 +175,13 @@ export const Play: PlayerCommand = {
 
                 if (!channel) {
                   console.log('channel is undefined');
+
+                  await interaction.deleteReply();
                   await interaction.followUp({
                     content: localizedString('global:connectToVoiceChannelToUseBot', { lng: interaction.locale }),
                     ephemeral: true,
                   });
+
                   return;
                 }
                 await queue.connect(channel);
@@ -191,8 +195,6 @@ export const Play: PlayerCommand = {
               });
               return;
             }
-
-            await interaction.followUp(localizedString('global:loadingYourSearch', { lng: interaction.locale }));
 
             if (queue.destroyed) {
               const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
@@ -217,7 +219,7 @@ export const Play: PlayerCommand = {
                 .setAuthor({ name: localizedString('global:songAddedToQueue', { lng: interaction.locale, song }) })
                 .setDescription(`[${track.title}](${track.url})`)
                 .setColor('Random');
-
+              await interaction.deleteReply();
               await interaction.followUp({
                 embeds: [em],
               });
@@ -237,6 +239,7 @@ export const Play: PlayerCommand = {
       });
       collector.on('end', async (_, msg: string) => {
         if (msg === 'time') {
+          await interaction.deleteReply();
           await interaction.followUp({
             content: localizedString('global:searchTimedOut', {
               user: interaction.member?.user.username,
@@ -247,14 +250,6 @@ export const Play: PlayerCommand = {
         }
       });
     }
-
-    // const interFunc = (inter: Interaction<CacheType>) => {
-    //   if (!inter.isButton() || inter.user.bot) return;
-    //   console.log('BUTTON THAT TRIGGERED THIS LISTENENER: ', inter);
-    // };
-
-    // interaction.client.off(Events.InteractionCreate, interFunc);
-    // interaction.client.on(Events.InteractionCreate, interFunc);
   },
 };
 export default Play;

@@ -1,7 +1,7 @@
-import { QueueRepeatMode } from 'discord-player';
 import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
+import setLoop from '../../utilities/loopHandler';
 
 import getLocalizations from '../i18n/discordLocalization';
 
@@ -29,88 +29,11 @@ export const Loop: PlayerCommand = {
   type: ApplicationCommandType.ChatInput,
 
   run: async (interaction: ChatInputCommandInteraction) => {
-    if (!interaction.guildId) {
-      console.log('GuildId is undefined');
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
-      return await interaction.reply({
-        content: genericError,
-        ephemeral: true,
-      });
-    }
-    const queue = global.player.getQueue(interaction.guildId);
-
-    if (!queue?.playing) {
-      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
-      return await interaction.reply({
-        content: noMusicCurrentlyPlaying,
-        ephemeral: true,
-      });
-    }
-    const genericError = localizedString('global:genericError', {
-      lng: interaction.locale,
-    });
-    switch (interaction.options.data.map((x) => x.value).toString()) {
-      case 'enable_loop_queue': {
-        if (queue.repeatMode === QueueRepeatMode.TRACK) {
-          const disableCurrentLoop = localizedString('global:disableCurrentLoop', {
-            lng: interaction.locale,
-          });
-
-          return await interaction.reply({
-            content: disableCurrentLoop,
-            ephemeral: true,
-          });
-        }
-
-        const success = queue.setRepeatMode(QueueRepeatMode.QUEUE);
-
-        const loc = localizedString('global:songRepeatMode', {
-          lng: interaction.locale,
-        });
-
-        // songRepeatMode
-        return await interaction.reply({
-          content: success ? loc : genericError,
-        });
-      }
-      case 'disable_loop': {
-        const success = queue.setRepeatMode(QueueRepeatMode.OFF);
-
-        return await interaction.reply({
-          content: success ? `Repeat mode **disabled**` : genericError,
-        });
-      }
-      case 'enable_loop_song': {
-        if (queue.repeatMode === QueueRepeatMode.QUEUE) {
-          const locc = localizedString('global:disableCurrentLoop', {
-            lng: interaction.locale,
-          });
-          return await interaction.reply({
-            content: locc,
-            ephemeral: true,
-          });
-        }
-
-        const success = queue.setRepeatMode(QueueRepeatMode.TRACK);
-
-        const locc = localizedString('global:songRepeatMode', {
-          lng: interaction.locale,
-        });
-
-        return await interaction.reply({
-          content: success ? locc : genericError,
-        });
-      }
-      default: {
-        return await interaction.reply({
-          content: genericError,
-        });
-      }
-    }
+    const type = interaction.options.data.map((x) => x.value).toString() as
+      | 'enable_loop_queue'
+      | 'disable_loop'
+      | 'enable_loop_song';
+    return setLoop(interaction, type, async (obj) => interaction.reply(obj));
   },
 };
 

@@ -10,6 +10,9 @@ import {
 } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
+import setLoop from '../../utilities/loopHandler';
+import pauseTrack from '../../utilities/pauseHandler';
+import saveTrack from '../../utilities/saveTrackHandler';
 
 import getLocalizations from '../i18n/discordLocalization';
 
@@ -35,7 +38,7 @@ export const NowPlaying: PlayerCommand = {
     }
     const queue = global.player.getQueue(interaction.guildId);
 
-    if (!queue) {
+    if (!queue || !queue.playing) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -49,7 +52,20 @@ export const NowPlaying: PlayerCommand = {
 
     const methods = ['disabled', 'track', 'queue'];
 
-    const timestamp = queue.getPlayerTimestamp();
+    let timestamp: {
+      current: string;
+      end: string;
+      progress: number;
+    };
+    try {
+      timestamp = queue.getPlayerTimestamp();
+    } catch {
+      return await interaction.followUp(
+        localizedString('global:genericError', {
+          lng: interaction.locale,
+        }),
+      );
+    }
 
     const trackDuration = timestamp.progress === Number.MAX_SAFE_INTEGER ? 'infinity (live)' : track.duration;
 
@@ -57,47 +73,29 @@ export const NowPlaying: PlayerCommand = {
 
     const saveButton = new ButtonBuilder()
       .setLabel(
-        localizedString('global:saveThisTrack', {
+        localizedString('global:saveTrack', {
           lng: interaction.locale,
         }),
       )
-      .setCustomId(JSON.stringify({ ffb: 'savetrack' }))
+      .setCustomId('savetrack')
       .setStyle(ButtonStyle.Success);
-
-    const volumeup = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:volumeUp', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'volumeup' }))
-      .setStyle(ButtonStyle.Secondary);
-
-    const volumedown = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:volumeDown', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'volumedown' }))
-      .setStyle(ButtonStyle.Secondary);
 
     const loop = new ButtonBuilder()
       .setLabel(
-        localizedString('global:loop', {
+        localizedString('global:repeatCapitalise', {
           lng: interaction.locale,
         }),
       )
-      .setCustomId(JSON.stringify({ ffb: 'loop' }))
-      .setStyle(ButtonStyle.Secondary);
+      .setCustomId('loop')
+      .setStyle(ButtonStyle.Primary);
 
-    const resumepause = new ButtonBuilder()
+    const pause = new ButtonBuilder()
       .setLabel(
-        localizedString('global:resumeAndPause', {
+        localizedString('global:pauseCapitalise', {
           lng: interaction.locale,
         }),
       )
-      .setCustomId(JSON.stringify({ ffb: 'resume&pause' }))
+      .setCustomId('pause')
       .setStyle(ButtonStyle.Primary);
 
     const volDurationDesc = localizedString('global:nowPlayingDescription', {
@@ -125,14 +123,61 @@ export const NowPlaying: PlayerCommand = {
       })
       .setColor(Colors.Default)
       .setTimestamp();
-    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-      volumedown,
-      saveButton,
-      resumepause,
-      loop,
-      volumeup,
-    );
-    return await interaction.reply({ embeds: [embed], components: [row] });
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(loop, pause, saveButton);
+
+    // TODO: Helper functions to handle collectors?
+    const collector = interaction.channel?.createMessageComponentCollector({
+      time: 15000,
+      // max: 1,
+      filter: (m) => m.member.id === interaction.user.id,
+    });
+
+    if (!collector) {
+      console.log('Collector is undefined');
+      return await interaction.followUp({
+        content: localizedString('global:genericError', { lng: interaction.locale }),
+        ephemeral: true,
+      });
+    }
+
+    collector.on('collect', async (inter) => {
+      if ('customId' in inter && typeof inter.customId === 'string') {
+        switch (inter.customId) {
+          case 'loop': {
+            await setLoop(interaction, 'enable_loop_song', async (obj) => {
+              await interaction.deleteReply();
+              return interaction.followUp(obj);
+            });
+            break;
+          }
+          case 'pause': {
+            await pauseTrack(interaction, async (obj) => {
+              await interaction.deleteReply();
+              return interaction.followUp(obj);
+            });
+            break;
+          }
+          case 'savetrack': {
+            await saveTrack(interaction, async (obj) => {
+              await interaction.deleteReply();
+              return interaction.followUp(obj);
+            });
+            break;
+          }
+          default: {
+            await interaction.followUp({
+              content: localizedString('global:genericError', { lng: interaction.locale }),
+              ephemeral: true,
+            });
+            break;
+          }
+        }
+      } else {
+        console.log('custom id does not exist on interaction: ', inter);
+      }
+      collector.stop();
+    });
+    return await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
   },
 };
 
