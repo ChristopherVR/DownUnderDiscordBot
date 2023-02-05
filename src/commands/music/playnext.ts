@@ -54,7 +54,7 @@ export const PlayNext: PlayerCommand = {
     });
 
     if (!res?.tracks?.length) {
-      const noResultsFound = localizedString('global:noResultsFound', {
+      const noResultsFound = localizedString('global:noTracksFoundQueue', {
         lng: interaction.locale,
       });
       return await interaction.reply({
