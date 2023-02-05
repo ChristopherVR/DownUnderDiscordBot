@@ -32,6 +32,7 @@
   "ask": "ask",
   "helloDesc": "Returns a greeting.",
   "hello": "hello",
+  "noTracksFoundQueue": "No other tracks found in the queue",
   "returnsResponseUsingOpenAi": "Returns a response using OpenAI.",
   "textToSearchFor": "The text to search for.",
   "amountOfVolume": "The amount volume.",

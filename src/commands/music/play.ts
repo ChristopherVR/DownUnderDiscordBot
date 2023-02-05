@@ -223,7 +223,8 @@ export const Play: PlayerCommand = {
               });
               console.log('track played');
             } else {
-              console.warn('The queue is already playing a song.');
+              await interaction.followUp('');
+              console.log('There is already a track playing. Adding new one to the queue.');
             }
           }
         }
@@ -247,14 +248,6 @@ export const Play: PlayerCommand = {
         }
       });
     }
-
-    // const interFunc = (inter: Interaction<CacheType>) => {
-    //   if (!inter.isButton() || inter.user.bot) return;
-    //   console.log('BUTTON THAT TRIGGERED THIS LISTENENER: ', inter);
-    // };
-
-    // interaction.client.off(Events.InteractionCreate, interFunc);
-    // interaction.client.on(Events.InteractionCreate, interFunc);
   },
 };
 export default Play;
