@@ -10,6 +10,10 @@ import {
 } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
+import setLoop from '../../utilities/loopHandler';
+import pauseTrack from '../../utilities/pauseHandler';
+import saveTrack from '../../utilities/saveTrackHandler';
+import setVolume from '../../utilities/volumeHandler';
 
 import getLocalizations from '../i18n/discordLocalization';
 
@@ -161,31 +165,43 @@ export const NowPlaying: PlayerCommand = {
       });
     }
 
-    collector.on('collect', (inter) => {
+    collector.on('collect', async (inter) => {
       if ('customId' in inter && typeof inter.customId === 'string') {
         switch (inter.customId) {
           case 'volumedown': {
+            await setVolume(interaction, 10);
             break;
           }
           case 'loop': {
+            await setLoop(interaction, 'enable_loop_song');
             break;
           }
           case 'pause_resume': {
+            // TODO: depending on if this is pause or resume execute the correct func
+            // For now just pause
+            await pauseTrack(interaction);
             break;
           }
           case 'volumeup': {
+            await setVolume(interaction, 10, true);
             break;
           }
           case 'savetrack': {
+            await saveTrack(interaction);
             break;
           }
           default: {
+            await interaction.followUp({
+              content: localizedString('global:genericError', { lng: interaction.locale }),
+              ephemeral: true,
+            });
             break;
           }
         }
       } else {
         console.log('custom id does not exist on interaction: ', inter);
       }
+      collector.stop();
     });
     return await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
   },
