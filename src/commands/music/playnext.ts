@@ -40,8 +40,9 @@ export const PlayNext: PlayerCommand = {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
-      return await interaction.editReply({
+      return await interaction.reply({
         content: loc,
+        ephemeral: true,
       });
     }
 
@@ -53,11 +54,12 @@ export const PlayNext: PlayerCommand = {
     });
 
     if (!res?.tracks?.length) {
-      const noResultsFound = localizedString('global:noResultsFound', {
+      const noResultsFound = localizedString('global:noTracksFoundQueue', {
         lng: interaction.locale,
       });
-      return await interaction.editReply({
+      return await interaction.reply({
         content: noResultsFound,
+        ephemeral: true,
       });
     }
 
@@ -65,8 +67,9 @@ export const PlayNext: PlayerCommand = {
       const playlistsNotSupported = localizedString('global:playlistsNotSupported', {
         lng: interaction.locale,
       });
-      return await interaction.editReply({
+      return await interaction.reply({
         content: playlistsNotSupported,
+        ephemeral: true,
       });
     }
 
@@ -74,8 +77,9 @@ export const PlayNext: PlayerCommand = {
     const trackInsertedIntoQueue = localizedString('global:trackInsertedIntoQueue', {
       lng: interaction.locale,
     });
-    return await interaction.editReply({
+    return await interaction.reply({
       content: trackInsertedIntoQueue,
+      ephemeral: true,
     });
   },
 };

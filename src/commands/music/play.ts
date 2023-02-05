@@ -225,7 +225,8 @@ export const Play: PlayerCommand = {
               });
               console.log('track played');
             } else {
-              console.warn('The queue is already playing a song.');
+              await interaction.followUp(localizedString('global:songAddedToQueue', { lng: interaction.locale, song }));
+              console.log('There is already a track playing. Adding new one to the queue.');
             }
           }
         }
