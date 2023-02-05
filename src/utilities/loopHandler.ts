@@ -1,19 +1,20 @@
 import { QueueRepeatMode } from 'discord-player';
-import { ChatInputCommandInteraction, InteractionReplyOptions } from 'discord.js';
+import { ChatInputCommandInteraction, InteractionResponse, Message } from 'discord.js';
 import localizedString from '../i18n';
 
 const setLoop = async (
   interaction: ChatInputCommandInteraction,
   type: 'enable_loop_queue' | 'disable_loop' | 'enable_loop_song',
-  interactionOptions?: InteractionReplyOptions,
+  response: (
+    options: object,
+  ) => Promise<InteractionResponse<boolean> | Message<boolean> | undefined> | Promise<void> | Awaited<void> | void,
 ) => {
   if (!interaction.guildId) {
     console.log('GuildId is undefined');
     const genericError = localizedString('global:genericError', {
       lng: interaction.locale,
     });
-    return await interaction.reply({
-      ...interactionOptions,
+    return await response({
       content: genericError,
       ephemeral: true,
     });
@@ -24,8 +25,7 @@ const setLoop = async (
     const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
       lng: interaction.locale,
     });
-    return await interaction.reply({
-      ...interactionOptions,
+    return await response({
       content: noMusicCurrentlyPlaying,
       ephemeral: true,
     });
@@ -40,8 +40,7 @@ const setLoop = async (
           lng: interaction.locale,
         });
 
-        return await interaction.reply({
-          ...interactionOptions,
+        return await response({
           content: disableCurrentLoop,
           ephemeral: true,
         });
@@ -54,16 +53,14 @@ const setLoop = async (
       });
 
       // songRepeatMode
-      return await interaction.reply({
-        ...interactionOptions,
+      return await response({
         content: success ? loc : genericError,
       });
     }
     case 'disable_loop': {
       const success = queue.setRepeatMode(QueueRepeatMode.OFF);
 
-      return await interaction.reply({
-        ...interactionOptions,
+      return await response({
         content: success ? `Repeat mode **disabled**` : genericError,
       });
     }
@@ -72,8 +69,7 @@ const setLoop = async (
         const locc = localizedString('global:disableCurrentLoop', {
           lng: interaction.locale,
         });
-        return await interaction.reply({
-          ...interactionOptions,
+        return await response({
           content: locc,
           ephemeral: true,
         });
@@ -85,14 +81,12 @@ const setLoop = async (
         lng: interaction.locale,
       });
 
-      return await interaction.reply({
-        ...interactionOptions,
+      return await response({
         content: success ? locc : genericError,
       });
     }
     default: {
-      return await interaction.reply({
-        ...interactionOptions,
+      return await response({
         content: genericError,
       });
     }

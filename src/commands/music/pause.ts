@@ -14,7 +14,11 @@ export const Pause: PlayerCommand = {
 
   type: ApplicationCommandType.ChatInput,
 
-  run: async (interaction: ChatInputCommandInteraction) => await pauseTrack(interaction),
+  run: async (interaction: ChatInputCommandInteraction) => {
+    const res = pauseTrack(interaction, async (obj) => interaction.reply(obj));
+
+    return res;
+  },
 };
 
 export default Pause;

@@ -33,7 +33,7 @@ export const Loop: PlayerCommand = {
       | 'enable_loop_queue'
       | 'disable_loop'
       | 'enable_loop_song';
-    return setLoop(interaction, type);
+    return setLoop(interaction, type, async (obj) => interaction.reply(obj));
   },
 };
 

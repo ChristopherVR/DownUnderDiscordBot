@@ -13,7 +13,6 @@ import { PlayerCommand } from '../../types';
 import setLoop from '../../utilities/loopHandler';
 import pauseTrack from '../../utilities/pauseHandler';
 import saveTrack from '../../utilities/saveTrackHandler';
-import setVolume from '../../utilities/volumeHandler';
 
 import getLocalizations from '../i18n/discordLocalization';
 
@@ -39,7 +38,7 @@ export const NowPlaying: PlayerCommand = {
     }
     const queue = global.player.getQueue(interaction.guildId);
 
-    if (!queue) {
+    if (!queue || !queue.playing) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -81,24 +80,6 @@ export const NowPlaying: PlayerCommand = {
       .setCustomId('savetrack')
       .setStyle(ButtonStyle.Success);
 
-    const volumeup = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:volumeUp', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId('volumeup')
-      .setStyle(ButtonStyle.Secondary);
-
-    const volumedown = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:volumeDown', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId('volumedown')
-      .setStyle(ButtonStyle.Secondary);
-
     const loop = new ButtonBuilder()
       .setLabel(
         localizedString('global:repeatCapitalise', {
@@ -106,15 +87,15 @@ export const NowPlaying: PlayerCommand = {
         }),
       )
       .setCustomId('loop')
-      .setStyle(ButtonStyle.Secondary);
+      .setStyle(ButtonStyle.Primary);
 
-    const resumePause = new ButtonBuilder()
+    const pause = new ButtonBuilder()
       .setLabel(
-        localizedString('global:pause', {
+        localizedString('global:pauseCapitalise', {
           lng: interaction.locale,
         }),
       )
-      .setCustomId('pause_resume')
+      .setCustomId('pause')
       .setStyle(ButtonStyle.Primary);
 
     const volDurationDesc = localizedString('global:nowPlayingDescription', {
@@ -142,13 +123,7 @@ export const NowPlaying: PlayerCommand = {
       })
       .setColor(Colors.Default)
       .setTimestamp();
-    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-      volumedown,
-      saveButton,
-      resumePause,
-      loop,
-      volumeup,
-    );
+    const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(loop, pause, saveButton);
 
     // TODO: Helper functions to handle collectors?
     const collector = interaction.channel?.createMessageComponentCollector({
@@ -168,26 +143,25 @@ export const NowPlaying: PlayerCommand = {
     collector.on('collect', async (inter) => {
       if ('customId' in inter && typeof inter.customId === 'string') {
         switch (inter.customId) {
-          case 'volumedown': {
-            await setVolume(interaction, 10);
-            break;
-          }
           case 'loop': {
-            await setLoop(interaction, 'enable_loop_song');
+            await setLoop(interaction, 'enable_loop_song', async (obj) => {
+              await interaction.deleteReply();
+              return interaction.followUp(obj);
+            });
             break;
           }
-          case 'pause_resume': {
-            // TODO: depending on if this is pause or resume execute the correct func
-            // For now just pause
-            await pauseTrack(interaction);
-            break;
-          }
-          case 'volumeup': {
-            await setVolume(interaction, 10, true);
+          case 'pause': {
+            await pauseTrack(interaction, async (obj) => {
+              await interaction.deleteReply();
+              return interaction.followUp(obj);
+            });
             break;
           }
           case 'savetrack': {
-            await saveTrack(interaction);
+            await saveTrack(interaction, async (obj) => {
+              await interaction.deleteReply();
+              return interaction.followUp(obj);
+            });
             break;
           }
           default: {

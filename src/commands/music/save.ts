@@ -11,7 +11,8 @@ export const Save: PlayerCommand = {
   nameLocalizations: getLocalizations('global:save'),
   descriptionLocalizations: getLocalizations('global:saveThisTrack'),
   voiceChannel: true,
-  run: async (interaction: ChatInputCommandInteraction) => await saveTrack(interaction),
+  run: async (interaction: ChatInputCommandInteraction) =>
+    await saveTrack(interaction, async (obj) => interaction.reply(obj)),
 };
 
 export default Save;

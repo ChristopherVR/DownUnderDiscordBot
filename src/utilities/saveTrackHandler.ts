@@ -1,14 +1,18 @@
-import { ChatInputCommandInteraction, EmbedBuilder, InteractionReplyOptions } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, InteractionResponse, Message } from 'discord.js';
 import localizedString from '../i18n';
 
-const saveTrack = async (interaction: ChatInputCommandInteraction, interactionOptions?: InteractionReplyOptions) => {
+const saveTrack = async (
+  interaction: ChatInputCommandInteraction,
+  response: (
+    options: object,
+  ) => Promise<InteractionResponse<boolean> | Message<boolean> | undefined> | Promise<void> | Awaited<void> | void,
+) => {
   if (!interaction.guildId) {
     const genericError = localizedString('global:genericError', {
       lng: interaction.locale,
     });
     console.log('GuildId is undefined');
-    return await interaction.reply({
-      ...interactionOptions,
+    return await response({
       content: genericError,
       ephemeral: true,
     });
@@ -19,8 +23,7 @@ const saveTrack = async (interaction: ChatInputCommandInteraction, interactionOp
     const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
       lng: interaction.locale,
     });
-    return await interaction.reply({
-      ...interactionOptions,
+    return await response({
       content: noMusicCurrentlyPlaying,
       ephemeral: true,
     });
@@ -67,8 +70,7 @@ const saveTrack = async (interaction: ChatInputCommandInteraction, interactionOp
     const titleOfMusicPmSend = localizedString('global:titleOfMusicPmSend', {
       lng: interaction.locale,
     });
-    return await interaction.reply({
-      ...interactionOptions,
+    return await response({
       content: titleOfMusicPmSend,
       ephemeral: true,
     });
@@ -76,8 +78,7 @@ const saveTrack = async (interaction: ChatInputCommandInteraction, interactionOp
     const unableToSendPrivateMessag = localizedString('global:unableToSendPrivateMessag', {
       lng: interaction.locale,
     });
-    return await interaction.reply({
-      ...interactionOptions,
+    return await response({
       content: unableToSendPrivateMessag,
       ephemeral: true,
     });
