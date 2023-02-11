@@ -2,9 +2,9 @@ import { QueryType } from 'discord-player';
 import { ApplicationCommandOptionType, ChatInputCommandInteraction, User } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import cast from '../helpers/cast';
+import cast from '../../helpers/cast';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const PlayNext: PlayerCommand = {
   name: localizedString('global:playnext'),

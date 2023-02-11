@@ -1,5 +1,5 @@
 import { Locale, LocalizationMap } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../i18n';
 import { defaultLanguage } from '../constants/localization';
 
 const getLocalizations = (key: string): LocalizationMap | undefined => {

@@ -2,7 +2,7 @@ import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js'
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const Back: PlayerCommand = {
   name: localizedString('global:back'),

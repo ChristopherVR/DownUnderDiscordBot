@@ -3,7 +3,7 @@ import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import pauseTrack from '../../utilities/pauseHandler';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const Pause: PlayerCommand = {
   name: localizedString('global:pause'),

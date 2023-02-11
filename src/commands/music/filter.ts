@@ -3,7 +3,7 @@ import { QueueFilters, AudioFilters } from 'discord-player';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const Filter: PlayerCommand = {
   name: localizedString('global:filter'),

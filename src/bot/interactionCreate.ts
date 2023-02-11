@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, Client, Interaction } from 'discord.js';
-import { getCommands } from '../../commands';
+import { getCommands } from '../commands';
 import { cast } from '../helpers/cast';
 
 const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {

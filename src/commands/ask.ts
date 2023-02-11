@@ -2,7 +2,7 @@ import { ApplicationCommandType, ChatInputCommandInteraction, ApplicationCommand
 import { localizedString } from '../i18n';
 import { ask } from '../openai/ai';
 import { Command } from '../types';
-import getLocalizations from './i18n/discordLocalization';
+import getLocalizations from '../i18n/discordLocalization';
 
 export const Ask: Command<ChatInputCommandInteraction> = {
   name: localizedString('global:ask'),

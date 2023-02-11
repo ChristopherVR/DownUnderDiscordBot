@@ -3,7 +3,7 @@ import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import setLoop from '../../utilities/loopHandler';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const Loop: PlayerCommand = {
   name: localizedString('global:loop'),

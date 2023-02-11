@@ -3,7 +3,7 @@ import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import saveTrack from '../../utilities/saveTrackHandler';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const Save: PlayerCommand = {
   name: localizedString('global:save'),

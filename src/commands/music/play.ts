@@ -11,9 +11,9 @@ import {
 } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import cast from '../helpers/cast';
+import cast from '../../helpers/cast';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const Play: PlayerCommand = {
   name: localizedString('global:play'),
@@ -31,8 +31,10 @@ export const Play: PlayerCommand = {
       required: true,
     },
   ],
-  // eslint-disable-next-line consistent-return
   run: async (interaction: ChatInputCommandInteraction) => {
+    // if (!interaction.deferred) {
+    //   await interaction.deferReply({ ephemeral: true });
+    // }
     if (!interaction.guildId) {
       console.log('GuildId is undefined');
       return await interaction.reply({
@@ -90,6 +92,12 @@ export const Play: PlayerCommand = {
       global.player.createQueue(interaction.guild, {
         metadata: interaction.channel,
         leaveOnEnd: false,
+        ytdlOptions: {
+          filter: 'audioonly',
+          // eslint-disable-next-line no-bitwise
+          highWaterMark: 1 << 30,
+          dlChunkSize: 0,
+        },
       });
     const maxTracks = res.tracks.slice(0, 5);
 
@@ -156,7 +164,7 @@ export const Play: PlayerCommand = {
           await interaction.deleteReply();
         } else {
           const value = parseInt(content, 10);
-          console.log('Song track to play - ', value);
+          console.log('Requested song index to play - ', value);
           if (!(value >= 0 || value < maxTracks.length || content !== 'cancel')) {
             await interaction.deleteReply();
             await interaction.followUp({
@@ -174,7 +182,7 @@ export const Play: PlayerCommand = {
                 const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
 
                 if (!channel) {
-                  console.log('channel is undefined');
+                  console.log(`User ${interaction.member?.user.username} is not connected to a voice channel.`);
 
                   await interaction.deleteReply();
                   await interaction.followUp({
@@ -199,7 +207,7 @@ export const Play: PlayerCommand = {
             if (queue.destroyed) {
               const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
               if (!channel) {
-                console.log('channel is undefined');
+                console.log(`User ${interaction.member?.user.username} is not connected to a voice channel.`);
                 await interaction.reply({
                   content: localizedString('global:genericError', { lng: interaction.locale }),
                   ephemeral: true,
@@ -213,7 +221,7 @@ export const Play: PlayerCommand = {
             queue.addTrack(track);
 
             if (!queue.playing) {
-              console.log('track started');
+              console.log('Starting track ', queue.tracks[0].description);
               await queue.play();
               const em = new EmbedBuilder()
                 .setAuthor({ name: localizedString('global:songAddedToQueue', { lng: interaction.locale, song }) })
@@ -223,7 +231,7 @@ export const Play: PlayerCommand = {
               await interaction.followUp({
                 embeds: [em],
               });
-              console.log('track played');
+              console.log('Played track ', queue.tracks[0].description);
             } else {
               await interaction.followUp(localizedString('global:songAddedToQueue', { lng: interaction.locale, song }));
               console.log('There is already a track playing. Adding new one to the queue.');
@@ -235,9 +243,10 @@ export const Play: PlayerCommand = {
         if ('customId' in inter && typeof inter.customId === 'string') {
           playSong(inter.customId);
         } else {
-          console.log('custom id does not exist on interaction: ', inter);
+          console.log('Custom id does not exist on interaction: ', inter);
         }
       });
+
       collector.on('end', async (_, msg: string) => {
         if (msg === 'time') {
           await interaction.deleteReply();

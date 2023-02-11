@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
 import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
-import { ms } from '../helpers/ms';
+import { ms } from '../../helpers/ms';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const Seek: PlayerCommand = {
   name: localizedString('global:seek'),

@@ -14,7 +14,7 @@ import setLoop from '../../utilities/loopHandler';
 import pauseTrack from '../../utilities/pauseHandler';
 import saveTrack from '../../utilities/saveTrackHandler';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const NowPlaying: PlayerCommand = {
   name: localizedString('global:nowplaying'),

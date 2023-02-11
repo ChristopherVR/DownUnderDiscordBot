@@ -3,7 +3,7 @@ import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 import setVolume from '../../utilities/volumeHandler';
 
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../../i18n/discordLocalization';
 
 export const Volume: PlayerCommand = {
   name: localizedString('global:volume'),
