@@ -15,10 +15,10 @@ const init = async () => {
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates],
   });
 
-  const registerOnReadyListener: (c: Client) => void = require('./commands/bot/ready').default;
+  const registerOnReadyListener: (c: Client) => void = require('./bot/ready').default;
   registerOnReadyListener(client);
 
-  const registerInteractionCreateListener: (c: Client) => void = require('./commands/bot/interactionCreate').default;
+  const registerInteractionCreateListener: (c: Client) => void = require('./bot/interactionCreate').default;
 
   registerInteractionCreateListener(client);
 
