@@ -231,7 +231,7 @@ export const Play: PlayerCommand = {
               await interaction.followUp({
                 embeds: [em],
               });
-              console.log('Played track ', queue.tracks[0].description);
+              console.log('Played track ', queue.tracks[0]?.description);
             } else {
               await interaction.followUp(localizedString('global:songAddedToQueue', { lng: interaction.locale, song }));
               console.log('There is already a track playing. Adding new one to the queue.');
