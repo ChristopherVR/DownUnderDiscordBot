@@ -2,6 +2,7 @@
 /* eslint-disable global-require */
 import { Player } from 'discord-player';
 import { Client, GatewayIntentBits } from 'discord.js';
+import { VoiceConnectionStatus } from '@discordjs/voice';
 
 import { localizedString } from './i18n';
 import initInstance from './i18nSetup';
@@ -28,6 +29,22 @@ const init = async () => {
   });
   await client.login(token);
   global.player = new Player(client);
+
+  // Temp fix for https://github.com/discordjs/discord.js/issues/9185#issuecomment-1452510633
+  global.player.on('connectionCreate', (queue) => {
+    queue.connection.voiceConnection.on('stateChange', (oldState, newState) => {
+      const oldNetworking = Reflect.get(oldState, 'networking');
+      const newNetworking = Reflect.get(newState, 'networking');
+
+      const networkStateChangeHandler = (_oldNetworkState, newNetworkState) => {
+        const newUdp = Reflect.get(newNetworkState, 'udp');
+        clearInterval(newUdp?.keepAliveInterval);
+      };
+
+      oldNetworking?.off('stateChange', networkStateChangeHandler);
+      newNetworking?.on('stateChange', networkStateChangeHandler);
+    });
+  });
 };
 
 const setup = async () => await initServer(init);
