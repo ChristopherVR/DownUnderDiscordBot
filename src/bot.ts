@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable global-require */
 import { Player } from 'discord-player';
 import { Client, GatewayIntentBits } from 'discord.js';
-import { VoiceConnectionStatus } from '@discordjs/voice';
 
 import { localizedString } from './i18n';
 import initInstance from './i18nSetup';
 import { initServer } from './setup';
 
 const token = process.env.CLIENT_TOKEN;
+
 const init = async () => {
   await initInstance();
 
@@ -16,9 +15,11 @@ const init = async () => {
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates],
   });
 
+  // eslint-disable-next-line global-require
   const registerOnReadyListener: (c: Client) => void = require('./bot/ready').default;
   registerOnReadyListener(client);
 
+  // eslint-disable-next-line global-require
   const registerInteractionCreateListener: (c: Client) => void = require('./bot/interactionCreate').default;
 
   registerInteractionCreateListener(client);
@@ -36,7 +37,7 @@ const init = async () => {
       const oldNetworking = Reflect.get(oldState, 'networking');
       const newNetworking = Reflect.get(newState, 'networking');
 
-      const networkStateChangeHandler = (_oldNetworkState, newNetworkState) => {
+      const networkStateChangeHandler = (_oldNetworkState: object, newNetworkState: object) => {
         const newUdp = Reflect.get(newNetworkState, 'udp');
         clearInterval(newUdp?.keepAliveInterval);
       };
