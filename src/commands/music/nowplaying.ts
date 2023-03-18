@@ -3,6 +3,7 @@ import {
   ApplicationCommandType,
   ButtonBuilder,
   ButtonStyle,
+  ChannelType,
   ChatInputCommandInteraction,
   Colors,
   EmbedBuilder,
@@ -125,6 +126,9 @@ export const NowPlaying: PlayerCommand = {
       .setTimestamp();
     const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(loop, pause, saveButton);
 
+    if (interaction.channel?.type !== ChannelType.GuildText) {
+      throw new Error('Channel Type needs to be GuildText');
+    }
     // TODO: Helper functions to handle collectors?
     const collector = interaction.channel?.createMessageComponentCollector({
       time: 15000,

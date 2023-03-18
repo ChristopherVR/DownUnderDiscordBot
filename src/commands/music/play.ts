@@ -4,6 +4,7 @@ import {
   ApplicationCommandOptionType,
   ButtonBuilder,
   ButtonStyle,
+  ChannelType,
   ChatInputCommandInteraction,
   EmbedBuilder,
   MessageActionRowComponentBuilder,
@@ -31,6 +32,7 @@ export const Play: PlayerCommand = {
       required: true,
     },
   ],
+  // eslint-disable-next-line consistent-return
   run: async (interaction: ChatInputCommandInteraction) => {
     // if (!interaction.deferred) {
     //   await interaction.deferReply({ ephemeral: true });
@@ -133,6 +135,15 @@ export const Play: PlayerCommand = {
     );
     await interaction.reply({ embeds: [embed], components: [row] });
 
+    if (interaction.channel?.type !== ChannelType.GuildText) {
+      return await interaction.reply({
+        content: localizedString('global:genericError', {
+          lng: interaction.locale,
+          user: interaction.member?.user.username,
+        }),
+        ephemeral: true,
+      });
+    }
     const collector = interaction.channel?.createMessageComponentCollector({
       time: 15000,
       max: 1,

@@ -1,4 +1,9 @@
-import { ApplicationCommandType, ChatInputCommandInteraction, ApplicationCommandOptionType } from 'discord.js';
+import {
+  ApplicationCommandType,
+  ChatInputCommandInteraction,
+  ApplicationCommandOptionType,
+  ChannelType,
+} from 'discord.js';
 import { localizedString } from '../i18n';
 import { ask } from '../openai/ai';
 import { Command } from '../types';
@@ -23,7 +28,10 @@ export const Ask: Command<ChatInputCommandInteraction> = {
   run: async (interaction: ChatInputCommandInteraction) => {
     const input = interaction.options.getString('input') ?? '';
     const answer = await ask(input); // prompt GPT-3
-    await interaction.channel?.send(answer);
+    if (interaction.channel?.type !== ChannelType.GuildText) {
+      throw new Error('Channel Type needs to be GuildText');
+    }
+    await interaction.channel?.send(answer ?? '');
   },
 };
 

@@ -8,6 +8,6 @@ export default (client: Client): void => {
     }
     await client.application.commands.set(getCommands());
 
-    console.log('Führer online. Get in loser, time to invade poland!');
+    console.log(`${client.user.username} is now connected.`);
   });
 };

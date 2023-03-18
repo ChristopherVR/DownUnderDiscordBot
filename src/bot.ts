@@ -30,22 +30,6 @@ const init = async () => {
   });
   await client.login(token);
   global.player = new Player(client);
-
-  // Temp fix for https://github.com/discordjs/discord.js/issues/9185#issuecomment-1452510633
-  global.player.on('connectionCreate', (queue) => {
-    queue.connection.voiceConnection.on('stateChange', (oldState, newState) => {
-      const oldNetworking = Reflect.get(oldState, 'networking');
-      const newNetworking = Reflect.get(newState, 'networking');
-
-      const networkStateChangeHandler = (_oldNetworkState: object, newNetworkState: object) => {
-        const newUdp = Reflect.get(newNetworkState, 'udp');
-        clearInterval(newUdp?.keepAliveInterval);
-      };
-
-      oldNetworking?.off('stateChange', networkStateChangeHandler);
-      newNetworking?.on('stateChange', networkStateChangeHandler);
-    });
-  });
 };
 
 const setup = async () => await initServer(init);
