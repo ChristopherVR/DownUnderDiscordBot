@@ -4,10 +4,15 @@ import {
   ApplicationCommandOptionType,
   ChannelType,
 } from 'discord.js';
-import { localizedString } from '../i18n';
+import { localizedString } from '../helpers/localization';
 import { ask } from '../openai/ai';
 import { Command } from '../types';
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../helpers/multiMapLocalization';
+
+type UserId = number | string;
+type ConversationId = number | string | undefined;
+
+const conversations = new Map<UserId, ConversationId>();
 
 export const Ask: Command<ChatInputCommandInteraction> = {
   name: localizedString('global:ask'),
@@ -27,11 +32,16 @@ export const Ask: Command<ChatInputCommandInteraction> = {
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
     const input = interaction.options.getString('input') ?? '';
-    const answer = await ask(input); // prompt GPT-3
+
+    const userConversation = conversations.get(interaction.user.id);
+
+    const response = await ask(input, userConversation); // prompt GPT-3
     if (interaction.channel?.type !== ChannelType.GuildText) {
       throw new Error('Channel Type needs to be GuildText');
     }
-    await interaction.channel?.send(answer ?? '');
+
+    conversations.set(interaction.user.id, response.conversationId);
+    await interaction.channel?.send(response.answer ?? '');
   },
 };
 

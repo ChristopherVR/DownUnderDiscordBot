@@ -1,9 +1,9 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 import pauseTrack from '../../utilities/pauseHandler';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
 
 export const Pause: PlayerCommand = {
   name: localizedString('global:pause'),

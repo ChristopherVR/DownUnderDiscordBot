@@ -1,7 +1,7 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../i18n';
+import { localizedString } from '../helpers/localization';
 import { Command } from '../types';
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../helpers/multiMapLocalization';
 
 const Hello: Command<ChatInputCommandInteraction> = {
   name: localizedString('global:hello'),

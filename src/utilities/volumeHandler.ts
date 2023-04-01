@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, InteractionReplyOptions } from 'discord.js';
 import { useDefaultPlayer } from '../helpers/discord';
-import localizedString from '../i18n';
+import localizedString from '../helpers/localization';
 
 const replyToUser = async (interaction: ChatInputCommandInteraction, interactionOptions: InteractionReplyOptions) => {
   if (interaction.deferred || interaction.replied) {

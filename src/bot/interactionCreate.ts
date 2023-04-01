@@ -1,6 +1,5 @@
 import { ChatInputCommandInteraction, Client, Interaction } from 'discord.js';
 import { getCommands } from '../commands';
-import { cast } from '../helpers/cast';
 
 const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   try {
@@ -19,7 +18,7 @@ const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Pro
 export default (client: Client): void => {
   client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.isCommand() || interaction.isContextMenuCommand()) {
-      await handleSlashCommand(cast<ChatInputCommandInteraction>(interaction));
+      await handleSlashCommand(interaction as ChatInputCommandInteraction);
     }
   });
 };

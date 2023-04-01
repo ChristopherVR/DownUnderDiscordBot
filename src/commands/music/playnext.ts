@@ -1,10 +1,9 @@
 import { QueryType } from 'discord-player';
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, User } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { ApplicationCommandOptionType, ChatInputCommandInteraction, GuildMember } from 'discord.js';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
-import cast from '../../helpers/cast';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
 import { useDefaultPlayer } from '../../helpers/discord';
 
 export const PlayNext: PlayerCommand = {
@@ -51,7 +50,7 @@ export const PlayNext: PlayerCommand = {
     const song = interaction.options.getString('song') ?? '';
 
     const res = await player.search(song, {
-      requestedBy: cast<User>(interaction.member),
+      requestedBy: interaction.member as GuildMember,
       searchEngine: QueryType.AUTO,
     });
 

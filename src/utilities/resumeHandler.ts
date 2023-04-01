@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, InteractionReplyOptions } from 'discord.js';
 import { useDefaultPlayer } from '../helpers/discord';
-import localizedString from '../i18n';
+import localizedString from '../helpers/localization';
 
 const resumeTrack = async (interaction: ChatInputCommandInteraction, interactionOptions?: InteractionReplyOptions) => {
   const genericError = localizedString('global:genericError', {

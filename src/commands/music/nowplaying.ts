@@ -10,13 +10,13 @@ import {
   MessageActionRowComponentBuilder,
 } from 'discord.js';
 import { PlayerTimestamp } from 'discord-player';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 import setLoop from '../../utilities/loopHandler';
 import pauseTrack from '../../utilities/pauseHandler';
 import saveTrack from '../../utilities/saveTrackHandler';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
 import { useDefaultPlayer } from '../../helpers/discord';
 
 export const NowPlaying: PlayerCommand = {

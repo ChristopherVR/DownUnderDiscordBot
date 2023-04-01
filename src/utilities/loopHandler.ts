@@ -1,7 +1,7 @@
 import { QueueRepeatMode } from 'discord-player';
 import { ChatInputCommandInteraction, InteractionResponse, Message } from 'discord.js';
 import { useDefaultPlayer } from '../helpers/discord';
-import localizedString from '../i18n';
+import localizedString from '../helpers/localization';
 
 const setLoop = async (
   interaction: ChatInputCommandInteraction,

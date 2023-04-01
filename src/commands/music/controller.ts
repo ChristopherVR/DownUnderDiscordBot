@@ -10,9 +10,9 @@ import {
   MessageActionRowComponentBuilder,
   ChannelType,
 } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
 
 export const Controller: PlayerCommand = {
   name: localizedString('global:controller'),

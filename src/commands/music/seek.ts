@@ -1,9 +1,9 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 import { ms } from '../../helpers/ms';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
 import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Seek: PlayerCommand = {

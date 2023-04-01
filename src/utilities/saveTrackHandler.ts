@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, EmbedBuilder, InteractionResponse, Message } from 'discord.js';
 import { useDefaultPlayer } from '../helpers/discord';
-import localizedString from '../i18n';
+import localizedString from '../helpers/localization';
 
 const saveTrack = async (
   interaction: ChatInputCommandInteraction,
