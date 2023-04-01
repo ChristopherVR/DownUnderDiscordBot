@@ -16,7 +16,7 @@ export const initServer = async (cb: () => Promise<void> | Awaitable<void>) => {
 
   const server = express();
 
-  server.set('title', 'Nein Discord Bot');
+  server.set('title', 'Down Under Discord Bot');
   server.use('/locales', express.static(`${__dirname}/locales`));
   server.set('port', port);
   server.set('ipaddr', hostname);

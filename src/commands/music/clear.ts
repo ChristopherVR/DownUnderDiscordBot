@@ -23,9 +23,9 @@ export const Clear: PlayerCommand = {
       });
     }
 
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -45,7 +45,7 @@ export const Clear: PlayerCommand = {
       });
     }
 
-    queue.clear();
+    queue.tracks.clear();
 
     const loc = localizedString('global:queueHasBeenCleared', {
       lng: interaction.locale,

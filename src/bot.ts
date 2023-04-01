@@ -29,7 +29,7 @@ const init = async () => {
     client.user?.setActivity(value);
   });
   await client.login(token);
-  global.player = new Player(client);
+  global.player = Player.singleton(client);
 };
 
 const setup = async () => await initServer(init);

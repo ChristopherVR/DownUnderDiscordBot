@@ -42,9 +42,9 @@ export const Jump: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -66,9 +66,9 @@ export const Jump: PlayerCommand = {
 
     if (track) {
       // eslint-disable-next-line no-restricted-syntax
-      for (const song of queue.tracks) {
+      for (const song of queue.tracks.data) {
         if (song.title === track || song.url === track) {
-          queue.skipTo(song);
+          queue.node.skipTo(song);
 
           const loc = localizedString('global:skippedTo', {
             lng: interaction.locale,
@@ -100,7 +100,7 @@ export const Jump: PlayerCommand = {
         });
       }
 
-      queue.skipTo(index);
+      queue.node.skipTo(index);
       const loc = localizedString('global:jumpedTo', {
         lng: interaction.locale,
         track: trackname,

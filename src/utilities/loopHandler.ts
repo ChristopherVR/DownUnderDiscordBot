@@ -19,9 +19,9 @@ const setLoop = async (
       ephemeral: true,
     });
   }
-  const queue = global.player.getQueue(interaction.guildId);
+  const queue = global.player.nodes.get(interaction.guildId);
 
-  if (!queue?.playing) {
+  if (!queue?.isPlaying()) {
     const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
       lng: interaction.locale,
     });
@@ -46,7 +46,7 @@ const setLoop = async (
         });
       }
 
-      const success = queue.setRepeatMode(QueueRepeatMode.QUEUE);
+      queue.setRepeatMode(QueueRepeatMode.QUEUE);
 
       const loc = localizedString('global:songRepeatMode', {
         lng: interaction.locale,
@@ -54,14 +54,14 @@ const setLoop = async (
 
       // songRepeatMode
       return await response({
-        content: success ? loc : genericError,
+        content: loc,
       });
     }
     case 'disable_loop': {
-      const success = queue.setRepeatMode(QueueRepeatMode.OFF);
+      queue.setRepeatMode(QueueRepeatMode.OFF);
 
       return await response({
-        content: success ? `Repeat mode **disabled**` : genericError,
+        content: localizedString('global:repeatModeDisabled', { lng: interaction.locale }),
       });
     }
     case 'enable_loop_song': {
@@ -75,14 +75,14 @@ const setLoop = async (
         });
       }
 
-      const success = queue.setRepeatMode(QueueRepeatMode.TRACK);
+      queue.setRepeatMode(QueueRepeatMode.TRACK);
 
       const locc = localizedString('global:songRepeatMode', {
         lng: interaction.locale,
       });
 
       return await response({
-        content: success ? locc : genericError,
+        content: locc,
       });
     }
     default: {

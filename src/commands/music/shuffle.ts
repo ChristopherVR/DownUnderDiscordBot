@@ -22,9 +22,9 @@ export const Shuffle: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -44,10 +44,10 @@ export const Shuffle: PlayerCommand = {
       });
     }
 
-    queue.shuffle();
+    queue.tracks.shuffle();
     const queueShuffled = localizedString('global:queueShuffled', {
       lng: interaction.locale,
-      count: queue.tracks.length,
+      count: queue.tracks.data.length,
     });
     return await interaction.reply({
       content: queueShuffled,

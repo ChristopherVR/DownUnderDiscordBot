@@ -1,8 +1,8 @@
-name: nein-discord
+name: down-under-discord
 
 services:
-  nein:
-    image: ${DOCKER_REGISTRY}nein:${TAG}
+  downunder:
+    image: ${DOCKER_REGISTRY}downunder:${TAG}
     build:
       context: .
       dockerfile: /Dockerfile

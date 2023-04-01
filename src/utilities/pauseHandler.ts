@@ -17,7 +17,7 @@ const pauseTrack = async (
       ephemeral: true,
     });
   }
-  const queue = global.player.getQueue(interaction.guildId);
+  const queue = global.player.nodes.get(interaction.guildId);
 
   if (!queue) {
     const noMusicLoc = localizedString('global:noMusicCurrentlyPlaying', {
@@ -30,7 +30,7 @@ const pauseTrack = async (
     });
   }
 
-  if (queue.connection.paused) {
+  if (queue.node.isPaused()) {
     const trackIsPaused = localizedString('global:trackIsPaused', {
       lng: interaction.locale,
     });
@@ -40,16 +40,16 @@ const pauseTrack = async (
     });
   }
 
-  const success = queue.setPaused(true);
+  const success = queue.node.pause();
 
   const loc = localizedString('global:currentTrackPaused', {
     lng: interaction.locale,
-    title: queue.current.title,
+    title: queue.currentTrack?.title,
   });
 
   const genericError = localizedString('global:genericError', {
     lng: interaction.locale,
-    title: queue.current.title,
+    title: queue.currentTrack?.title,
   });
   return await response({
     content: success ? loc : genericError,

@@ -11,7 +11,7 @@ const Hello: Command<ChatInputCommandInteraction> = {
 
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: ChatInputCommandInteraction) => {
-    const content = 'NEIN, NEIN, NEIN, NEIN!';
+    const content = 'OI, OI, OI, OI!';
     await interaction.followUp({
       ephemeral: true,
       content,

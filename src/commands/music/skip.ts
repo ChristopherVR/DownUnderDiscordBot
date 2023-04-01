@@ -6,9 +6,9 @@ import getLocalizations from '../../i18n/discordLocalization';
 
 export const Skip: PlayerCommand = {
   name: localizedString('global:skip'),
-  description: localizedString('global:stopTrack'),
+  description: localizedString('global:skipTrackDesc'),
   nameLocalizations: getLocalizations('global:skip'),
-  descriptionLocalizations: getLocalizations('global:stopTrack'),
+  descriptionLocalizations: getLocalizations('global:skipTrackDesc'),
   voiceChannel: true,
 
   run: async (interaction: ChatInputCommandInteraction) => {
@@ -23,9 +23,9 @@ export const Skip: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -35,10 +35,10 @@ export const Skip: PlayerCommand = {
       });
     }
 
-    const success = queue.skip();
-    const currentTrackSkipped = localizedString('global:genericError', {
+    const success = queue.node.skip();
+    const currentTrackSkipped = localizedString('global:currentTrackSkipped', {
       lng: interaction.locale,
-      track: queue.current.title,
+      title: queue.currentTrack?.title,
     });
     return await interaction.reply({
       content: success ? currentTrackSkipped : genericError,

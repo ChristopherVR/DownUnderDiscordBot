@@ -23,9 +23,9 @@ export const Back: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -35,7 +35,7 @@ export const Back: PlayerCommand = {
       });
     }
 
-    if (!queue.previousTracks[1]) {
+    if (!queue.history.previousTrack) {
       const loc = localizedString('global:noMusicPlayedPreviously', {
         lng: interaction.locale,
       });
@@ -45,7 +45,7 @@ export const Back: PlayerCommand = {
       });
     }
 
-    await queue.back();
+    await queue.history.back();
     const loc = localizedString('global:playingPreviousTrack', {
       lng: interaction.locale,
     });

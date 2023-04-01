@@ -22,9 +22,9 @@ export const Stop: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -34,8 +34,8 @@ export const Stop: PlayerCommand = {
       });
     }
 
-    queue.clear();
-    queue.destroy();
+    queue.tracks.clear();
+    queue.delete();
     const loc = localizedString('global:musicStopped', {
       lng: interaction.locale,
     });

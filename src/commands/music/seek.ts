@@ -33,9 +33,9 @@ export const Seek: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -48,7 +48,7 @@ export const Seek: PlayerCommand = {
 
     const timeToMS = ms(interaction.options.getString('time'));
 
-    if (timeToMS >= queue.current.durationMS) {
+    if (timeToMS >= (queue.currentTrack?.durationMS ?? 0)) {
       const indicatedTimeIsTooHigh = localizedString('global:indicatedTimeIsTooHigh', {
         lng: interaction.locale,
       });
@@ -62,7 +62,7 @@ export const Seek: PlayerCommand = {
       });
     }
 
-    await queue.seek(timeToMS);
+    await queue.node.seek(timeToMS);
 
     const longMs = ms(timeToMS, {
       long: true,

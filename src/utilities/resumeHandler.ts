@@ -13,7 +13,7 @@ const resumeTrack = async (interaction: ChatInputCommandInteraction, interaction
       ephemeral: true,
     });
   }
-  const queue = global.player.getQueue(interaction.guildId);
+  const queue = global.player.nodes.get(interaction.guildId);
 
   if (!queue) {
     const loc = localizedString('global:noMusicCurrentlyPlaying', {
@@ -26,7 +26,7 @@ const resumeTrack = async (interaction: ChatInputCommandInteraction, interaction
     });
   }
 
-  if (!queue.connection.paused) {
+  if (!queue.node.isPaused()) {
     const trackAlreadyRunning = localizedString('global:trackAlreadyRunning', {
       lng: interaction.locale,
     });
@@ -37,11 +37,11 @@ const resumeTrack = async (interaction: ChatInputCommandInteraction, interaction
     });
   }
 
-  const success = queue.setPaused(false);
+  const success = queue.node.setPaused(false);
 
   const currentMusicResumed = localizedString('global:currentMusicResumed', {
     lng: interaction.locale,
-    title: queue.current.title,
+    title: queue.currentTrack?.title,
   });
 
   return await interaction.reply({

@@ -34,9 +34,9 @@ export const PlayNext: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -73,7 +73,7 @@ export const PlayNext: PlayerCommand = {
       });
     }
 
-    queue.insert(res.tracks[0], 0);
+    queue.insertTrack(res.tracks[0], 0);
     const trackInsertedIntoQueue = localizedString('global:trackInsertedIntoQueue', {
       lng: interaction.locale,
     });

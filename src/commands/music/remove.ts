@@ -42,9 +42,9 @@ export const Remove: PlayerCommand = {
     const number = interaction.options.getNumber('number');
     const track = interaction.options.getString('song');
 
-    const queue = global.player.getQueue(interaction.guildId);
+    const queue = global.player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -66,13 +66,13 @@ export const Remove: PlayerCommand = {
 
     if (track) {
       // eslint-disable-next-line no-restricted-syntax
-      for (const song of queue.tracks) {
+      for (const song of queue.tracks.data) {
         if (song.title === track || song.url === track) {
           const removedSongFromQueue = localizedString('global:removedSongFromQueue', {
             lng: interaction.locale,
             track,
           });
-          queue.remove(song);
+          queue.removeTrack(song);
           return interaction.reply({
             content: removedSongFromQueue,
           });
@@ -104,7 +104,7 @@ export const Remove: PlayerCommand = {
         });
       }
 
-      queue.remove(index);
+      queue.removeTrack(index);
       const removedSongFromQueue = localizedString('global:removedSongFromQueue', {
         lng: interaction.locale,
         track,
