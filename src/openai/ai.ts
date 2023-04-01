@@ -15,7 +15,7 @@ export const ask = async (
     model: 'text-davinci-002',
     prompt,
     temperature: 0.7,
-    max_tokens: 256,
+    max_tokens: 2048,
     top_p: 1,
     frequency_penalty: 0,
     presence_penalty: 0,
