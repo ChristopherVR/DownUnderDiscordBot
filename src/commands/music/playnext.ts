@@ -5,6 +5,7 @@ import { PlayerCommand } from '../../types';
 import cast from '../../helpers/cast';
 
 import getLocalizations from '../../i18n/discordLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const PlayNext: PlayerCommand = {
   name: localizedString('global:playnext'),
@@ -34,7 +35,8 @@ export const PlayNext: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.nodes.get(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
@@ -48,7 +50,7 @@ export const PlayNext: PlayerCommand = {
 
     const song = interaction.options.getString('song') ?? '';
 
-    const res = await global.player.search(song, {
+    const res = await player.search(song, {
       requestedBy: cast<User>(interaction.member),
       searchEngine: QueryType.AUTO,
     });

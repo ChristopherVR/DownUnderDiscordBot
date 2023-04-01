@@ -3,6 +3,7 @@ import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 
 import getLocalizations from '../../i18n/discordLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Skip: PlayerCommand = {
   name: localizedString('global:skip'),
@@ -23,7 +24,8 @@ export const Skip: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.nodes.get(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {

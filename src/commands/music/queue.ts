@@ -4,6 +4,7 @@ import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 
 import getLocalizations from '../../i18n/discordLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Queue: PlayerCommand = {
   name: localizedString('global:queue'),
@@ -23,7 +24,8 @@ export const Queue: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.nodes.get(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
     if (!queue) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {

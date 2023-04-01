@@ -17,6 +17,7 @@ import pauseTrack from '../../utilities/pauseHandler';
 import saveTrack from '../../utilities/saveTrackHandler';
 
 import getLocalizations from '../../i18n/discordLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const NowPlaying: PlayerCommand = {
   name: localizedString('global:nowplaying'),
@@ -38,7 +39,8 @@ export const NowPlaying: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.nodes.get(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
     if (!queue || !queue.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {

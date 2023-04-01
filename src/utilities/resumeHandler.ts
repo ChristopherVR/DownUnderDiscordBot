@@ -1,4 +1,5 @@
 import { ChatInputCommandInteraction, InteractionReplyOptions } from 'discord.js';
+import { useDefaultPlayer } from '../helpers/discord';
 import localizedString from '../i18n';
 
 const resumeTrack = async (interaction: ChatInputCommandInteraction, interactionOptions?: InteractionReplyOptions) => {
@@ -13,7 +14,8 @@ const resumeTrack = async (interaction: ChatInputCommandInteraction, interaction
       ephemeral: true,
     });
   }
-  const queue = global.player.nodes.get(interaction.guildId);
+  const player = useDefaultPlayer();
+  const queue = player.nodes.get(interaction.guildId);
 
   if (!queue) {
     const loc = localizedString('global:noMusicCurrentlyPlaying', {

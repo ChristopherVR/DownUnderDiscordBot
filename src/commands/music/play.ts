@@ -14,6 +14,7 @@ import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 
 import getLocalizations from '../../i18n/discordLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Play: PlayerCommand = {
   name: localizedString('global:play'),
@@ -57,8 +58,8 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     }
-
-    const res = await global.player.search(song, {
+    const player = useDefaultPlayer();
+    const res = await player.search(song, {
       requestedBy: interaction.member as GuildMember,
       searchEngine: QueryType.AUTO,
     });
@@ -86,8 +87,8 @@ export const Play: PlayerCommand = {
     }
 
     const queue =
-      global.player.nodes.get(interaction.guild) ??
-      global.player.nodes.create(interaction.guild, {
+      player.nodes.get(interaction.guild) ??
+      player.nodes.create(interaction.guild, {
         metadata: {
           channel: interaction.channel,
           client: interaction.guild?.members.me,

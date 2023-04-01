@@ -4,6 +4,7 @@ import { PlayerCommand } from '../../types';
 import { ms } from '../../helpers/ms';
 
 import getLocalizations from '../../i18n/discordLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Seek: PlayerCommand = {
   name: localizedString('global:seek'),
@@ -33,7 +34,8 @@ export const Seek: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.nodes.get(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
@@ -64,9 +66,7 @@ export const Seek: PlayerCommand = {
 
     await queue.node.seek(timeToMS);
 
-    const longMs = ms(timeToMS, {
-      long: true,
-    });
+    const longMs = ms(timeToMS);
 
     const timeSetInCurrentTrack = localizedString('global:timeSetInCurrentTrack', {
       lng: interaction.locale,

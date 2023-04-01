@@ -3,6 +3,7 @@ import { localizedString } from '../../i18n';
 import { PlayerCommand } from '../../types';
 
 import getLocalizations from '../../i18n/discordLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Remove: PlayerCommand = {
   name: localizedString('global:remove'),
@@ -41,8 +42,8 @@ export const Remove: PlayerCommand = {
     }
     const number = interaction.options.getNumber('number');
     const track = interaction.options.getString('song');
-
-    const queue = global.player.nodes.get(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
