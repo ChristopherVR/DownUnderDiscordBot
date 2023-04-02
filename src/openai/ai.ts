@@ -12,7 +12,7 @@ export const ask = async (
   });
   const openAI = new OpenAIApi(configuration);
   const response = await openAI.createCompletion({
-    model: 'text-davinci-002',
+    model: 'gpt-3.5-turbo',
     prompt,
     temperature: 0.7,
     max_tokens: 2048,
