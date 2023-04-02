@@ -61,7 +61,7 @@ export const Play: PlayerCommand = {
     const player = useDefaultPlayer();
     const res = await player.search(song, {
       requestedBy: interaction.member as GuildMember,
-      searchEngine: QueryType.AUTO,
+      searchEngine: QueryType.YOUTUBE,
     });
 
     if (!res?.tracks?.length) {
@@ -185,7 +185,6 @@ export const Play: PlayerCommand = {
               ephemeral: true,
             });
           } else {
-            // collector?.stop();
             const userChannel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
 
             if (!userChannel) {
@@ -205,7 +204,6 @@ export const Play: PlayerCommand = {
               await queue.connect(userChannel);
             }
 
-            queue.addTrack(track);
             console.log('Starting track ', track.url);
             if (!queue.isPlaying()) {
               const em = new EmbedBuilder()
