@@ -9,13 +9,15 @@ import {
   EmbedBuilder,
   MessageActionRowComponentBuilder,
 } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { PlayerTimestamp } from 'discord-player';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 import setLoop from '../../utilities/loopHandler';
 import pauseTrack from '../../utilities/pauseHandler';
 import saveTrack from '../../utilities/saveTrackHandler';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const NowPlaying: PlayerCommand = {
   name: localizedString('global:nowplaying'),
@@ -37,9 +39,10 @@ export const NowPlaying: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
-    if (!queue || !queue.playing) {
+    if (!queue || !queue.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -49,17 +52,13 @@ export const NowPlaying: PlayerCommand = {
       });
     }
 
-    const track = queue.current;
+    const track = queue.currentTrack;
 
     const methods = ['disabled', 'track', 'queue'];
 
-    let timestamp: {
-      current: string;
-      end: string;
-      progress: number;
-    };
+    let timestamp: PlayerTimestamp | null;
     try {
-      timestamp = queue.getPlayerTimestamp();
+      timestamp = queue.node.getTimestamp();
     } catch {
       return await interaction.followUp(
         localizedString('global:genericError', {
@@ -68,9 +67,9 @@ export const NowPlaying: PlayerCommand = {
       );
     }
 
-    const trackDuration = timestamp.progress === Number.MAX_SAFE_INTEGER ? 'infinity (live)' : track.duration;
+    const trackDuration = timestamp?.progress === Number.MAX_SAFE_INTEGER ? 'infinity (live)' : track?.duration;
 
-    const progress = queue.createProgressBar();
+    const progress = queue.node.createProgressBar();
 
     const saveButton = new ButtonBuilder()
       .setLabel(
@@ -101,19 +100,19 @@ export const NowPlaying: PlayerCommand = {
 
     const volDurationDesc = localizedString('global:nowPlayingDescription', {
       lng: interaction.locale,
-      volume: queue.volume,
+      volume: queue.node.volume,
       duration: trackDuration,
       progress,
       mode: methods[queue.repeatMode],
-      user: track.requestedBy.username,
+      user: track?.requestedBy?.username,
     });
 
     const embed = new EmbedBuilder()
       .setAuthor({
-        name: track.title,
+        name: track?.title ?? '',
         iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }),
       })
-      .setThumbnail(track.thumbnail)
+      .setThumbnail(track?.thumbnail ?? '')
       .setDescription(volDurationDesc)
       .setFooter({
         text: localizedString('global:defaultFooter', {

@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, EmbedBuilder, InteractionResponse, Message } from 'discord.js';
-import localizedString from '../i18n';
+import { useDefaultPlayer } from '../helpers/discord';
+import localizedString from '../helpers/localization';
 
 const saveTrack = async (
   interaction: ChatInputCommandInteraction,
@@ -7,17 +8,18 @@ const saveTrack = async (
     options: object,
   ) => Promise<InteractionResponse<boolean> | Message<boolean> | undefined> | Promise<void> | Awaited<void> | void,
 ) => {
+  const genericError = localizedString('global:genericError', {
+    lng: interaction.locale,
+  });
   if (!interaction.guildId) {
-    const genericError = localizedString('global:genericError', {
-      lng: interaction.locale,
-    });
     console.log('GuildId is undefined');
     return await response({
       content: genericError,
       ephemeral: true,
     });
   }
-  const queue = global.player.getQueue(interaction.guildId);
+  const player = useDefaultPlayer();
+  const queue = player.nodes.get(interaction.guildId);
 
   if (!queue) {
     const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
@@ -29,35 +31,42 @@ const saveTrack = async (
     });
   }
 
+  if (!queue.currentTrack) {
+    return await response({
+      content: genericError,
+      ephemeral: true,
+    });
+  }
+
   try {
     await interaction.user.send({
       embeds: [
         new EmbedBuilder()
           .setColor('Red')
-          .setTitle(`:arrow_forward: ${queue.current.title}`)
-          .setURL(queue.current.url)
+          .setTitle(`:arrow_forward: ${queue.currentTrack.title}`)
+          .setURL(queue.currentTrack.url)
           .addFields(
             {
               name: `:hourglass: ${localizedString('global:duration', { lng: interaction.locale })}`,
-              value: `\`${queue.current.duration}\``,
+              value: `\`${queue.currentTrack.duration}\``,
               inline: true,
             },
             {
               name: localizedString('global:songBy', { lng: interaction.locale }),
-              value: `\`${queue.current.author}\``,
+              value: `\`${queue.currentTrack.author}\``,
               inline: true,
             },
             {
               name: `${localizedString('global:views', { lng: interaction.locale })} :eyes:`,
-              value: `\`${Number(queue.current.views).toLocaleString()}\``,
+              value: `\`${Number(queue.currentTrack.views).toLocaleString()}\``,
               inline: true,
             },
             {
               name: localizedString('global:songUrl', { lng: interaction.locale }),
-              value: `\`${queue.current.url}\``,
+              value: `\`${queue.currentTrack.url}\``,
             },
           )
-          .setThumbnail(queue.current.thumbnail)
+          .setThumbnail(queue.currentTrack.thumbnail)
           .setFooter({
             text: `${localizedString('global:fromTheServer', { lng: interaction.locale })} ${
               interaction.guild?.name ?? ''

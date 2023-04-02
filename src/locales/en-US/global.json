@@ -45,6 +45,7 @@
   "shuffle": "shuffle",
   "shuffleTheTrack": "Shuffle the queue.",
   "seek": "seek",
+  "skipTrackDesc": "Skips the current playing track.",
   "skipBackAndForth": "Set the position of the playing track.",
   "timeToSkip": "Time that you want to skip to.",
   "time": "time",

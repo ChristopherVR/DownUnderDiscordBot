@@ -1,8 +1,9 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Remove: PlayerCommand = {
   name: localizedString('global:remove'),
@@ -41,10 +42,10 @@ export const Remove: PlayerCommand = {
     }
     const number = interaction.options.getNumber('number');
     const track = interaction.options.getString('song');
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
-    const queue = global.player.getQueue(interaction.guildId);
-
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -66,13 +67,13 @@ export const Remove: PlayerCommand = {
 
     if (track) {
       // eslint-disable-next-line no-restricted-syntax
-      for (const song of queue.tracks) {
+      for (const song of queue.tracks.data) {
         if (song.title === track || song.url === track) {
           const removedSongFromQueue = localizedString('global:removedSongFromQueue', {
             lng: interaction.locale,
             track,
           });
-          queue.remove(song);
+          queue.removeTrack(song);
           return interaction.reply({
             content: removedSongFromQueue,
           });
@@ -104,7 +105,7 @@ export const Remove: PlayerCommand = {
         });
       }
 
-      queue.remove(index);
+      queue.removeTrack(index);
       const removedSongFromQueue = localizedString('global:removedSongFromQueue', {
         lng: interaction.locale,
         track,

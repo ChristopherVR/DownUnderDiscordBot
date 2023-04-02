@@ -1,8 +1,9 @@
 import { ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Stop: PlayerCommand = {
   name: localizedString('global:stop'),
@@ -22,9 +23,10 @@ export const Stop: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -34,8 +36,8 @@ export const Stop: PlayerCommand = {
       });
     }
 
-    queue.clear();
-    queue.destroy();
+    queue.tracks.clear();
+    queue.delete();
     const loc = localizedString('global:musicStopped', {
       lng: interaction.locale,
     });

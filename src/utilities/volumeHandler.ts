@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, InteractionReplyOptions } from 'discord.js';
-import localizedString from '../i18n';
+import { useDefaultPlayer } from '../helpers/discord';
+import localizedString from '../helpers/localization';
 
 const replyToUser = async (interaction: ChatInputCommandInteraction, interactionOptions: InteractionReplyOptions) => {
   if (interaction.deferred || interaction.replied) {
@@ -32,7 +33,8 @@ const setVolume = async (
       ephemeral: true,
     });
   }
-  const queue = global.player.getQueue(interaction.guildId);
+  const player = useDefaultPlayer();
+  const queue = player.nodes.get(interaction.guildId);
 
   if (!queue) {
     const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
@@ -45,13 +47,13 @@ const setVolume = async (
     });
   }
 
-  let vol = interaction.options.getNumber('volume') ?? queue.volume ?? 100;
+  let vol = interaction.options.getNumber('volume') ?? queue.node.volume ?? 100;
 
   if (volume) {
     vol = increase ? vol + volume : vol - volume;
   }
 
-  if (queue.volume === vol) {
+  if (queue.node.volume === vol) {
     const volumeAlreadyTheSame = localizedString('global:volumeAlreadyTheSame', {
       lng: interaction.locale,
     });
@@ -63,7 +65,7 @@ const setVolume = async (
     });
   }
 
-  const success = queue.setVolume(vol);
+  const success = queue.node.setVolume(vol);
   const volumeHasBeenModifiedTo = localizedString('global:volumeHasBeenModifiedTo', {
     lng: interaction.locale,
     volume: vol,

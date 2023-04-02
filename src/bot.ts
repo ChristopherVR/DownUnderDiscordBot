@@ -2,7 +2,7 @@
 import { Player } from 'discord-player';
 import { Client, GatewayIntentBits } from 'discord.js';
 
-import { localizedString } from './i18n';
+import { localizedString } from './helpers/localization';
 import initInstance from './i18nSetup';
 import { initServer } from './setup';
 
@@ -29,7 +29,8 @@ const init = async () => {
     client.user?.setActivity(value);
   });
   await client.login(token);
-  global.player = new Player(client);
+
+  Player.singleton(client);
 };
 
 const setup = async () => await initServer(init);

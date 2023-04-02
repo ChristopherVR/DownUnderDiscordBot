@@ -1,8 +1,9 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Clear: PlayerCommand = {
   name: localizedString('global:clear'),
@@ -23,9 +24,10 @@ export const Clear: PlayerCommand = {
       });
     }
 
-    const queue = global.player.getQueue(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -45,7 +47,7 @@ export const Clear: PlayerCommand = {
       });
     }
 
-    queue.clear();
+    queue.tracks.clear();
 
     const loc = localizedString('global:queueHasBeenCleared', {
       lng: interaction.locale,

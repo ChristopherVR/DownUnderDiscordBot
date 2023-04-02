@@ -1,4 +1,4 @@
-import { defaultLanguage } from './constants/localization';
+import { defaultLanguage } from '../constants/localization';
 
 export const localizedString: (key: string, args?: object) => string = (key: string, args?: object) =>
   global.instance.t(

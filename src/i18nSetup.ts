@@ -24,14 +24,11 @@ export const initInstance = async () =>
         allowMultiLoading: false,
         withCredentials: true,
         requestOptions: {
-          // used for fetch, can also be a function (payload) => ({ method: 'GET' })
           mode: 'cors',
           credentials: 'same-origin',
           cache: 'default',
         },
-        // for all available options read the backend's repository readme file
         loadPath: `http://${hostname}:${port}/locales/{{lng}}/{{ns}}.json`,
-        // loadPath: '/locales/{{lng}}/{{ns}}.json',
       },
     },
     (error) => {

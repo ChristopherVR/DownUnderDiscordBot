@@ -7,14 +7,14 @@ import {
   ChannelType,
   ChatInputCommandInteraction,
   EmbedBuilder,
+  GuildMember,
   MessageActionRowComponentBuilder,
-  User,
 } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
-import cast from '../../helpers/cast';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Play: PlayerCommand = {
   name: localizedString('global:play'),
@@ -34,9 +34,6 @@ export const Play: PlayerCommand = {
   ],
   // eslint-disable-next-line consistent-return
   run: async (interaction: ChatInputCommandInteraction) => {
-    // if (!interaction.deferred) {
-    //   await interaction.deferReply({ ephemeral: true });
-    // }
     if (!interaction.guildId) {
       console.log('GuildId is undefined');
       return await interaction.reply({
@@ -61,10 +58,10 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     }
-
-    const res = await global.player.search(song, {
-      requestedBy: cast<User>(interaction.member),
-      searchEngine: QueryType.AUTO,
+    const player = useDefaultPlayer();
+    const res = await player.search(song, {
+      requestedBy: interaction.member as GuildMember,
+      searchEngine: QueryType.YOUTUBE,
     });
 
     if (!res?.tracks?.length) {
@@ -90,16 +87,18 @@ export const Play: PlayerCommand = {
     }
 
     const queue =
-      global.player.getQueue(interaction.guild) ??
-      global.player.createQueue(interaction.guild, {
-        metadata: interaction.channel,
-        leaveOnEnd: false,
-        ytdlOptions: {
-          filter: 'audioonly',
-          // eslint-disable-next-line no-bitwise
-          highWaterMark: 1 << 30,
-          dlChunkSize: 0,
+      player.nodes.get(interaction.guild) ??
+      player.nodes.create(interaction.guild, {
+        metadata: {
+          channel: interaction.channel,
+          client: interaction.guild?.members.me,
+          requestedBy: interaction.user.username,
         },
+        leaveOnEmptyCooldown: 300000,
+        leaveOnEmpty: true,
+        leaveOnEnd: false,
+        bufferingTimeout: 0,
+        volume: 100,
       });
     const maxTracks = res.tracks.slice(0, 5);
 
@@ -168,8 +167,8 @@ export const Play: PlayerCommand = {
             ephemeral: true,
           });
           collector?.stop();
-          if (queue.connection && !queue.destroyed) {
-            queue.destroy(true);
+          if (queue.connection && !queue.deleted) {
+            queue.delete();
           }
           console.log('Deleting reply');
           await interaction.deleteReply();
@@ -186,54 +185,27 @@ export const Play: PlayerCommand = {
               ephemeral: true,
             });
           } else {
-            collector?.stop();
+            const userChannel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
 
-            try {
-              if (!queue.connection) {
-                const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
+            if (!userChannel) {
+              console.log(`User ${interaction.member?.user.username} is not connected to a voice channel.`);
 
-                if (!channel) {
-                  console.log(`User ${interaction.member?.user.username} is not connected to a voice channel.`);
-
-                  await interaction.deleteReply();
-                  await interaction.followUp({
-                    content: localizedString('global:connectToVoiceChannelToUseBot', { lng: interaction.locale }),
-                    ephemeral: true,
-                  });
-
-                  return;
-                }
-                await queue.connect(channel);
-              }
-            } catch (ex) {
-              console.log('An error occurred. Exception thrown: ', ex);
-              if (interaction.guildId) global.player.deleteQueue(interaction.guildId);
+              await interaction.deleteReply();
               await interaction.followUp({
-                content: localizedString('global:unableToJoinVoiceChannel', { lng: interaction.locale }),
+                content: localizedString('global:connectToVoiceChannelToUseBot', { lng: interaction.locale }),
                 ephemeral: true,
               });
+
               return;
             }
 
-            if (queue.destroyed) {
-              const channel = interaction.guild?.members.cache.get(interaction.member?.user?.id ?? '')?.voice.channel;
-              if (!channel) {
-                console.log(`User ${interaction.member?.user.username} is not connected to a voice channel.`);
-                await interaction.reply({
-                  content: localizedString('global:genericError', { lng: interaction.locale }),
-                  ephemeral: true,
-                });
-                return;
-              }
-              await queue.connect(channel);
+            const track = res.tracks[Number(content) - 1];
+            if (queue.channel?.id !== userChannel.id) {
+              await queue.connect(userChannel);
             }
 
-            const track = res.tracks[Number(content) - 1];
-            queue.addTrack(track);
-
-            if (!queue.playing) {
-              console.log('Starting track ', queue.tracks[0].description);
-              await queue.play();
+            console.log('Starting track ', track.url);
+            if (!queue.isPlaying()) {
               const em = new EmbedBuilder()
                 .setAuthor({ name: localizedString('global:songAddedToQueue', { lng: interaction.locale, song }) })
                 .setDescription(`[${track.title}](${track.url})`)
@@ -242,10 +214,11 @@ export const Play: PlayerCommand = {
               await interaction.followUp({
                 embeds: [em],
               });
-              console.log('Played track ', queue.tracks[0]?.description);
+              await queue.node.play(track);
             } else {
               await interaction.followUp(localizedString('global:songAddedToQueue', { lng: interaction.locale, song }));
               console.log('There is already a track playing. Adding new one to the queue.');
+              await queue.node.play(track, { queue: true });
             }
           }
         }

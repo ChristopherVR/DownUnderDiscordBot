@@ -1,9 +1,10 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 import { ms } from '../../helpers/ms';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Seek: PlayerCommand = {
   name: localizedString('global:seek'),
@@ -33,9 +34,10 @@ export const Seek: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
-    if (!queue?.playing) {
+    if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -48,7 +50,7 @@ export const Seek: PlayerCommand = {
 
     const timeToMS = ms(interaction.options.getString('time'));
 
-    if (timeToMS >= queue.current.durationMS) {
+    if (timeToMS >= (queue.currentTrack?.durationMS ?? 0)) {
       const indicatedTimeIsTooHigh = localizedString('global:indicatedTimeIsTooHigh', {
         lng: interaction.locale,
       });
@@ -62,11 +64,9 @@ export const Seek: PlayerCommand = {
       });
     }
 
-    await queue.seek(timeToMS);
+    await queue.node.seek(timeToMS);
 
-    const longMs = ms(timeToMS, {
-      long: true,
-    });
+    const longMs = ms(timeToMS);
 
     const timeSetInCurrentTrack = localizedString('global:timeSetInCurrentTrack', {
       lng: interaction.locale,

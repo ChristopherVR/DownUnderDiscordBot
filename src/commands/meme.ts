@@ -1,7 +1,7 @@
 import { ApplicationCommandType, CommandInteraction } from 'discord.js';
-import { localizedString } from '../i18n';
+import { localizedString } from '../helpers/localization';
 import { Command } from '../types';
-import getLocalizations from '../i18n/discordLocalization';
+import getLocalizations from '../helpers/multiMapLocalization';
 
 export const Meme: Command<CommandInteraction> = {
   name: localizedString('global:meme'),

@@ -1,9 +1,10 @@
 import { EmbedBuilder } from '@discordjs/builders';
 import { ChatInputCommandInteraction, Colors } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Queue: PlayerCommand = {
   name: localizedString('global:queue'),
@@ -23,7 +24,8 @@ export const Queue: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
 
     if (!queue) {
       const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
@@ -47,7 +49,7 @@ export const Queue: PlayerCommand = {
 
     const methods = ['', '🔁', '🔂'];
 
-    const songs = queue.tracks.length;
+    const songs = queue.tracks.data.length;
 
     const nextSongs =
       songs > 5
@@ -57,7 +59,7 @@ export const Queue: PlayerCommand = {
     const tracks = queue.tracks.map(
       (track, i) =>
         `**${i + 1}** - ${track.title} | ${track.author} ${localizedString('global:requestedBy', {
-          by: track.requestedBy.username,
+          by: track?.requestedBy?.username,
           lng: interaction.locale,
         })}`,
     );
@@ -76,7 +78,7 @@ export const Queue: PlayerCommand = {
         iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }),
       })
       .setDescription(
-        `${localizedString('global:current')} ${queue.current.title}\n\n${tracks
+        `${localizedString('global:current')} ${queue.currentTrack?.title}\n\n${tracks
           .slice(0, 5)
           .join('\n')}\n\n${nextSongs}`,
       )

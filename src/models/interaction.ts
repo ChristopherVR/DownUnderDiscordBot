@@ -3,13 +3,16 @@ import { ChatInputCommandInteraction, InteractionEditReplyOptions, InteractionRe
 export default class Interaction {
   private interaction: ChatInputCommandInteraction;
 
-  private options: InteractionReplyOptions | InteractionEditReplyOptions = {};
+  private options: InteractionReplyOptions | InteractionEditReplyOptions | undefined;
 
   constructor(interaction: ChatInputCommandInteraction) {
     this.interaction = interaction;
   }
 
   public setOptions(interactionOptions: InteractionReplyOptions | InteractionEditReplyOptions) {
+    if (!this.options) {
+      throw new Error('The options have already been set.');
+    }
     this.options = interactionOptions;
     return this;
   }

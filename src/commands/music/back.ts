@@ -1,8 +1,9 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../i18n';
+import { localizedString } from '../../helpers/localization';
 import { PlayerCommand } from '../../types';
 
-import getLocalizations from '../../i18n/discordLocalization';
+import getLocalizations from '../../helpers/multiMapLocalization';
+import { useDefaultPlayer } from '../../helpers/discord';
 
 export const Back: PlayerCommand = {
   name: localizedString('global:back'),
@@ -23,9 +24,11 @@ export const Back: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const queue = global.player.getQueue(interaction.guildId);
 
-    if (!queue?.playing) {
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId);
+
+    if (!queue?.isPlaying()) {
       const loc = localizedString('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
@@ -35,7 +38,7 @@ export const Back: PlayerCommand = {
       });
     }
 
-    if (!queue.previousTracks[1]) {
+    if (!queue.history.previousTrack) {
       const loc = localizedString('global:noMusicPlayedPreviously', {
         lng: interaction.locale,
       });
@@ -45,7 +48,7 @@ export const Back: PlayerCommand = {
       });
     }
 
-    await queue.back();
+    await queue.history.back();
     const loc = localizedString('global:playingPreviousTrack', {
       lng: interaction.locale,
     });

@@ -3,7 +3,6 @@ import { Meme } from './commands/meme';
 import { Back } from './commands/music/back';
 import { Clear } from './commands/music/clear';
 import { Controller } from './commands/music/controller';
-import { Filter } from './commands/music/filter';
 import { Jump } from './commands/music/jump';
 import { Loop } from './commands/music/loop';
 import { NowPlaying } from './commands/music/nowplaying';
@@ -26,7 +25,6 @@ export const getCommands = () => [
   Back,
   Clear,
   Controller,
-  Filter,
   Jump,
   Loop,
   NowPlaying,
