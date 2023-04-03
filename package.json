@@ -18,7 +18,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@discord-player/equalizer": "^0.1.4-dev.1",
+    "@discord-player/equalizer": "^0.2.1",
     "@discord-player/extractor": "^4.1.2",
     "@discordjs/builders": "^1.5.0",
     "@discordjs/opus": "^0.9.0",
