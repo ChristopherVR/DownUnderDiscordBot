@@ -19,7 +19,7 @@
   "description": "",
   "dependencies": {
     "@discord-player/equalizer": "^0.2.1",
-    "@discord-player/extractor": "^4.2.2",
+    "@discord-player/extractor": "^4.3.0",
     "@discordjs/builders": "^1.6.3",
     "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": "^0.16.0",
