@@ -42,7 +42,7 @@ export const Remove: PlayerCommand = {
     }
     const number = interaction.options.getNumber('number');
     const track = interaction.options.getString('song');
-    const player = useDefaultPlayer();
+    const player = await useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {

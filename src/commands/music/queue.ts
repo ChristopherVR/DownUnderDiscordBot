@@ -24,7 +24,7 @@ export const Queue: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const player = useDefaultPlayer();
+    const player = await useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue) {

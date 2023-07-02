@@ -58,9 +58,10 @@ export const Play: PlayerCommand = {
         ephemeral: true,
       });
     }
-    const player = useDefaultPlayer();
+    const player = await useDefaultPlayer();
     const res = await player.search(song, {
       requestedBy: interaction.member as GuildMember,
+      ignoreCache: true,
       searchEngine: QueryType.YOUTUBE,
     });
 
