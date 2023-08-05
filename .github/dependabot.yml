@@ -10,8 +10,8 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
-  # Maintain dependencies for the npm project
-  - package-ecosystem: 'npm'
+  # Maintain dependencies for the yarn project
+  - package-ecosystem: 'yarn'
     directory: '/'
     schedule:
       interval: 'weekly'
