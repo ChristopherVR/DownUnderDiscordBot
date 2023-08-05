@@ -18,6 +18,6 @@ jobs:
           node-version: 16.x
       - name: yarn ci, build and test
         run: |
-          yarn ci
+          yarn install
           yarn run build --if-present
           yarn test
