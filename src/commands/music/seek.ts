@@ -50,7 +50,7 @@ export const Seek: PlayerCommand = {
 
     const timeToMS = ms(interaction.options.getString('time'));
 
-    if (timeToMS >= (queue.currentTrack?.durationMS ?? 0)) {
+    if (queue.currentTrack?.durationMS !== undefined && timeToMS >= queue.currentTrack.durationMS) {
       const indicatedTimeIsTooHigh = localizedString('global:indicatedTimeIsTooHigh', {
         lng: interaction.locale,
       });
