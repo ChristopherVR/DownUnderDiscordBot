@@ -16,11 +16,6 @@ const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Pro
 export default (client: Client): void => {
   client.on('interactionCreate', async (interaction) => {
     if (interaction.type !== InteractionType.ApplicationCommand) {
-      logger(
-        'Client tried to interaction with a type: ',
-        interaction.type,
-        '. This type is not supported by the bot.',
-      ).error();
       return;
     }
 
