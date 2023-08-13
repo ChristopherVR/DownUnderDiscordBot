@@ -24,8 +24,8 @@ import Hello from '../commands/misc/hello.js';
 export const COMMANDS = [
   Back,
   Clear,
-  // Controller,
-  // Jump,
+  Controller,
+  Jump,
   Loop,
   NowPlaying,
   Pause,
