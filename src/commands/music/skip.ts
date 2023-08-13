@@ -1,23 +1,22 @@
 import { ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
 
-import getLocalizations from '../../helpers/multiMapLocalization';
-import { useDefaultPlayer } from '../../helpers/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
 
 export const Skip: PlayerCommand = {
   name: localizedString('global:skip'),
   description: localizedString('global:skipTrackDesc'),
   nameLocalizations: getLocalizations('global:skip'),
   descriptionLocalizations: getLocalizations('global:skipTrackDesc'),
-  voiceChannel: true,
 
   run: async (interaction: ChatInputCommandInteraction) => {
-    const genericError = localizedString('global:genericError', {
-      lng: interaction.locale,
-    });
+    const { localize } = useLocalizedString(interaction.locale);
+    const genericError = localize('global:genericError');
     if (!interaction.guildId) {
-      console.log('GuildId is undefined');
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
 
       return await interaction.reply({
         content: genericError,
@@ -28,9 +27,7 @@ export const Skip: PlayerCommand = {
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
-      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
+      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
       return await interaction.reply({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
@@ -38,7 +35,7 @@ export const Skip: PlayerCommand = {
     }
 
     const success = queue.node.skip();
-    const currentTrackSkipped = localizedString('global:currentTrackSkipped', {
+    const currentTrackSkipped = localize('global:currentTrackSkipped', {
       lng: interaction.locale,
       title: queue.currentTrack?.title,
     });

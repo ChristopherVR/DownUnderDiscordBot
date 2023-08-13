@@ -1,17 +1,17 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
-import { ms } from '../../helpers/ms';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
+import { ms } from '../../helpers/time/ms.js';
 
-import getLocalizations from '../../helpers/multiMapLocalization';
-import { useDefaultPlayer } from '../../helpers/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
 
 export const Seek: PlayerCommand = {
   name: localizedString('global:seek'),
   description: localizedString('global:skipBackAndForth'),
   nameLocalizations: getLocalizations('global:seek'),
   descriptionLocalizations: getLocalizations('global:skipBackAndForth'),
-  voiceChannel: true,
   options: [
     {
       name: localizedString('global:time'),
@@ -23,12 +23,11 @@ export const Seek: PlayerCommand = {
     },
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId) {
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
+      const genericError = localize('global:genericError');
 
-      console.log('GuildId is undefined');
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
       return await interaction.reply({
         content: genericError,
         ephemeral: true,
@@ -38,9 +37,7 @@ export const Seek: PlayerCommand = {
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
-      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
+      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
 
       return await interaction.reply({
         content: noMusicCurrentlyPlaying,
@@ -51,12 +48,8 @@ export const Seek: PlayerCommand = {
     const timeToMS = ms(interaction.options.getString('time'));
 
     if (queue.currentTrack?.durationMS !== undefined && timeToMS >= queue.currentTrack.durationMS) {
-      const indicatedTimeIsTooHigh = localizedString('global:indicatedTimeIsTooHigh', {
-        lng: interaction.locale,
-      });
-      const validSkipHint = localizedString('global:validSkipHint', {
-        lng: interaction.locale,
-      });
+      const indicatedTimeIsTooHigh = localize('global:indicatedTimeIsTooHigh');
+      const validSkipHint = localize('global:validSkipHint');
 
       return await interaction.reply({
         content: `${indicatedTimeIsTooHigh}\n${validSkipHint}`,
@@ -68,7 +61,7 @@ export const Seek: PlayerCommand = {
 
     const longMs = ms(timeToMS);
 
-    const timeSetInCurrentTrack = localizedString('global:timeSetInCurrentTrack', {
+    const timeSetInCurrentTrack = localize('global:timeSetInCurrentTrack', {
       lng: interaction.locale,
       time: longMs,
     });

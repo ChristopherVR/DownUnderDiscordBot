@@ -3,24 +3,26 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   EmbedBuilder,
-  PermissionsBitField,
   ApplicationCommandType,
   ButtonStyle,
   ChatInputCommandInteraction,
   MessageActionRowComponentBuilder,
   ChannelType,
 } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
-import getLocalizations from '../../helpers/multiMapLocalization';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { ControllerAction } from '../../enums/controller.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
+import { VolumeInputInteraction } from '../../models/commands/volume.js';
 
 export const Controller: PlayerCommand = {
   name: localizedString('global:controller'),
   description: localizedString('global:setControllerChannel'),
   nameLocalizations: getLocalizations('global:controller'),
   descriptionLocalizations: getLocalizations('global:setControllerChannel'),
-  voiceChannel: false,
-  permissions: PermissionsBitField.Flags.ManageMessages,
+
   options: [
     {
       name: localizedString('global:controller'),
@@ -33,11 +35,10 @@ export const Controller: PlayerCommand = {
   ],
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: ChatInputCommandInteraction) => {
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guild) {
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
-      console.log('GuildId is undefined');
+      const genericError = localize('global:genericError');
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
       return await interaction.reply({
         content: genericError,
         ephemeral: true,
@@ -45,140 +46,79 @@ export const Controller: PlayerCommand = {
     }
     const { channel } = interaction;
     if (!channel) {
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
-      console.log('channel is undefined');
+      const genericError = localize('global:noChannelFound');
+      logger('Unable to find channel to control.').error();
       return await interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
     if (channel.type !== ChannelType.GuildText) {
-      const loc = localizedString('global:haveToSendToTextChannel', {
-        lng: interaction.locale,
-      });
+      const response = localize('global:haveToSendToTextChannel');
       return await interaction.reply({
-        content: loc,
+        content: response,
         ephemeral: true,
       });
     }
 
     if (!interaction.member) {
-      console.log('member is undefined');
-      const loc = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
+      const response = localize('global:genericError');
       return await interaction.reply({
-        content: loc,
+        content: response,
         ephemeral: true,
       });
     }
 
     const back = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:back', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'back' }))
+      .setLabel(localize('global:back'))
+      .setCustomId(ControllerAction.Back)
       .setStyle(ButtonStyle.Primary);
 
     const skip = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:skip', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'skip' }))
+      .setLabel(localize('global:skip'))
+      .setCustomId(ControllerAction.Skip)
       .setStyle(ButtonStyle.Primary);
 
     const resumepause = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:resumeAndPause', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'resume&pause' }))
+      .setLabel(localize('global:resumeAndPause'))
+      .setCustomId(ControllerAction.ResumePause)
       .setStyle(ButtonStyle.Danger);
 
     const save = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:save', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'savetrack' }))
+      .setLabel(localize('global:save'))
+      .setCustomId(ControllerAction.Save)
       .setStyle(ButtonStyle.Success);
 
     const volumeup = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:volumeUp', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'volumeup' }))
+      .setLabel(localize('global:volumeUp'))
+      .setCustomId(ControllerAction.VolumeUp)
       .setStyle(ButtonStyle.Primary);
 
     const volumedown = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:volumeDown', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'volumedown' }))
+      .setLabel(localize('global:volumeDown'))
+      .setCustomId(ControllerAction.VolumeDown)
       .setStyle(ButtonStyle.Primary);
 
-    const loop = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:loop', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'loop' }))
-      .setStyle(ButtonStyle.Danger);
+    const loop = new ButtonBuilder().setLabel(localize('global:loop')).setCustomId('loop').setStyle(ButtonStyle.Danger);
 
     const np = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:nowPlaying', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'nowplaying' }))
+      .setLabel(localize('global:nowPlaying'))
+      .setCustomId(ControllerAction.NowPlaying)
       .setStyle(ButtonStyle.Secondary);
 
     const queuebutton = new ButtonBuilder()
-      .setLabel(
-        localizedString('global:queue', {
-          lng: interaction.locale,
-        }),
-      )
-      .setCustomId(JSON.stringify({ ffb: 'queue' }))
+      .setLabel(localize('global:queue'))
+      .setCustomId(ControllerAction.Queue)
       .setStyle(ButtonStyle.Secondary);
 
     const embed = new EmbedBuilder()
-      .setTitle(
-        localizedString('global:controlMusicWithButtonsBelow', {
-          lng: interaction.locale,
-        }),
-      )
+      .setTitle(localize('global:controlMusicWithButtonsBelow'))
       .setImage(interaction.guild.iconURL({ size: 4096 }))
-      .setColor('#36393e')
+      .setColor('Random')
       .setFooter({
-        text: localizedString('global:defaultFooter', {
-          lng: interaction.locale,
-        }),
+        text: localize('global:defaultFooter'),
         iconURL: interaction.member.avatar ?? undefined,
       });
-
-    const loc = localizedString('global:genericError', {
-      lng: interaction.locale,
-      name: channel.name,
-    });
-    await interaction.reply({
-      content: loc,
-      ephemeral: true,
-    });
 
     const row1 = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
       back,
@@ -193,7 +133,66 @@ export const Controller: PlayerCommand = {
       save,
       volumeup,
     );
-    return await channel.send({ embeds: [embed], components: [row1, row2] });
+
+    const collector = interaction.channel!.createMessageComponentCollector({
+      time: 15000,
+      filter: (m) => m.member.id === interaction.user.id,
+    });
+
+    collector.on('collect', async (inter) => {
+      if ('customId' in inter && typeof inter.customId === 'string') {
+        const { command } = await import('../../helpers/discord/command.js');
+        let commandName: string | undefined;
+        await interaction.deleteReply();
+        switch (inter.customId as ControllerAction) {
+          case ControllerAction.Back: {
+            commandName = localizedString('global:back');
+            break;
+          }
+          case ControllerAction.Skip: {
+            commandName = localizedString('global:skip');
+            break;
+          }
+          case ControllerAction.Save: {
+            commandName = localizedString('global:save');
+            break;
+          }
+          case ControllerAction.ResumePause: {
+            const player = await useDefaultPlayer();
+            const queue = player.nodes.get(interaction.guildId!);
+            commandName = queue?.isPlaying() ? localizedString('global:pause') : localizedString('global:resume');
+            break;
+          }
+          case ControllerAction.VolumeUp: {
+            await command(localizedString('global:volumeUp'))
+              .setup({ ...interaction, volume: 40, increase: true } as VolumeInputInteraction)
+              .run();
+            break;
+          }
+          case ControllerAction.VolumeDown: {
+            await command(localizedString('global:volumeDown'))
+              .setup({ ...interaction, volume: 40, increase: true } as VolumeInputInteraction)
+              .run();
+            break;
+          }
+          case ControllerAction.NowPlaying: {
+            commandName = localizedString('global:nowplaying');
+            break;
+          }
+          case ControllerAction.Queue: {
+            commandName = localizedString('global:queue');
+            break;
+          }
+        }
+        if (commandName) {
+          await command(commandName).setup(interaction).run();
+        }
+      }
+
+      collector.stop();
+    });
+
+    await channel.send({ embeds: [embed], components: [row1, row2] });
   },
 };
 

@@ -1,19 +1,12 @@
 import {
-  BaseInteraction,
   ChatInputApplicationCommandData,
   ChatInputCommandInteraction,
-  Client,
   InteractionResponse,
   Message,
+  BaseInteraction,
 } from 'discord.js';
 
-export type ClientExtended = Client<boolean> & {
-  debug?: boolean;
-};
-
 export type PlayerCommand = ChatInputApplicationCommandData & {
-  voiceChannel: boolean;
-  permissions?: bigint;
   run: (
     interaction: ChatInputCommandInteraction,
   ) =>

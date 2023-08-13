@@ -1,27 +1,27 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
+import { PlayerCommand } from '../../models/discord.js';
 
-import getLocalizations from '../../helpers/multiMapLocalization';
-import { useDefaultPlayer } from '../../helpers/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
 
 export const Back: PlayerCommand = {
   name: localizedString('global:back'),
   description: localizedString('global:backToPreviousSong'),
   nameLocalizations: getLocalizations('global:back'),
   descriptionLocalizations: getLocalizations('global:backToPreviousSong'),
-  voiceChannel: true,
+
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: ChatInputCommandInteraction) => {
-    const genericError = localizedString('global:genericError', {
-      lng: interaction.locale,
-    });
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId) {
-      console.log('GuildId is undefined');
-
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
       return await interaction.reply({
-        content: genericError,
-        ephemeral: true,
+        content: localize('global:genericError', {
+          lng: interaction.locale,
+          ephemeral: true,
+        }),
       });
     }
 
@@ -29,30 +29,24 @@ export const Back: PlayerCommand = {
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
-      const loc = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
+      const response = localize('global:noMusicCurrentlyPlaying');
       return await interaction.reply({
-        content: loc,
+        content: response,
         ephemeral: true,
       });
     }
 
     if (!queue.history.previousTrack) {
-      const loc = localizedString('global:noMusicPlayedPreviously', {
-        lng: interaction.locale,
-      });
+      const response = localize('global:noMusicPlayedPreviously');
       return await interaction.reply({
-        content: loc,
+        content: response,
         ephemeral: true,
       });
     }
 
     await queue.history.back();
-    const loc = localizedString('global:playingPreviousTrack', {
-      lng: interaction.locale,
-    });
-    return await interaction.reply({ content: loc });
+    const response = localize('global:playingPreviousTrack');
+    return await interaction.reply({ content: response });
   },
 };
 

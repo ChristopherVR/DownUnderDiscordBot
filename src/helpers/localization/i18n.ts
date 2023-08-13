@@ -1,20 +1,22 @@
 import i18next from 'i18next';
 import HttpApi, { HttpBackendOptions } from 'i18next-http-backend';
 import * as dotenv from 'dotenv';
+import { logger } from '../logger/logger.js';
 
 dotenv.config();
 
 const hostname = process.env.HOST;
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-console.log('host is', hostname);
-console.log('port is ', port);
+const protocol = process.env.PROTOCOL ?? 'http';
+
 const instance = i18next.use(HttpApi).createInstance();
-export const initInstance = async () =>
+
+export const i18n = async () =>
   await instance.use(HttpApi).init<HttpBackendOptions>(
     {
       fallbackLng: 'en-US',
       lng: 'en-US',
-      debug: true,
+      debug: process.env.NODE_ENV === 'development',
       fallbackNS: 'global',
       defaultNS: 'global',
       load: 'currentOnly',
@@ -28,16 +30,12 @@ export const initInstance = async () =>
           credentials: 'same-origin',
           cache: 'default',
         },
-        loadPath: `http://${hostname}:${port}/locales/{{lng}}/{{ns}}.json`,
+        loadPath: `${protocol}://${hostname}:${port}/locales/{{lng}}/{{ns}}.json`,
       },
     },
-    (error) => {
-      if (error) {
-        console.log(error);
-      }
-    },
+    (error) => error && logger(error).error(),
   );
 
-global.instance = instance;
+globalThis.localization = instance;
 
-export default initInstance;
+export default i18n;

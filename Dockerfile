@@ -21,4 +21,4 @@ ENV NODE_PATH=./dist
 
 RUN npm run build
 
-CMD ["node", "./dist/bot.js"]
+CMD ["node", "./dist/main.js"]

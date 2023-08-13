@@ -1,24 +1,23 @@
 import { EmbedBuilder } from '@discordjs/builders';
 import { ChatInputCommandInteraction, Colors } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
 
-import getLocalizations from '../../helpers/multiMapLocalization';
-import { useDefaultPlayer } from '../../helpers/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
 
 export const Queue: PlayerCommand = {
   name: localizedString('global:queue'),
   description: localizedString('global:getSongsFromQueue'),
   nameLocalizations: getLocalizations('global:queue'),
   descriptionLocalizations: getLocalizations('global:getSongsFromQueue'),
-  voiceChannel: true,
 
   run: async (interaction: ChatInputCommandInteraction) => {
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId) {
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
-      console.log('GuildId is undefined');
+      const genericError = localize('global:genericError');
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
       return await interaction.reply({
         content: genericError,
         ephemeral: true,
@@ -28,9 +27,7 @@ export const Queue: PlayerCommand = {
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue) {
-      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
+      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
       return await interaction.reply({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
@@ -38,9 +35,7 @@ export const Queue: PlayerCommand = {
     }
 
     if (!queue.tracks[0]) {
-      const noTrackInQueue = localizedString('global:noTrackInQueue', {
-        lng: interaction.locale,
-      });
+      const noTrackInQueue = localize('global:noTrackInQueue');
       return await interaction.reply({
         content: noTrackInQueue,
         ephemeral: true,
@@ -53,18 +48,18 @@ export const Queue: PlayerCommand = {
 
     const nextSongs =
       songs > 5
-        ? localizedString('global:queueAndOtherSongsInPlaylist', { count: songs - 5, lng: interaction.locale })
-        : localizedString('global:inPlaylistNrSongs', { songs, lng: interaction.locale });
+        ? localize('global:queueAndOtherSongsInPlaylist', { count: songs - 5, lng: interaction.locale })
+        : localize('global:inPlaylistNrSongs', { songs, lng: interaction.locale });
 
     const tracks = queue.tracks.map(
       (track, i) =>
-        `**${i + 1}** - ${track.title} | ${track.author} ${localizedString('global:requestedBy', {
+        `**${i + 1}** - ${track.title} | ${track.author} ${localize('global:requestedBy', {
           by: track?.requestedBy?.username,
           lng: interaction.locale,
         })}`,
     );
 
-    const severQueue = localizedString('global:severQueue', {
+    const severQueue = localize('global:severQueue', {
       lng: interaction.locale,
       guild: interaction.guild?.name ?? '',
       value: methods[queue.repeatMode],
@@ -78,15 +73,13 @@ export const Queue: PlayerCommand = {
         iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }),
       })
       .setDescription(
-        `${localizedString('global:current')} ${queue.currentTrack?.title}\n\n${tracks
+        `${localize('global:current')} ${queue.currentTrack?.title}\n\n${tracks
           .slice(0, 5)
           .join('\n')}\n\n${nextSongs}`,
       )
       .setTimestamp()
       .setFooter({
-        text: localizedString('global:defaultFooter', {
-          lng: interaction.locale,
-        }),
+        text: localize('global:defaultFooter'),
         iconURL: interaction.member?.avatar ?? undefined,
       });
 

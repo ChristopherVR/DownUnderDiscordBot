@@ -3,6 +3,8 @@ import { i18n } from 'i18next';
 type Localization = i18n;
 
 declare global {
+  // eslint-disable-next-line vars-on-top, no-var
+  var localization: Localization;
   namespace NodeJS {
     // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
     interface ProcessEnv {
@@ -11,6 +13,7 @@ declare global {
       OPEN_AI_TOKEN?: string;
       HOST: string;
       PORT: string;
+      PROTOCOL: 'http' | 'https';
     }
   }
 }

@@ -1,17 +1,18 @@
 import { QueryType } from 'discord-player';
 import { ApplicationCommandOptionType, ChatInputCommandInteraction, GuildMember } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
 
-import getLocalizations from '../../helpers/multiMapLocalization';
-import { useDefaultPlayer } from '../../helpers/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
 
 export const PlayNext: PlayerCommand = {
   name: localizedString('global:playnext'),
   description: localizedString('global:songToPlayNext'),
   nameLocalizations: getLocalizations('global:playnext'),
   descriptionLocalizations: getLocalizations('global:songToPlayNext'),
-  voiceChannel: true,
+
   options: [
     {
       name: localizedString('global:playnext'),
@@ -24,11 +25,10 @@ export const PlayNext: PlayerCommand = {
   ],
 
   run: async (interaction: ChatInputCommandInteraction) => {
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId) {
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
-      console.log('GuildId is undefined');
+      const genericError = localize('global:genericError');
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
       return await interaction.reply({
         content: genericError,
         ephemeral: true,
@@ -38,11 +38,9 @@ export const PlayNext: PlayerCommand = {
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
-      const loc = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
+      const response = localize('global:noMusicCurrentlyPlaying');
       return await interaction.reply({
-        content: loc,
+        content: response,
         ephemeral: true,
       });
     }
@@ -54,10 +52,8 @@ export const PlayNext: PlayerCommand = {
       searchEngine: QueryType.AUTO,
     });
 
-    if (!res?.tracks?.length) {
-      const noResultsFound = localizedString('global:noTracksFoundQueue', {
-        lng: interaction.locale,
-      });
+    if (!res.tracks.length) {
+      const noResultsFound = localize('global:noTracksFoundQueue');
       return await interaction.reply({
         content: noResultsFound,
         ephemeral: true,
@@ -65,9 +61,7 @@ export const PlayNext: PlayerCommand = {
     }
 
     if (res.playlist) {
-      const playlistsNotSupported = localizedString('global:playlistsNotSupported', {
-        lng: interaction.locale,
-      });
+      const playlistsNotSupported = localize('global:playlistsNotSupported');
       return await interaction.reply({
         content: playlistsNotSupported,
         ephemeral: true,
@@ -75,9 +69,7 @@ export const PlayNext: PlayerCommand = {
     }
 
     queue.insertTrack(res.tracks[0], 0);
-    const trackInsertedIntoQueue = localizedString('global:trackInsertedIntoQueue', {
-      lng: interaction.locale,
-    });
+    const trackInsertedIntoQueue = localize('global:trackInsertedIntoQueue');
     return await interaction.reply({
       content: trackInsertedIntoQueue,
       ephemeral: true,

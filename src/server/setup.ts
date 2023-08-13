@@ -3,13 +3,16 @@ import * as dotenv from 'dotenv';
 import express from 'express';
 import path from 'path';
 import { rateLimit } from 'express-rate-limit';
+import { logger } from '../helpers/logger/logger.js';
 
 dotenv.config();
 
 // eslint-disable-next-line import/prefer-default-export
-export const initServer = async (cb: () => Promise<void> | Awaitable<void>) => {
+export const setup = async (callback: () => Promise<void> | Awaitable<void>) => {
   const hostname = process.env.HOST;
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+  const protocol = process.env.PROTOCOL ?? 'http';
+
   if (!hostname || !port) {
     throw new Error('Need to specify a Hostname and Port in your env file.');
   }
@@ -17,13 +20,13 @@ export const initServer = async (cb: () => Promise<void> | Awaitable<void>) => {
   const server = express();
 
   server.set('title', 'Down Under Discord Bot');
-  server.use('/locales', express.static(`${__dirname}/locales`));
+  server.use('/locales', express.static(path.join(path.dirname(''), `/assets/locales`)));
   server.set('port', port);
   server.set('ipaddr', hostname);
-  server.use('/components', express.static(`${__dirname}/components`));
-  server.use('/js', express.static(`${__dirname}/js`));
-  server.use('/icons', express.static(`${__dirname}/icons`));
-  server.set('views', `${__dirname}/views`);
+  server.use('/components', express.static(path.join(path.dirname(''), `/components`)));
+  server.use('/js', express.static(path.join(path.dirname(''), `/js`)));
+  server.use('/icons', express.static(path.join(path.dirname(''), `/icons`)));
+  server.set('views', path.join(path.dirname(''), `/views`));
 
   server.use(
     rateLimit({
@@ -32,12 +35,10 @@ export const initServer = async (cb: () => Promise<void> | Awaitable<void>) => {
     }),
   );
 
-  server.get('/', (_req, res) => {
-    res.sendFile(path.join(__dirname, '/index.html'));
-  });
+  server.get('/', (_, res) => res.sendFile(path.join(path.dirname('/index.html'))));
 
   server.listen(port, hostname, async () => {
-    await cb();
-    console.log(`Server running at http://${hostname}:${port}/`);
+    await callback();
+    logger(`Server is running at ${protocol}://${hostname}:${port}/`).info();
   });
 };

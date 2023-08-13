@@ -1,23 +1,22 @@
 import { ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
 
-import getLocalizations from '../../helpers/multiMapLocalization';
-import { useDefaultPlayer } from '../../helpers/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { DefaultLoggerMessage, logger } from '../../helpers/logger/logger.js';
 
 export const Stop: PlayerCommand = {
   name: localizedString('global:stop'),
   description: localizedString('global:stopTrack'),
   nameLocalizations: getLocalizations('global:stop'),
   descriptionLocalizations: getLocalizations('global:stopTrack'),
-  voiceChannel: true,
 
   run: async (interaction: ChatInputCommandInteraction) => {
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId) {
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
-      console.log('GuildId is undefined');
+      const genericError = localize('global:genericError');
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
       return await interaction.reply({
         content: genericError,
         ephemeral: true,
@@ -27,9 +26,7 @@ export const Stop: PlayerCommand = {
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
-      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
+      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
       return await interaction.reply({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
@@ -38,11 +35,9 @@ export const Stop: PlayerCommand = {
 
     queue.tracks.clear();
     queue.delete();
-    const loc = localizedString('global:musicStopped', {
-      lng: interaction.locale,
-    });
+    const response = localize('global:musicStopped');
     return await interaction.reply({
-      content: loc,
+      content: response,
     });
   },
 };

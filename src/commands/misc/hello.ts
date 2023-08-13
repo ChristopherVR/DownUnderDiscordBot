@@ -1,7 +1,7 @@
 import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../helpers/localization';
-import { Command } from '../types';
-import getLocalizations from '../helpers/multiMapLocalization';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { Command } from '../../models/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
 
 const Hello: Command<ChatInputCommandInteraction> = {
   name: localizedString('global:hello'),
@@ -12,7 +12,7 @@ const Hello: Command<ChatInputCommandInteraction> = {
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: ChatInputCommandInteraction) => {
     const content = 'OI, OI, OI, OI!';
-    await interaction.followUp({
+    await interaction.reply({
       ephemeral: true,
       content,
     });
