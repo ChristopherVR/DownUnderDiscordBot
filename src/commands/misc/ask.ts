@@ -31,9 +31,13 @@ export const Ask: Command<ChatInputCommandInteraction> = {
     },
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.channel) {
-      const { localize } = useLocalizedString(interaction.locale);
       await interaction.followUp(localize('channelNotFound'));
+    }
+
+    if (!process.env.OPEN_AI_TOKEN) {
+      await interaction.followUp(localize('commandDisabled'));
     }
 
     const input = interaction.options.getString('input') ?? '';

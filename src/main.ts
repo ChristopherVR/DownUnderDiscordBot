@@ -14,11 +14,11 @@ import {
 } from '@discord-player/extractor';
 import { useLocalizedString } from './helpers/localization/localizedString.js';
 import { logger } from './helpers/logger/logger.js';
-import { DefaultLoggerMessage } from './constants/logger.js';
+import { DefaultLoggerMessage } from './enums/logger.js';
 
 const token = process.env.CLIENT_TOKEN;
 
-process.on('uncaughtException', (err) => console.error(err));
+process.on('uncaughtException', (err) => logger(err).error());
 
 const listeners = ['ready', 'slashCommand'];
 
@@ -26,9 +26,6 @@ const init = async () => {
   await i18n();
 
   const client = new Client({
-    rest: {
-      version: '10',
-    },
     intents:
       GatewayIntentBits.GuildMessages |
       GatewayIntentBits.MessageContent |

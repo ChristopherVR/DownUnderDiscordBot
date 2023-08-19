@@ -16,7 +16,7 @@ import { ControllerAction } from '../../enums/controller.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { VolumeInputInteraction } from '../../models/commands/volume.js';
-import { DefaultLoggerMessage } from '../../constants/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const Controller: PlayerCommand = {
   name: localizedString('global:controller'),

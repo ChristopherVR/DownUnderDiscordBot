@@ -6,7 +6,7 @@ import { PlayerCommand } from '../../models/discord.js';
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../constants/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const PlayNext: PlayerCommand = {
   name: localizedString('global:playnext'),

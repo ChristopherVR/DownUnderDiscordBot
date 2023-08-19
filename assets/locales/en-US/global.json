@@ -135,6 +135,7 @@
   "controller": "controller",
   "setControllerChannel": "Sets the controller channel",
   "setTheChannelYouWantToSendTo": "The specified text channel that the bot will use.",
+  "commandDisabled": "This command is currently disabled. Please try again later.",
   "haveToSendToTextChannel": "This command can only be send to a text channel.",
   "connectToVoiceChannelToUseBot": "You need to connect to a voice channel for this command to work.",
   "back": "back",

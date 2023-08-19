@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, Client, GatewayDispatchEvents, InteractionType } from 'discord.js';
 import { command } from './command.js';
 import { logger } from '../logger/logger.js';
-import { DefaultLoggerMessage } from '../../constants/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   try {

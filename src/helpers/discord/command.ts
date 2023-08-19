@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { COMMANDS } from '../../constants/commands.js';
 import { useLocalizedString } from '../localization/localizedString.js';
 import { logger } from '../logger/logger.js';
-import { DefaultLoggerMessage } from '../../constants/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const command = (name: string) => {
   const setup = (interaction: ChatInputCommandInteraction) => {

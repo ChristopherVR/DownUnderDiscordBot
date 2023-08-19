@@ -13,7 +13,7 @@ import { LoopOption } from '../../models/commands/loop.js';
 import { QueueRepeatMode } from 'discord-player';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../constants/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const Loop: PlayerCommand = {
   name: localizedString('global:loop'),

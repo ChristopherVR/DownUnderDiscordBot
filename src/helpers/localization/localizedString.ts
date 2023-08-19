@@ -1,5 +1,7 @@
 import { Locale } from 'discord.js';
 import { DEFAULT_LANGUAGE } from '../../constants/localization.js';
+import { logger } from '../logger/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 type LocalizedStringOptions = Record<string, unknown>;
 
@@ -22,7 +24,7 @@ export const localizedString: (key: string, args?: LocalizedStringOptions) => st
   }
 
   if (!global.localization) {
-    console.error('Failed to retrieve localization value. The global localization instance is not available.');
+    logger(DefaultLoggerMessage.LocaleInstanceNotAvailable).error();
 
     if (params?.strict) {
       throw new TypeError('Failed to retrieve localization value. The global localization instance is not available.');

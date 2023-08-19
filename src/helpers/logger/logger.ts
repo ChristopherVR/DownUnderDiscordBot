@@ -1,6 +1,6 @@
-import { DefaultLoggerMessage } from '../../constants/logger';
+import { DefaultLoggerMessage } from '../../enums/logger';
 
-export const logger = (message: string | DefaultLoggerMessage, ...optionalParams: unknown[]) => {
+export const logger = (message: string | DefaultLoggerMessage | Error, ...optionalParams: unknown[]) => {
   // TODO: Replace console logging with a proper logger.
   return {
     trace: () => false && process.env.NODE_ENV === 'development' && console.trace(message, optionalParams),

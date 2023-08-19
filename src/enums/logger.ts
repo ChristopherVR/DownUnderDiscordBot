@@ -8,4 +8,5 @@ export const enum DefaultLoggerMessage {
   SomethingWentWrongTryingToFindTrack = 'Something went wrong trying to find tracks. Object: ',
   UnableToFindSlashCommand = 'Unable to find slash command with name - ',
   UnableToHandleCommand = 'An error occurred trying to handle the command. Error: ',
+  LocaleInstanceNotAvailable = 'Failed to retrieve localization value. The global localization instance is not available.',
 }

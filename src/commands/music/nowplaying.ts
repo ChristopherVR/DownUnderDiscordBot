@@ -20,7 +20,7 @@ import { NowPlayingAction } from '../../enums/nowplaying.js';
 import Save from './save.js';
 import { Loop } from './loop.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../constants/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const NowPlaying: PlayerCommand = {
   name: localizedString('global:nowplaying'),

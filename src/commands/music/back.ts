@@ -5,7 +5,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../constants/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const Back: PlayerCommand = {
   name: localizedString('global:back'),
