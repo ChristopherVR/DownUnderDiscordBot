@@ -7,7 +7,7 @@ const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Pro
   try {
     await command(interaction.commandName).setup(interaction).run();
   } catch (er) {
-    if (!interaction.replied) {
+    if (!interaction.replied && !interaction.deferred) {
       await interaction.reply('An internal server error occurred. Unable to handle request.');
     }
     logger(DefaultLoggerMessage.UnableToHandleCommand, er).error();
