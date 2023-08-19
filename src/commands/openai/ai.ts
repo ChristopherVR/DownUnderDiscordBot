@@ -1,34 +1,27 @@
-import { Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
+import { CreateChatCompletionRequestMessage } from 'openai/resources/chat';
 
-export const ask = async (
-  prompt: string | undefined,
-  conversationId?: number | string,
-): Promise<{
-  answer: string | undefined;
-  conversationId: string | undefined;
-}> => {
-  const configuration = new Configuration({
-    apiKey: process.env.OPEN_AI_TOKEN,
+type UserId = number | string;
+
+const conversations = new Map<UserId, CreateChatCompletionRequestMessage[]>();
+
+export const ask = async (prompt: string, userId: number | string): Promise<string | undefined> => {
+  const openAI = new OpenAI({ apiKey: process.env.OPEN_AI_TOKEN! });
+
+  const messages = conversations.get(userId) ?? [];
+
+  messages.push({
+    content: prompt,
+    role: 'user',
   });
-  const openAI = new OpenAIApi(configuration);
-  const response = await openAI.createCompletion({
+  const compeltion = await openAI.chat.completions.create({
+    messages: messages,
     model: 'gpt-3.5-turbo',
-    prompt,
-    temperature: 0.7,
-    max_tokens: 2048,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
-    ...(conversationId ? { context: conversationId } : {}),
   });
 
-  const answer = response.data.choices[0].text?.trim();
-  const id = response.headers['x-ctx-conversation-id'];
+  const response = compeltion.choices[0].message.content?.trim();
 
-  return {
-    answer,
-    conversationId: id,
-  };
+  return response;
 };
 
 export default ask;

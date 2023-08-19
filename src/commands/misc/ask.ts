@@ -9,11 +9,6 @@ import { ask } from '../openai/ai.js';
 import { Command } from '../../models/discord.js';
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 
-type UserId = number | string;
-type ConversationId = number | string | undefined;
-
-const conversations = new Map<UserId, ConversationId>();
-
 export const Ask: Command<ChatInputCommandInteraction> = {
   name: localizedString('global:ask'),
   nameLocalizations: getLocalizations('global:ask'),
@@ -42,16 +37,12 @@ export const Ask: Command<ChatInputCommandInteraction> = {
 
     const input = interaction.options.getString('input') ?? '';
 
-    const userConversation = conversations.get(interaction.user.id);
-
     await interaction.deferReply();
-    const response = await ask(input, userConversation);
+    const response = await ask(input, interaction.user.id);
     if (interaction.channel?.type !== ChannelType.GuildText) {
       throw new Error('Channel Type needs to be GuildText');
     }
-
-    conversations.set(interaction.user.id, response.conversationId);
-    return await interaction.channel?.send(response.answer ?? '');
+    return await interaction.channel?.send(response ?? localize('global:noResponseFromOpenAI'));
   },
 };
 
