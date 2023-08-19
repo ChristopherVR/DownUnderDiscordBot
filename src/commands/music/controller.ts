@@ -14,8 +14,9 @@ import { PlayerCommand } from '../../models/discord.js';
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { ControllerAction } from '../../enums/controller.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
-import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
+import { logger } from '../../helpers/logger/logger.js';
 import { VolumeInputInteraction } from '../../models/commands/volume.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const Controller: PlayerCommand = {
   name: localizedString('global:controller'),
@@ -47,7 +48,7 @@ export const Controller: PlayerCommand = {
     const { channel } = interaction;
     if (!channel) {
       const genericError = localize('global:noChannelFound');
-      logger('Unable to find channel to control.').error();
+      logger(DefaultLoggerMessage.UnableToFindChannelToControl).error();
       return await interaction.reply({
         content: genericError,
         ephemeral: true,

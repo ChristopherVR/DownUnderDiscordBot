@@ -4,7 +4,8 @@ import { PlayerCommand } from '../../models/discord.js';
 
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
-import { DefaultLoggerMessage, logger } from '../../helpers/logger/logger.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const Stop: PlayerCommand = {
   name: localizedString('global:stop'),

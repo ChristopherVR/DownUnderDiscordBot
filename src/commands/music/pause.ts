@@ -9,7 +9,8 @@ import {
   MessagePayload,
 } from 'discord.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
-import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const Pause: PlayerCommand = {
   name: localizedString('global:pause'),

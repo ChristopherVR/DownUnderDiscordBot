@@ -2,6 +2,7 @@ import { ChatInputCommandInteraction } from 'discord.js';
 import { COMMANDS } from '../../constants/commands.js';
 import { useLocalizedString } from '../localization/localizedString.js';
 import { logger } from '../logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const command = (name: string) => {
   const setup = (interaction: ChatInputCommandInteraction) => {
@@ -14,8 +15,8 @@ export const command = (name: string) => {
     const run = async () => {
       if (!command) {
         const { localize } = useLocalizedString(interaction.locale);
-        logger('Unable to find slash command with name - ', interaction.commandName).error();
-        const errMsg = localize('unableToFindCommand');
+        logger(DefaultLoggerMessage.UnableToFindSlashCommand, interaction.commandName).error();
+        const errMsg = localize('global:unableToFindCommand');
 
         await interaction.followUp({ content: errMsg });
         return;

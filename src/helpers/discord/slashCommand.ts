@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, Client, GatewayDispatchEvents, InteractionType } from 'discord.js';
 import { command } from './command.js';
 import { logger } from '../logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   try {
@@ -9,7 +10,7 @@ const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Pro
     if (!interaction.replied) {
       await interaction.reply('An internal server error occurred. Unable to handle request.');
     }
-    logger('An error occurred trying to handle the command. Error: ', er).error();
+    logger(DefaultLoggerMessage.UnableToHandleCommand, er).error();
   }
 };
 

@@ -19,7 +19,8 @@ import Pause from './pause.js';
 import { NowPlayingAction } from '../../enums/nowplaying.js';
 import Save from './save.js';
 import { Loop } from './loop.js';
-import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const NowPlaying: PlayerCommand = {
   name: localizedString('global:nowplaying'),
@@ -55,7 +56,7 @@ export const NowPlaying: PlayerCommand = {
     try {
       timestamp = queue.node.getTimestamp();
     } catch {
-      logger('Unable to retrieve the current queue`s timestamp.').error();
+      logger(DefaultLoggerMessage.UnableToRetrieveCurrentQueueTimestamp).error();
       return await interaction.followUp(localize('global:genericError'));
     }
 

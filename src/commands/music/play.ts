@@ -17,7 +17,8 @@ import { PlayerCommand } from '../../models/discord.js';
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { ColletorType } from '../../enums/collector.js';
-import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const Play: PlayerCommand = {
   name: localizedString('global:play'),
@@ -51,12 +52,12 @@ export const Play: PlayerCommand = {
       return await interaction.reply({
         content: localize('global:genericError', {
           lng: interaction.locale,
-          user: interaction.member?.user.username,
         }),
         ephemeral: true,
       });
     }
     const player = await useDefaultPlayer();
+    await interaction.deferReply();
     const res = await player.search(userInput, {
       requestedBy: interaction.member as GuildMember,
       ignoreCache: true,
@@ -64,22 +65,20 @@ export const Play: PlayerCommand = {
     });
 
     if (!res.tracks.length) {
-      logger('Something went wrong trying to find tracks. Object: ', res).error();
+      logger(DefaultLoggerMessage.SomethingWentWrongTryingToFindTrack, res).error();
       return await interaction.reply({
         content: localize('global:genericError', {
           lng: interaction.locale,
-          user: interaction.member?.user.username,
         }),
         ephemeral: true,
       });
     }
 
     if (!interaction.guild) {
-      logger('Guild not available on interaction.').error();
+      logger(DefaultLoggerMessage.GuildNotAvailableInteraction).error();
       return await interaction.reply({
         content: localize('global:genericError', {
           lng: interaction.locale,
-          user: interaction.member?.user.username,
         }),
         ephemeral: true,
       });
@@ -131,13 +130,12 @@ export const Play: PlayerCommand = {
       new ButtonBuilder().setLabel(localize('global:cancel')).setCustomId('cancel').setStyle(ButtonStyle.Secondary),
     );
 
-    await interaction.reply({ embeds: [embed], components: [row] });
+    await interaction.followUp({ embeds: [embed], components: [row] });
 
     if (interaction.channel?.type !== ChannelType.GuildText) {
       return await interaction.reply({
         content: localize('global:channelMustBeGuildText', {
           lng: interaction.locale,
-          user: interaction.member?.user.username,
         }),
         ephemeral: true,
       });
@@ -229,7 +227,6 @@ export const Play: PlayerCommand = {
         await interaction.deleteReply();
         await interaction.followUp({
           content: localize('global:searchTimedOut', {
-            user: interaction.member?.user.username,
             lng: interaction.locale,
           }),
           ephemeral: true,

@@ -12,7 +12,8 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { LoopOption } from '../../models/commands/loop.js';
 import { QueueRepeatMode } from 'discord-player';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
-import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const Loop: PlayerCommand = {
   name: localizedString('global:loop'),

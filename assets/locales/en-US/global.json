@@ -52,6 +52,7 @@
   "time": "time",
   "indicatedTimeIsTooHigh": "The indicated time is higher than the total time of the current track.",
   "validSkipHint": "Try for example a valid time like **5s, 10s, 20 seconds, 1m**...*",
+  "invalidFormat": "Seek format is incorrect. Specify a format as hh:mm:ss, hh:mm, 5s, 20 seconds, 1m, or 1 minute.",
   "timeSetInCurrentTrack": "Time set on the current track **{{time}}**.",
   "search": "search",
   "trackToSearch": "Searches for the track.",

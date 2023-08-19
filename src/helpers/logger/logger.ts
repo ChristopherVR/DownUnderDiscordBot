@@ -1,6 +1,4 @@
-export const enum DefaultLoggerMessage {
-  GuildIsNotDefined = 'Discord player was unable to find a Guild (Discord Server).',
-}
+import { DefaultLoggerMessage } from '../../constants/logger';
 
 export const logger = (message: string | DefaultLoggerMessage, ...optionalParams: unknown[]) => {
   // TODO: Replace console logging with a proper logger.

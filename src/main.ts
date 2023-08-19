@@ -14,6 +14,7 @@ import {
 } from '@discord-player/extractor';
 import { useLocalizedString } from './helpers/localization/localizedString.js';
 import { logger } from './helpers/logger/logger.js';
+import { DefaultLoggerMessage } from './constants/logger.js';
 
 const token = process.env.CLIENT_TOKEN;
 
@@ -47,9 +48,7 @@ const init = async () => {
   });
 
   if (!token) {
-    logger(
-      'Unable to start this discord bot. There is no Discord client token. Check if the environment specifies the CLIENT_TOKEN value.',
-    ).error();
+    logger(DefaultLoggerMessage.NoClientToken).error();
     process.exit(1);
   } else {
     await client.login(token);
@@ -67,7 +66,7 @@ const init = async () => {
     await player.extractors.register(AppleMusicExtractor, undefined);
 
     if (player.extractors.size === 0) {
-      logger('No extractors registered. Unable to use this discord bot.').error();
+      logger(DefaultLoggerMessage.NoExtractorsRegistered).error();
       process.exit(1);
     }
   }

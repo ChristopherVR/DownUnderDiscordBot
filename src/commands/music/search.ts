@@ -2,7 +2,8 @@ import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'disco
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
-import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const Search: PlayerCommand = {
   name: localizedString('global:search'),
