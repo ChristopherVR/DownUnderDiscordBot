@@ -47,7 +47,7 @@ export const PlayNext: PlayerCommand = {
     }
 
     const song = interaction.options.getString('song') ?? '';
-
+    await interaction.deferReply();
     const res = await player.search(song, {
       requestedBy: interaction.member as GuildMember,
       searchEngine: QueryType.AUTO,
@@ -55,7 +55,7 @@ export const PlayNext: PlayerCommand = {
 
     if (!res.tracks.length) {
       const noResultsFound = localize('global:noTracksFoundQueue');
-      return await interaction.reply({
+      return await interaction.followUp({
         content: noResultsFound,
         ephemeral: true,
       });
@@ -63,7 +63,7 @@ export const PlayNext: PlayerCommand = {
 
     if (res.playlist) {
       const playlistsNotSupported = localize('global:playlistsNotSupported');
-      return await interaction.reply({
+      return await interaction.followUp({
         content: playlistsNotSupported,
         ephemeral: true,
       });
@@ -71,7 +71,7 @@ export const PlayNext: PlayerCommand = {
 
     queue.insertTrack(res.tracks[0], 0);
     const trackInsertedIntoQueue = localize('global:trackInsertedIntoQueue');
-    return await interaction.reply({
+    return await interaction.followUp({
       content: trackInsertedIntoQueue,
       ephemeral: true,
     });

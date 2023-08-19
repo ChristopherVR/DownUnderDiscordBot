@@ -185,6 +185,7 @@ export const Controller: PlayerCommand = {
             break;
           }
         }
+
         if (commandName) {
           await command(commandName).setup(interaction).run();
         }

@@ -12,7 +12,7 @@ const Hello: Command<ChatInputCommandInteraction> = {
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: ChatInputCommandInteraction) => {
     const content = 'OI, OI, OI, OI!';
-    await interaction.reply({
+    return await interaction.reply({
       ephemeral: true,
       content,
     });

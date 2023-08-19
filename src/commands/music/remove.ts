@@ -71,7 +71,7 @@ export const Remove: PlayerCommand = {
             track,
           });
           queue.removeTrack(song);
-          return interaction.reply({
+          return await interaction.reply({
             content: removedSongFromQueue,
           });
         }
