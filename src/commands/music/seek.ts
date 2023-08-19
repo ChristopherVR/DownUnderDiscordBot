@@ -5,7 +5,8 @@ import { ms } from '../../helpers/time/ms.js';
 
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
-import { logger, DefaultLoggerMessage } from '../../helpers/logger/logger.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../constants/logger.js';
 
 export const Seek: PlayerCommand = {
   name: localizedString('global:seek'),
@@ -45,30 +46,37 @@ export const Seek: PlayerCommand = {
       });
     }
 
-    const timeToMS = ms(interaction.options.getString('time'));
+    try {
+      const timeToMS = ms(interaction.options.getString('time'));
 
-    if (queue.currentTrack?.durationMS !== undefined && timeToMS >= queue.currentTrack.durationMS) {
-      const indicatedTimeIsTooHigh = localize('global:indicatedTimeIsTooHigh');
-      const validSkipHint = localize('global:validSkipHint');
+      if (queue.currentTrack?.durationMS !== undefined && timeToMS >= queue.currentTrack.durationMS) {
+        const indicatedTimeIsTooHigh = localize('global:indicatedTimeIsTooHigh');
+        const validSkipHint = localize('global:validSkipHint');
+
+        return await interaction.reply({
+          content: `${indicatedTimeIsTooHigh}\n${validSkipHint}`,
+          ephemeral: true,
+        });
+      }
+
+      await queue.node.seek(timeToMS);
+      const timeSetInCurrentTrack = localize('global:timeSetInCurrentTrack', {
+        lng: interaction.locale,
+        time: timeToMS,
+      });
 
       return await interaction.reply({
-        content: `${indicatedTimeIsTooHigh}\n${validSkipHint}`,
-        ephemeral: true,
+        content: timeSetInCurrentTrack,
+      });
+    } catch {
+      const invalidMsFormat = localize('global:invalidMsFormat', {
+        lng: interaction.locale,
+      });
+
+      return await interaction.reply({
+        content: invalidMsFormat,
       });
     }
-
-    await queue.node.seek(timeToMS);
-
-    const longMs = ms(timeToMS);
-
-    const timeSetInCurrentTrack = localize('global:timeSetInCurrentTrack', {
-      lng: interaction.locale,
-      time: longMs,
-    });
-
-    return await interaction.reply({
-      content: timeSetInCurrentTrack,
-    });
   },
 };
 
