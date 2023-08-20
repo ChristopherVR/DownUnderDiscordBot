@@ -17,8 +17,8 @@ EXPOSE 8080
 
 FROM base as production
 
-ENV NODE_PATH=./dist
+ENV NODE_PATH=./public
 
 RUN npm run build
 
-CMD ["node", "./dist/main.js"]
+CMD ["node", "./public/main.js"]

@@ -13,7 +13,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "rootDir": "./src",
-    "outDir": "./dist",
+    "outDir": "./public",
     "esModuleInterop": true,
     "declaration": true,
     "lib": ["ESNext"],
