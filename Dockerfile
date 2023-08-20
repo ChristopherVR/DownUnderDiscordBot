@@ -7,9 +7,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN rm -rf node_modules && npm ci
-
-# RUN npm install --global rimraf && npm install --global parcel-bundler
+RUN rm -rf node_modules && yarn init
 
 COPY . .
 
@@ -19,6 +17,6 @@ FROM base as production
 
 ENV NODE_PATH=./public
 
-RUN npm run build
+RUN yarn build
 
 CMD ["node", "./public/main.js"]
