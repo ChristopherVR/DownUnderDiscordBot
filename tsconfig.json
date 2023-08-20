@@ -13,7 +13,7 @@
     "target": "ESNext",
     "module": "ESNext",
     "rootDir": "./src",
-    "outDir": "./public",
+    "outDir": "./dist",
     "esModuleInterop": true,
     "declaration": true,
     "lib": ["ESNext"],
@@ -29,6 +29,6 @@
     "newLine": "LF",
     "noImplicitAny": false
   },
-  "include": ["src/**/*.ts", "src/**/index.html", "src/locales/**/*.json"],
+  "include": ["src/**/*.ts", "src/index.html", "assets/**/*.*"],
   "exclude": ["node_modules", "dist"]
 }

@@ -15,8 +15,8 @@ EXPOSE 8080
 
 FROM base as production
 
-ENV NODE_PATH=./public
+ENV NODE_PATH=./dist
 
 RUN yarn build
 
-CMD ["node", "./public/main.js"]
+CMD ["node", "./dist/main.js"]
