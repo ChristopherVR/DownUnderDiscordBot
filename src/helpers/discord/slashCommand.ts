@@ -1,6 +1,7 @@
-import { ChatInputCommandInteraction, Client, GatewayDispatchEvents, InteractionType } from 'discord.js';
+import { ChatInputCommandInteraction, Client, InteractionType } from 'discord.js';
 import { command } from './command.js';
 import { logger } from '../logger/logger.js';
+import { useLocalizedString } from '../localization/localizedString.js';
 import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {
@@ -8,7 +9,8 @@ const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Pro
     await command(interaction.commandName).setup(interaction).run();
   } catch (er) {
     if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply('An internal server error occurred. Unable to handle request.');
+      const { localize } = useLocalizedString(interaction.locale);
+      await interaction.reply(localize('global:internalServerError'));
     }
     logger(DefaultLoggerMessage.UnableToHandleCommand, er).error();
   }

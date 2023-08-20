@@ -25,7 +25,7 @@
     "strict": true,
     "sourceMap": true,
     "types": ["node"],
-    "typeRoots": ["../node_modules/@types"],
+    "typeRoots": ["./node_modules/@types"],
     "newLine": "LF",
     "noImplicitAny": false
   },

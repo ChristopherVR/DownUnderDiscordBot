@@ -25,26 +25,26 @@ export const Save: PlayerCommand = {
 
     if (!interaction.guildId) {
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await sendResponse({
+      return sendResponse({
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue) {
       const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying', {
         lng: interaction.locale,
       });
-      return await sendResponse({
+      return sendResponse({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
     }
 
     if (!queue.currentTrack) {
-      return await sendResponse({
+      return sendResponse({
         content: genericError,
         ephemeral: true,
       });

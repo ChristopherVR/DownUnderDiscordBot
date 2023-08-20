@@ -13,7 +13,7 @@ export const Meme: Command<CommandInteraction> = {
     const { localize } = useLocalizedString(interaction.locale);
     const genericError = localize('global:playlistsNotSupported');
 
-    return await interaction.reply({
+    return interaction.reply({
       content: genericError,
       ephemeral: true,
     });

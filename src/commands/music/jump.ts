@@ -6,6 +6,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { DefaultLoggerMessage } from '../../enums/logger.js';
+import { Track } from 'discord-player';
 
 export const Jump: PlayerCommand = {
   name: localizedString('global:jump'),
@@ -38,24 +39,24 @@ export const Jump: PlayerCommand = {
     if (!interaction.guildId) {
       const genericError = localize('global:genericError');
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const response = localize('global:noMusicCurrentlyPlaying');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
       });
     }
 
     if (!track && !number) {
       const response = localize('global:haveToUseOneOfTheOptions');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });
@@ -70,7 +71,7 @@ export const Jump: PlayerCommand = {
             lng: interaction.locale,
             track,
           });
-          return await interaction.reply({ content: response });
+          return interaction.reply({ content: response });
         }
       }
 
@@ -79,17 +80,17 @@ export const Jump: PlayerCommand = {
         track,
       });
 
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });
     }
 
     const index = number! - 1;
-    const trackname = queue.tracks[index].title;
+    const trackname = (queue.tracks[index] as Track).title;
     if (!trackname) {
       const response = localize('global:trackDoesNotExist');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });

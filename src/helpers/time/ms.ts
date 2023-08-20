@@ -1,4 +1,8 @@
-/** Converts the time to milliseconds */
+/** Converts the time to milliseconds
+ * @example
+ *  const milliseconds = ms('1 min');
+ *  console.log(milliseconds); // Outputs: 1000 milliseconds
+ */
 export const ms = (arg0: string | number | null): number => {
   if (!arg0) {
     return 0;

@@ -3,8 +3,7 @@ import { DiscordjsError } from 'discord.js';
 import { logger } from '../logger/logger';
 import { DefaultLoggerMessage } from '../../enums/logger';
 
-// eslint-disable-next-line import/prefer-default-export
-export const useDefaultPlayer = async () => {
+export const useDefaultPlayer = () => {
   const player = useMainPlayer();
 
   if (!player) {

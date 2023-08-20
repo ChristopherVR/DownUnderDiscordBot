@@ -55,6 +55,7 @@
   "invalidFormat": "Seek format is incorrect. Specify a format as hh:mm:ss, hh:mm, 5s, 20 seconds, 1m, or 1 minute.",
   "timeSetInCurrentTrack": "Time set on the current track **{{time}}**.",
   "search": "search",
+  "internalServerError": "'An internal server error occurred. Unable to handle request.'",
   "noResponseFromOpenAI": "No response received from OpenAI.",
   "trackToSearch": "Searches for the track.",
   "theSongYouWantToSearchFor": "The track to search for.",

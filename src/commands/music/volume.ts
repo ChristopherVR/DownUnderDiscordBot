@@ -11,12 +11,12 @@ import { VolumeInputInteraction } from '../../models/commands/volume.js';
 const replyToUser = async (interaction: ChatInputCommandInteraction, interactionOptions: InteractionReplyOptions) => {
   if (interaction.deferred || interaction.replied) {
     await interaction.deleteReply();
-    return await interaction.followUp({
+    return interaction.followUp({
       ...interactionOptions,
     });
   }
 
-  return await interaction.reply({
+  return interaction.reply({
     ...interactionOptions,
   });
 };
@@ -44,17 +44,17 @@ export const Volume: PlayerCommand = {
     const genericError = localize('global:genericError');
     if (!interaction.guildId) {
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await replyToUser(interaction, {
+      return replyToUser(interaction, {
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue) {
       const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return await replyToUser(interaction, {
+      return replyToUser(interaction, {
         ephemeral: true,
         content: noMusicCurrentlyPlaying,
       });
@@ -69,7 +69,7 @@ export const Volume: PlayerCommand = {
     if (queue.node.volume === vol) {
       const volumeAlreadyTheSame = localize('global:volumeAlreadyTheSame');
 
-      return await replyToUser(interaction, {
+      return replyToUser(interaction, {
         content: volumeAlreadyTheSame,
         ephemeral: true,
       });
@@ -80,7 +80,7 @@ export const Volume: PlayerCommand = {
       volume: vol,
     });
 
-    return await replyToUser(interaction, {
+    return replyToUser(interaction, {
       content: success ? volumeHasBeenModifiedTo : genericError,
     });
   },

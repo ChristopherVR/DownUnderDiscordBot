@@ -13,7 +13,6 @@ export type PlayerCommand = ChatInputApplicationCommandData & {
     | Promise<InteractionResponse<boolean> | Message<boolean> | undefined>
     | Promise<void>
     | Awaited<void>
-    | void
     | Promise<void | InteractionResponse<boolean> | Message<boolean> | undefined>;
 };
 
@@ -24,6 +23,5 @@ export type Command<TCommand extends BaseInteraction> = ChatInputApplicationComm
     | Promise<InteractionResponse<boolean> | Message<boolean> | undefined>
     | Promise<void>
     | Awaited<void>
-    | void
     | Promise<void | InteractionResponse<boolean> | Message<boolean> | undefined>;
 };

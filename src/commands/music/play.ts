@@ -6,7 +6,6 @@ import {
   ButtonStyle,
   ChannelType,
   ChatInputCommandInteraction,
-  ComponentType,
   EmbedBuilder,
   GuildMember,
   MessageActionRowComponentBuilder,
@@ -36,12 +35,13 @@ export const Play: PlayerCommand = {
       required: true,
     },
   ],
-  // eslint-disable-next-line consistent-return
+
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
+
     if (!interaction.guildId) {
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: localize('global:genericError'),
         ephemeral: true,
       });
@@ -49,14 +49,14 @@ export const Play: PlayerCommand = {
     const userInput = interaction.options.getString(localize('global:linkOrQuery'));
 
     if (!userInput) {
-      return await interaction.reply({
+      return interaction.reply({
         content: localize('global:genericError', {
           lng: interaction.locale,
         }),
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     await interaction.deferReply();
     const res = await player.search(userInput, {
       requestedBy: interaction.member as GuildMember,
@@ -66,7 +66,7 @@ export const Play: PlayerCommand = {
 
     if (!res.tracks.length) {
       logger(DefaultLoggerMessage.SomethingWentWrongTryingToFindTrack, res).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: localize('global:genericError', {
           lng: interaction.locale,
         }),
@@ -76,7 +76,7 @@ export const Play: PlayerCommand = {
 
     if (!interaction.guild) {
       logger(DefaultLoggerMessage.GuildNotAvailableInteraction).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: localize('global:genericError', {
           lng: interaction.locale,
         }),
@@ -133,7 +133,7 @@ export const Play: PlayerCommand = {
     await interaction.followUp({ embeds: [embed], components: [row] });
 
     if (interaction.channel?.type !== ChannelType.GuildText) {
-      return await interaction.reply({
+      return interaction.reply({
         content: localize('global:channelMustBeGuildText', {
           lng: interaction.locale,
         }),
@@ -166,7 +166,7 @@ export const Play: PlayerCommand = {
 
       if (!(value >= 0 || value < maxTracks.length)) {
         await interaction.deleteReply();
-        return await interaction.followUp({
+        return interaction.followUp({
           content: localize('global:invalidResponseForSong', {
             max: maxTracks.length - 1,
             lng: interaction.locale,
@@ -180,7 +180,7 @@ export const Play: PlayerCommand = {
         logger(`User ${interaction.member?.user.username} is not connected to a voice channel.`);
 
         await interaction.deleteReply();
-        return await interaction.followUp({
+        return interaction.followUp({
           content: localize('global:connectToVoiceChannelToUseBot'),
           ephemeral: true,
         });
@@ -203,7 +203,7 @@ export const Play: PlayerCommand = {
       });
       await queue.node.play(track, { queue: queue.isPlaying() });
 
-      logger('Playing track ', track.title, '\nWith URL: ', track.url).debug();
+      logger(`Playing track ${track.title} with URL: ${track.url}`).debug();
     };
 
     collector.on(ColletorType.Collect, async (inter) => {

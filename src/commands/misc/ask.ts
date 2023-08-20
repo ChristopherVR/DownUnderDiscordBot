@@ -28,11 +28,11 @@ export const Ask: Command<ChatInputCommandInteraction> = {
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.channel) {
-      return await interaction.reply(localize('channelNotFound'));
+      return interaction.reply(localize('channelNotFound'));
     }
 
     if (!process.env.OPEN_AI_TOKEN) {
-      return await interaction.reply(localize('commandDisabled'));
+      return interaction.reply(localize('commandDisabled'));
     }
 
     const input = interaction.options.getString('input') ?? '';
@@ -42,7 +42,7 @@ export const Ask: Command<ChatInputCommandInteraction> = {
     if (interaction.channel?.type !== ChannelType.GuildText) {
       throw new Error('Channel Type needs to be GuildText');
     }
-    return await interaction.channel?.send(response ?? localize('global:noResponseFromOpenAI'));
+    return interaction.channel?.send(response ?? localize('global:noResponseFromOpenAI'));
   },
 };
 

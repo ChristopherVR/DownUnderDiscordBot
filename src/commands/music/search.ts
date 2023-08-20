@@ -43,7 +43,7 @@ export const Search: PlayerCommand = {
     if (!interaction.guildId) {
       const genericError = localize('global:genericError');
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
@@ -51,7 +51,7 @@ export const Search: PlayerCommand = {
 
     const notYetSupported = localize('global:notYetSupported');
 
-    return await interaction.reply({
+    return interaction.reply({
       content: notYetSupported,
       ephemeral: true,
     });

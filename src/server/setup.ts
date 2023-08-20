@@ -4,11 +4,11 @@ import express from 'express';
 import path from 'path';
 import { rateLimit } from 'express-rate-limit';
 import { logger } from '../helpers/logger/logger.js';
-
+import * as url from 'url';
+const __dirname = path.dirname(url.fileURLToPath(new URL('.', import.meta.url)));
 dotenv.config();
 
-// eslint-disable-next-line import/prefer-default-export
-export const setup = async (callback: () => Promise<void> | Awaitable<void>) => {
+export const setup = (callback: () => Promise<void> | Awaitable<void>) => {
   const hostname = process.env.HOST;
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   const protocol = process.env.PROTOCOL ?? 'http';
@@ -35,10 +35,10 @@ export const setup = async (callback: () => Promise<void> | Awaitable<void>) => 
     }),
   );
 
-  server.get('/', (_, res) => res.sendFile(path.join(path.dirname('/index.html'))));
+  server.get('/', (_, res) => res.sendFile(path.join(__dirname, '/index.html')));
 
-  server.listen(port, hostname, async () => {
-    await callback();
+  server.listen(port, hostname, () => {
+    void callback();
     logger(`Server is running at ${protocol}://${hostname}:${port}/`).info();
   });
 };

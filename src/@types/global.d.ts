@@ -1,12 +1,11 @@
+// eslint-disable-next-line import/namespace
 import { i18n } from 'i18next';
 
 type Localization = i18n;
 
 declare global {
-  // eslint-disable-next-line vars-on-top, no-var
   var localization: Localization;
   namespace NodeJS {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
     interface ProcessEnv {
       NODE_ENV: 'development' | 'production';
       CLIENT_TOKEN: string;

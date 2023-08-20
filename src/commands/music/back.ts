@@ -18,7 +18,7 @@ export const Back: PlayerCommand = {
     const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId) {
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: localize('global:genericError', {
           lng: interaction.locale,
           ephemeral: true,
@@ -26,12 +26,12 @@ export const Back: PlayerCommand = {
       });
     }
 
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const response = localize('global:noMusicCurrentlyPlaying');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });
@@ -39,7 +39,7 @@ export const Back: PlayerCommand = {
 
     if (!queue.history.previousTrack) {
       const response = localize('global:noMusicPlayedPreviously');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });
@@ -47,7 +47,7 @@ export const Back: PlayerCommand = {
 
     await queue.history.back();
     const response = localize('global:playingPreviousTrack');
-    return await interaction.reply({ content: response });
+    return interaction.reply({ content: response });
   },
 };
 

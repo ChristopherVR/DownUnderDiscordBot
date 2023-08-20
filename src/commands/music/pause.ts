@@ -34,12 +34,12 @@ export const Pause: PlayerCommand = {
         lng: interaction.locale,
       });
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await sendResponse({
+      return sendResponse({
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue) {
@@ -47,7 +47,7 @@ export const Pause: PlayerCommand = {
         lng: interaction.locale,
       });
 
-      return await sendResponse({
+      return sendResponse({
         content: noMusicLoc,
         ephemeral: true,
       });
@@ -57,7 +57,7 @@ export const Pause: PlayerCommand = {
       const trackIsPaused = localize('global:trackIsPaused', {
         lng: interaction.locale,
       });
-      return await sendResponse({
+      return sendResponse({
         content: trackIsPaused,
         ephemeral: true,
       });
@@ -74,7 +74,7 @@ export const Pause: PlayerCommand = {
       lng: interaction.locale,
       title: queue.currentTrack?.title,
     });
-    return await sendResponse({
+    return sendResponse({
       content: success ? response : genericError,
       ephemeral: !success,
     });

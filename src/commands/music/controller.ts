@@ -40,7 +40,7 @@ export const Controller: PlayerCommand = {
     if (!interaction.guild) {
       const genericError = localize('global:genericError');
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
@@ -49,14 +49,14 @@ export const Controller: PlayerCommand = {
     if (!channel) {
       const genericError = localize('global:noChannelFound');
       logger(DefaultLoggerMessage.UnableToFindChannelToControl).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
     if (channel.type !== ChannelType.GuildText) {
       const response = localize('global:haveToSendToTextChannel');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });
@@ -64,7 +64,7 @@ export const Controller: PlayerCommand = {
 
     if (!interaction.member) {
       const response = localize('global:genericError');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });
@@ -159,7 +159,7 @@ export const Controller: PlayerCommand = {
             break;
           }
           case ControllerAction.ResumePause: {
-            const player = await useDefaultPlayer();
+            const player = useDefaultPlayer();
             const queue = player.nodes.get(interaction.guildId!);
             commandName = queue?.isPlaying() ? localizedString('global:pause') : localizedString('global:resume');
             break;

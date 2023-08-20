@@ -1,16 +1,16 @@
 import { Locale, LocalizationMap } from 'discord.js';
-import { logger } from '../logger/logger.js';
 import { localizedString } from './localizedString.js';
 
 /** Gets the localized values for all available locales supported by DiscordJS for the given string.
- * @default
- * en-US will be used as a fallback for the language value.
+ * @example
+ * const localizations = getLocalizations('global:helloWorld');
+ *
+ * console.log(localizations); // Outputs object - { 'en-US': 'Hello World!', 'af': 'Hallo Wêreld!'};
  */
 const getLocalizations = (key: string): LocalizationMap | undefined => {
-  const localizations: { [x: string]: string }[] = [];
+  const localizations: Record<string, string>[] = [];
 
   Object.values(Locale).forEach((y) => {
-    logger('Locale: ', y, ' Key: ', key).debug();
     const response = localizedString(key, {
       lng: y,
       skipFallback: true,
@@ -25,7 +25,7 @@ const getLocalizations = (key: string): LocalizationMap | undefined => {
   if (!localizations.length) {
     return undefined;
   }
-  const localizationMap: LocalizationMap = Object.assign({}, ...localizations);
+  const localizationMap: LocalizationMap = Object.assign({}, ...localizations) as LocalizationMap;
   return localizationMap;
 };
 

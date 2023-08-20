@@ -51,17 +51,17 @@ export const Loop: PlayerCommand = {
     if (!interaction.guildId) {
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
       const genericError = localize('global:genericError');
-      return await sendResponse({
+      return sendResponse({
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return await sendResponse({
+      return sendResponse({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
@@ -72,7 +72,7 @@ export const Loop: PlayerCommand = {
         if (queue.repeatMode === QueueRepeatMode.TRACK) {
           const disableCurrentLoop = localize('global:disableCurrentLoop');
 
-          return await sendResponse({
+          return sendResponse({
             content: disableCurrentLoop,
             ephemeral: true,
           });
@@ -83,21 +83,21 @@ export const Loop: PlayerCommand = {
         const response = localize('global:songRepeatMode');
 
         // songRepeatMode
-        return await sendResponse({
+        return sendResponse({
           content: response,
         });
       }
       case LoopOption.DisableLoop: {
         queue.setRepeatMode(QueueRepeatMode.OFF);
 
-        return await sendResponse({
+        return sendResponse({
           content: localize('global:repeatModeDisabled'),
         });
       }
       case LoopOption.EnableLoopSong: {
         if (queue.repeatMode === QueueRepeatMode.QUEUE) {
           const responsec = localize('global:disableCurrentLoop');
-          return await sendResponse({
+          return sendResponse({
             content: responsec,
             ephemeral: true,
           });
@@ -107,12 +107,12 @@ export const Loop: PlayerCommand = {
 
         const responsec = localize('global:songRepeatMode');
 
-        return await sendResponse({
+        return sendResponse({
           content: responsec,
         });
       }
       default: {
-        return await sendResponse({
+        return sendResponse({
           content: genericError,
           ephemeral: true,
         });

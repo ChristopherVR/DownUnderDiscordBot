@@ -18,18 +18,18 @@ export const Clear: PlayerCommand = {
     if (!interaction.guildId) {
       const genericError = localize('global:genericError');
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
 
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const response = localize('global:noMusicCurrentlyPlaying');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });
@@ -37,7 +37,7 @@ export const Clear: PlayerCommand = {
 
     if (!queue.tracks[0]) {
       const response = localize('global:noTrackInQueue');
-      return await interaction.reply({
+      return interaction.reply({
         content: response,
         ephemeral: true,
       });
@@ -46,7 +46,7 @@ export const Clear: PlayerCommand = {
     queue.tracks.clear();
 
     const response = localize('global:queueHasBeenCleared');
-    return await interaction.reply(response);
+    return interaction.reply(response);
   },
 };
 

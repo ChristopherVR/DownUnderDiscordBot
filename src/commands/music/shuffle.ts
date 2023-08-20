@@ -18,17 +18,17 @@ export const Shuffle: PlayerCommand = {
     if (!interaction.guildId) {
       const genericError = localize('global:genericError');
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return await interaction.reply({
+      return interaction.reply({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
@@ -36,7 +36,7 @@ export const Shuffle: PlayerCommand = {
 
     if (!queue.tracks[0]) {
       const noTrackInQueue = localize('global:noTrackInQueue');
-      return await interaction.reply({
+      return interaction.reply({
         content: noTrackInQueue,
         ephemeral: true,
       });
@@ -47,7 +47,7 @@ export const Shuffle: PlayerCommand = {
       lng: interaction.locale,
       count: queue.tracks.data.length,
     });
-    return await interaction.reply({
+    return interaction.reply({
       content: queueShuffled,
     });
   },

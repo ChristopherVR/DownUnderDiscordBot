@@ -35,17 +35,17 @@ export const NowPlaying: PlayerCommand = {
     if (!interaction.guildId) {
       const genericError = localize('global:genericError');
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return await interaction.reply({
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
     const track = queue?.currentTrack;
     if (!queue || !queue.isPlaying() || !track) {
       const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return await interaction.reply({
+      return interaction.reply({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
@@ -106,7 +106,7 @@ export const NowPlaying: PlayerCommand = {
     if (interaction.channel?.type !== ChannelType.GuildText) {
       const response = localize('global:haveToSendToTextChannel');
 
-      return await interaction.followUp({
+      return interaction.followUp({
         content: response,
         ephemeral: true,
       });
@@ -153,7 +153,7 @@ export const NowPlaying: PlayerCommand = {
       }
       collector.stop();
     });
-    return await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+    return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
   },
 };
 

@@ -19,17 +19,17 @@ export const Skip: PlayerCommand = {
     if (!interaction.guildId) {
       logger(DefaultLoggerMessage.GuildIsNotDefined).error();
 
-      return await interaction.reply({
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
       const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return await interaction.reply({
+      return interaction.reply({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
@@ -40,7 +40,7 @@ export const Skip: PlayerCommand = {
       lng: interaction.locale,
       title: queue.currentTrack?.title,
     });
-    return await interaction.reply({
+    return interaction.reply({
       content: success ? currentTrackSkipped : genericError,
     });
   },

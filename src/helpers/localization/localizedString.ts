@@ -5,7 +5,12 @@ import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 type LocalizedStringOptions = Record<string, unknown>;
 
-/** Hook to provide a localize function that will retrieve a string value based on the Locale specified. */
+/** Hook to provide a localize function that will retrieve a string value based on the Locale specified.
+ * @example
+ * const { localize } = useLocalizedString(Locale.EnglishUS);
+ * const message = localize('global:helloWorld');
+ * console.log(message); // Outputs: 'Hello World!';
+ */
 export const useLocalizedString = (loc: Locale = Locale.EnglishUS) => {
   return {
     localize: (key: string, args?: LocalizedStringOptions) =>
