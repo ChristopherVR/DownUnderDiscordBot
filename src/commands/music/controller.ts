@@ -71,24 +71,22 @@ export const Controller: PlayerCommand = {
     }
 
     const back = new ButtonBuilder()
-      .setLabel(localize('global:back'))
+      .setLabel(localize('global:Back'))
       .setCustomId(ControllerAction.Back)
       .setStyle(ButtonStyle.Primary);
 
     const skip = new ButtonBuilder()
-      .setLabel(localize('global:skip'))
+      .setLabel(localize('global:Skip'))
       .setCustomId(ControllerAction.Skip)
       .setStyle(ButtonStyle.Primary);
 
-    const resumepause = new ButtonBuilder()
-      .setLabel(localize('global:resumeAndPause'))
-      .setCustomId(ControllerAction.ResumePause)
-      .setStyle(ButtonStyle.Danger);
+    const player = useDefaultPlayer();
+    const queue = player.nodes.get(interaction.guildId!);
 
     const save = new ButtonBuilder()
-      .setLabel(localize('global:save'))
+      .setLabel(localize('global:Save'))
       .setCustomId(ControllerAction.Save)
-      .setStyle(ButtonStyle.Success);
+      .setStyle(ButtonStyle.Primary);
 
     const volumeup = new ButtonBuilder()
       .setLabel(localize('global:volumeUp'))
@@ -100,7 +98,10 @@ export const Controller: PlayerCommand = {
       .setCustomId(ControllerAction.VolumeDown)
       .setStyle(ButtonStyle.Primary);
 
-    const loop = new ButtonBuilder().setLabel(localize('global:loop')).setCustomId('loop').setStyle(ButtonStyle.Danger);
+    const loop = new ButtonBuilder()
+      .setLabel(localize('global:loop'))
+      .setCustomId('loop')
+      .setStyle(ButtonStyle.Primary);
 
     const np = new ButtonBuilder()
       .setLabel(localize('global:nowPlaying'))
@@ -108,9 +109,9 @@ export const Controller: PlayerCommand = {
       .setStyle(ButtonStyle.Secondary);
 
     const queuebutton = new ButtonBuilder()
-      .setLabel(localize('global:queue'))
+      .setLabel(localize('global:Queue'))
       .setCustomId(ControllerAction.Queue)
-      .setStyle(ButtonStyle.Secondary);
+      .setStyle(ButtonStyle.Primary);
 
     const embed = new EmbedBuilder()
       .setTitle(localize('global:controlMusicWithButtonsBelow'))
@@ -121,13 +122,23 @@ export const Controller: PlayerCommand = {
         iconURL: interaction.member.avatar ?? undefined,
       });
 
-    const row1 = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-      back,
-      queuebutton,
-      resumepause,
-      np,
-      skip,
-    );
+    const row1 = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(back, queuebutton, np, skip);
+    if (queue?.isPlaying()) {
+      const pause = new ButtonBuilder()
+        .setLabel(localize('global:Pause'))
+        .setCustomId(ControllerAction.ResumePause)
+        .setStyle(ButtonStyle.Primary);
+
+      row1.addComponents(pause);
+    } else if (!queue?.isEmpty()) {
+      const resume = new ButtonBuilder()
+        .setLabel(localize('global:Resume'))
+        .setCustomId(ControllerAction.ResumePause)
+        .setStyle(ButtonStyle.Primary);
+
+      row1.addComponents(resume);
+    }
+
     const row2 = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
       volumedown,
       loop,
@@ -172,7 +183,7 @@ export const Controller: PlayerCommand = {
           }
           case ControllerAction.VolumeDown: {
             await command(localizedString('global:volumeDown'))
-              .setup({ ...interaction, volume: 40, increase: true } as VolumeInputInteraction)
+              .setup({ ...interaction, volume: 40, increase: false } as VolumeInputInteraction)
               .run();
             break;
           }
