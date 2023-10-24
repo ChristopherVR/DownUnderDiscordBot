@@ -1,14 +1,15 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
-import getLocalizations from '../../helpers/multiMapLocalization';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const Search: PlayerCommand = {
   name: localizedString('global:search'),
   description: localizedString('global:providerDesc'),
   nameLocalizations: getLocalizations('global:search'),
   descriptionLocalizations: getLocalizations('global:providerDesc'),
-  voiceChannel: true,
   options: [
     {
       name: localizedString('global:provider'),
@@ -38,22 +39,19 @@ export const Search: PlayerCommand = {
     },
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId) {
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
-      console.log('GuildId is undefined');
-      return await interaction.reply({
+      const genericError = localize('global:genericError');
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
 
-    const notYetSupported = localizedString('global:notYetSupported', {
-      lng: interaction.locale,
-    });
+    const notYetSupported = localize('global:notYetSupported');
 
-    return await interaction.reply({
+    return interaction.reply({
       content: notYetSupported,
       ephemeral: true,
     });

@@ -1,16 +1,18 @@
 import { ApplicationCommandOptionType, ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
 
-import getLocalizations from '../../helpers/multiMapLocalization';
-import { useDefaultPlayer } from '../../helpers/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
+import { Track } from 'discord-player';
 
 export const Jump: PlayerCommand = {
   name: localizedString('global:jump'),
   description: localizedString('global:jumpDesc'),
   nameLocalizations: getLocalizations('global:jump'),
   descriptionLocalizations: getLocalizations('global:jumpDesc'),
-  voiceChannel: true,
   options: [
     {
       name: localizedString('global:song'),
@@ -33,86 +35,74 @@ export const Jump: PlayerCommand = {
   run: async (interaction: ChatInputCommandInteraction) => {
     const track = interaction.options.getString('song');
     const number = interaction.options.getNumber('number');
+    const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId) {
-      const genericError = localizedString('global:genericError', {
-        lng: interaction.locale,
-      });
-      console.log('GuildId is undefined');
-      return await interaction.reply({
+      const genericError = localize('global:genericError');
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
-      const loc = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
-      return await interaction.reply({
-        content: loc,
-        ephemeral: true,
+      const response = localize('global:noMusicCurrentlyPlaying');
+      return interaction.reply({
+        content: response,
       });
     }
 
     if (!track && !number) {
-      const loc = localizedString('global:haveToUseOneOfTheOptions', {
-        lng: interaction.locale,
-      });
-      await interaction.reply({
-        content: loc,
+      const response = localize('global:haveToUseOneOfTheOptions');
+      return interaction.reply({
+        content: response,
         ephemeral: true,
       });
     }
 
     if (track) {
-      // eslint-disable-next-line no-restricted-syntax
       for (const song of queue.tracks.data) {
         if (song.title === track || song.url === track) {
           queue.node.skipTo(song);
 
-          const loc = localizedString('global:skippedTo', {
+          const response = localize('global:skippedTo', {
             lng: interaction.locale,
             track,
           });
-          return interaction.reply({ content: loc });
+          return interaction.reply({ content: response });
         }
       }
 
-      const loc = localizedString('global:couldNotFindTrack', {
+      const response = localize('global:couldNotFindTrack', {
         lng: interaction.locale,
         track,
       });
-      return await interaction.reply({
-        content: loc,
+
+      return interaction.reply({
+        content: response,
         ephemeral: true,
       });
     }
-    if (number) {
-      const index = number - 1;
-      const trackname = queue.tracks[index].title;
-      if (!trackname) {
-        const loc = localizedString('global:trackDoesNotExist', {
-          lng: interaction.locale,
-        });
-        return await interaction.reply({
-          content: loc,
-          ephemeral: true,
-        });
-      }
 
-      queue.node.skipTo(index);
-      const loc = localizedString('global:jumpedTo', {
-        lng: interaction.locale,
-        track: trackname,
+    const index = number! - 1;
+    const trackname = (queue.tracks[index] as Track).title;
+    if (!trackname) {
+      const response = localize('global:trackDoesNotExist');
+      return interaction.reply({
+        content: response,
+        ephemeral: true,
       });
-      return await interaction.reply({ content: loc });
     }
-    const genericError = localizedString('global:genericError', {
+
+    queue.node.skipTo(index);
+    const response = localize('global:jumpedTo', {
       lng: interaction.locale,
+      track: trackname,
     });
-    return await interaction.reply({ content: genericError });
+
+    await interaction.reply({ content: response });
   },
 };
 

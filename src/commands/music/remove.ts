@@ -1,16 +1,19 @@
 import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
-import { localizedString } from '../../helpers/localization';
-import { PlayerCommand } from '../../types';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
+import { PlayerCommand } from '../../models/discord.js';
 
-import getLocalizations from '../../helpers/multiMapLocalization';
-import { useDefaultPlayer } from '../../helpers/discord';
+import getLocalizations from '../../helpers/localization/getLocalizations.js';
+import { useDefaultPlayer } from '../../helpers/discord/player.js';
+import { logger } from '../../helpers/logger/logger.js';
+import { DefaultLoggerMessage } from '../../enums/logger.js';
+import { Track } from 'discord-player';
 
 export const Remove: PlayerCommand = {
   name: localizedString('global:remove'),
   description: localizedString('global:removeSongFromQueue'),
   nameLocalizations: getLocalizations('global:remove'),
   descriptionLocalizations: getLocalizations('global:removeSongFromQueue'),
-  voiceChannel: true,
+
   options: [
     {
       name: localizedString('global:song'),
@@ -30,46 +33,40 @@ export const Remove: PlayerCommand = {
     },
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
-    const genericError = localizedString('global:genericError', {
-      lng: interaction.locale,
-    });
+    const { localize } = useLocalizedString(interaction.locale);
+    const genericError = localize('global:genericError');
     if (!interaction.guildId) {
-      console.log('GuildId is undefined');
-      return await interaction.reply({
+      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+      return interaction.reply({
         content: genericError,
         ephemeral: true,
       });
     }
     const number = interaction.options.getNumber('number');
     const track = interaction.options.getString('song');
-    const player = await useDefaultPlayer();
+    const player = useDefaultPlayer();
     const queue = player.nodes.get(interaction.guildId);
 
     if (!queue?.isPlaying()) {
-      const noMusicCurrentlyPlaying = localizedString('global:noMusicCurrentlyPlaying', {
-        lng: interaction.locale,
-      });
-      return await interaction.reply({
+      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
+      return interaction.reply({
         content: noMusicCurrentlyPlaying,
         ephemeral: true,
       });
     }
 
     if (!track && !number) {
-      const useValidOptionToRemoveSong = localizedString('global:useValidOptionToRemoveSong', {
-        lng: interaction.locale,
-      });
-      return await interaction.reply({
+      const useValidOptionToRemoveSong = localize('global:useValidOptionToRemoveSong');
+      return interaction.reply({
         content: useValidOptionToRemoveSong,
         ephemeral: true,
       });
     }
 
     if (track) {
-      // eslint-disable-next-line no-restricted-syntax
       for (const song of queue.tracks.data) {
         if (song.title === track || song.url === track) {
-          const removedSongFromQueue = localizedString('global:removedSongFromQueue', {
+          const removedSongFromQueue = localize('global:removedSongFromQueue', {
             lng: interaction.locale,
             track,
           });
@@ -80,11 +77,11 @@ export const Remove: PlayerCommand = {
         }
       }
 
-      const couldNotFindTrack = localizedString('global:couldNotFindTrack', {
+      const couldNotFindTrack = localize('global:couldNotFindTrack', {
         lng: interaction.locale,
         track,
       });
-      return await interaction.reply({
+      return interaction.reply({
         content: couldNotFindTrack,
         ephemeral: true,
       });
@@ -92,30 +89,30 @@ export const Remove: PlayerCommand = {
 
     if (number) {
       const index = number - 1;
-      const trackname = queue.tracks[index].title;
+      const trackname = (queue.tracks[index] as Track).title;
 
       if (!trackname) {
-        const trackDoesNotExist = localizedString('global:trackDoesNotExist', {
+        const trackDoesNotExist = localize('global:trackDoesNotExist', {
           lng: interaction.locale,
           track,
         });
-        return await interaction.reply({
+        return interaction.reply({
           content: trackDoesNotExist,
           ephemeral: true,
         });
       }
 
       queue.removeTrack(index);
-      const removedSongFromQueue = localizedString('global:removedSongFromQueue', {
+      const removedSongFromQueue = localize('global:removedSongFromQueue', {
         lng: interaction.locale,
         track,
       });
-      return await interaction.reply({
+      return interaction.reply({
         content: removedSongFromQueue,
       });
     }
 
-    return await interaction.reply({ content: genericError });
+    return interaction.reply({ content: genericError });
   },
 };
 
