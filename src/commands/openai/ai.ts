@@ -1,9 +1,9 @@
 import { OpenAI } from 'openai';
-import { CreateChatCompletionRequestMessage } from 'openai/resources/chat';
+import { ChatCompletionMessageParam } from 'openai/resources/chat';
 
 type UserId = number | string;
 
-const conversations = new Map<UserId, CreateChatCompletionRequestMessage[]>();
+const conversations = new Map<UserId, ChatCompletionMessageParam[]>();
 
 export const ask = async (prompt: string, userId: number | string): Promise<string | undefined> => {
   const openAI = new OpenAI({ apiKey: process.env.OPEN_AI_TOKEN! });
