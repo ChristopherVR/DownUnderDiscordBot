@@ -201,6 +201,11 @@ export const Play: PlayerCommand = {
       await interaction.followUp({
         embeds: [em],
       });
+
+      if (queue.isPlaying()) {
+        logger(`Player is currently playing a track. Will queue this one.`).debug();
+      }
+
       await queue.node.play(track, { queue: queue.isPlaying() });
 
       logger(`Playing track ${track.title} with URL: ${track.url}`).debug();

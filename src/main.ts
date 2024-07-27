@@ -5,7 +5,6 @@ import { setup } from './server/setup.js';
 import { GatewayIntentBits, Client, GatewayDispatchEvents, ChatInputCommandInteraction } from 'discord.js';
 import {
   SpotifyExtractor,
-  YouTubeExtractor,
   SoundCloudExtractor,
   VimeoExtractor,
   ReverbnationExtractor,
@@ -15,6 +14,7 @@ import {
 import { useLocalizedString } from './helpers/localization/localizedString.js';
 import { logger } from './helpers/logger/logger.js';
 import { DefaultLoggerMessage } from './enums/logger.js';
+import { YoutubeiExtractor } from 'discord-player-youtubei';
 
 const token = process.env.CLIENT_TOKEN;
 
@@ -62,7 +62,7 @@ const init = async () => {
     await player.extractors.loadDefault();
 
     await player.extractors.register(SpotifyExtractor, undefined);
-    await player.extractors.register(YouTubeExtractor, undefined);
+    await player.extractors.register(YoutubeiExtractor, undefined);
     await player.extractors.register(SoundCloudExtractor, undefined);
     await player.extractors.register(VimeoExtractor, undefined);
     await player.extractors.register(ReverbnationExtractor, undefined);
