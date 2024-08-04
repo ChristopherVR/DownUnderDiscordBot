@@ -33,12 +33,12 @@ export const i18n = async () =>
       initImmediate: false,
       ns: ['global', 'activity'],
       backend: {
-        allowMultiLoading: false,
+        // allowMultiLoading: false,
         withCredentials: true,
         requestOptions: {
           mode: 'cors',
           credentials: 'same-origin',
-          cache: 'default',
+          // cache: 'default',
         },
         loadPath: `${protocol}://${hostname}:${port}/locales/{{lng}}/{{ns}}.json`,
       },

@@ -3,7 +3,7 @@ import { DEFAULT_LANGUAGE } from '../../constants/localization.js';
 import { logger } from '../logger/logger.js';
 import { DefaultLoggerMessage } from '../../enums/logger.js';
 
-type LocalizedStringOptions = Record<string, unknown>;
+export type LocalizedStringOptions = Record<string, unknown>;
 
 /** Hook to provide a localize function that will retrieve a string value based on the Locale specified.
  * @example

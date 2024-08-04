@@ -7,7 +7,7 @@ export const useDefaultPlayer = () => {
   const player = useMainPlayer();
 
   if (!player) {
-    throw new DiscordjsError('The Discord player has not been created or initialized yet.');
+    throw new Error(); // throw new DiscordjsError('The Discord player has not been created or initialized yet.');
   }
 
   if (player.extractors.size === 0) {

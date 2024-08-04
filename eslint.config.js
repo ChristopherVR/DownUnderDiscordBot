@@ -27,7 +27,7 @@ import jsdoc from 'eslint-plugin-jsdoc';
 //   allConfig: js.configs.all, // optional
 // });
 
-/** @type { import("eslint").Linter.FlatConfig[] } */
+/** @type { import("eslint").Linter.Config[] } */
 export default [
   {
     ignores: ['dist/**', 'node_modules/**', 'bin/**', 'build/**', '.eslint.config.js', 'jest.config.js'],
@@ -43,7 +43,6 @@ export default [
       ts,
       prettier,
       'prefer-arrow': preferArrow,
-      deprecation,
       jsdoc,
     },
     linterOptions: {
@@ -82,7 +81,6 @@ export default [
           classPropertiesAllowed: false,
         },
       ],
-      'deprecation/deprecation': 'error',
     },
   },
 ];

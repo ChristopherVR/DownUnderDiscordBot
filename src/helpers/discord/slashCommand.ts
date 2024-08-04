@@ -12,6 +12,7 @@ const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Pro
       const { localize } = useLocalizedString(interaction.locale);
       await interaction.reply(localize('global:internalServerError'));
     }
+    console.error(er);
     logger(DefaultLoggerMessage.UnableToHandleCommand, er).error();
   }
 };
