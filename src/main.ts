@@ -57,17 +57,17 @@ const init = async () => {
   } else {
     await client.login(token);
 
-    const player = Player.singleton(client);
+    const player = Player.create(client);
 
-    await player.extractors.loadDefault();
-
-    await player.extractors.register(SpotifyExtractor, undefined);
-    await player.extractors.register(YoutubeiExtractor, undefined);
-    await player.extractors.register(SoundCloudExtractor, undefined);
-    await player.extractors.register(VimeoExtractor, undefined);
-    await player.extractors.register(ReverbnationExtractor, undefined);
-    await player.extractors.register(AttachmentExtractor, undefined);
-    await player.extractors.register(AppleMusicExtractor, undefined);
+    await player.extractors.loadMulti([
+      SpotifyExtractor,
+      YoutubeiExtractor,
+      SoundCloudExtractor,
+      AttachmentExtractor,
+      VimeoExtractor,
+      AppleMusicExtractor,
+      ReverbnationExtractor,
+    ]);
 
     if (player.extractors.size === 0) {
       logger(DefaultLoggerMessage.NoExtractorsRegistered).fatal();
