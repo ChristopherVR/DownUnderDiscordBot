@@ -45,5 +45,9 @@ export const localizedString: (key: string, args?: LocalizedStringOptions) => st
     },
   );
 
+  if (value === key) {
+    logger(`Failed to retrieve localization value for key: ${key}`).error();
+  }
+
   return value;
 };

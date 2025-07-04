@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
+import { ApplicationCommandOptionType, ChatInputCommandInteraction, GuildMember } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
 
@@ -34,85 +34,86 @@ export const Remove: PlayerCommand = {
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
-    const genericError = localize('global:genericError');
-    if (!interaction.guildId) {
-      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return interaction.reply({
-        content: genericError,
-        ephemeral: true,
-      });
-    }
-    const number = interaction.options.getNumber('number');
-    const track = interaction.options.getString('song');
-    const player = useDefaultPlayer();
-    const queue = player.nodes.get(interaction.guildId);
 
-    if (!queue?.isPlaying()) {
-      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return interaction.reply({
-        content: noMusicCurrentlyPlaying,
-        ephemeral: true,
-      });
-    }
-
-    if (!track && !number) {
-      const useValidOptionToRemoveSong = localize('global:useValidOptionToRemoveSong');
-      return interaction.reply({
-        content: useValidOptionToRemoveSong,
-        ephemeral: true,
-      });
-    }
-
-    if (track) {
-      for (const song of queue.tracks.data) {
-        if (song.title === track || song.url === track) {
-          const removedSongFromQueue = localize('global:removedSongFromQueue', {
-            lng: interaction.locale,
-            track,
-          });
-          queue.removeTrack(song);
-          return interaction.reply({
-            content: removedSongFromQueue,
-          });
-        }
-      }
-
-      const couldNotFindTrack = localize('global:couldNotFindTrack', {
-        lng: interaction.locale,
-        track,
-      });
-      return interaction.reply({
-        content: couldNotFindTrack,
-        ephemeral: true,
-      });
-    }
-
-    if (number) {
-      const index = number - 1;
-      const trackname = (queue.tracks[index] as Track).title;
-
-      if (!trackname) {
-        const trackDoesNotExist = localize('global:trackDoesNotExist', {
-          lng: interaction.locale,
-          track,
-        });
-        return interaction.reply({
-          content: trackDoesNotExist,
+    try {
+      if (!interaction.guildId || !interaction.guild) {
+        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        return await interaction.reply({
+          content: localize('global:genericError'),
           ephemeral: true,
         });
       }
 
-      queue.removeTrack(index);
-      const removedSongFromQueue = localize('global:removedSongFromQueue', {
-        lng: interaction.locale,
-        track,
-      });
-      return interaction.reply({
-        content: removedSongFromQueue,
+      const player = useDefaultPlayer();
+      const queue = player.nodes.get(interaction.guildId);
+
+      if (!queue?.isPlaying()) {
+        return await interaction.reply({
+          content: localize('global:noMusicCurrentlyPlaying'),
+          ephemeral: true,
+        });
+      }
+
+      const memberChannel = (interaction.member as GuildMember | null)?.voice.channel;
+      if (!memberChannel || memberChannel.id !== queue.channel?.id) {
+        return await interaction.reply({
+          content: localize('global:mustBeInSameVoiceChannel'),
+          ephemeral: true,
+        });
+      }
+
+      const number = interaction.options.getNumber('number');
+      const trackName = interaction.options.getString('song');
+
+      if (!trackName && !number) {
+        return await interaction.reply({
+          content: localize('global:useValidOptionToRemoveSong'),
+          ephemeral: true,
+        });
+      }
+
+      let removedTrack: Track | null = null;
+
+      if (number) {
+        removedTrack = queue.tracks.data[number - 1];
+        if (removedTrack) {
+          queue.removeTrack(number - 1);
+        }
+      } else if (trackName) {
+        removedTrack =
+          queue.tracks.find((t) => t.title.toLowerCase() === trackName.toLowerCase() || t.url === trackName) ?? null;
+        if (removedTrack) {
+          queue.removeTrack(removedTrack);
+        }
+      }
+
+      if (removedTrack) {
+        return await interaction.reply({
+          content: localize('global:removedSongFromQueue', { track: removedTrack.title }),
+        });
+      } else {
+        return await interaction.reply({
+          content: localize('global:couldNotFindTrack', { track: trackName ?? number }),
+          ephemeral: true,
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        logger(error).error();
+      } else {
+        logger(String(error)).error();
+      }
+      if (interaction.replied || interaction.deferred) {
+        return await interaction.followUp({
+          content: localize('global:genericError'),
+          ephemeral: true,
+        });
+      }
+      return await interaction.reply({
+        content: localize('global:genericError'),
+        ephemeral: true,
       });
     }
-
-    return interaction.reply({ content: genericError });
   },
 };
 

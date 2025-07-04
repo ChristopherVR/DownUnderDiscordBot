@@ -1,5 +1,14 @@
-import { EmbedBuilder } from '@discordjs/builders';
-import { ChatInputCommandInteraction, Colors } from 'discord.js';
+import {
+  ActionRowBuilder,
+  ApplicationCommandType,
+  ButtonBuilder,
+  ButtonStyle,
+  ChatInputCommandInteraction,
+  Colors,
+  EmbedBuilder,
+  GuildMember,
+  MessageActionRowComponentBuilder,
+} from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
 
@@ -7,84 +16,145 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { DefaultLoggerMessage } from '../../enums/logger.js';
+import { Track } from 'discord-player';
 
 export const Queue: PlayerCommand = {
   name: localizedString('global:queue'),
   description: localizedString('global:getSongsFromQueue'),
   nameLocalizations: getLocalizations('global:queue'),
   descriptionLocalizations: getLocalizations('global:getSongsFromQueue'),
+  type: ApplicationCommandType.ChatInput,
 
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
-    if (!interaction.guildId) {
-      const genericError = localize('global:genericError');
-      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return interaction.reply({
-        content: genericError,
+    try {
+      if (!interaction.guildId || !interaction.guild) {
+        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        return await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+      }
+
+      const player = useDefaultPlayer();
+      const queue = player.nodes.get(interaction.guildId);
+
+      if (!queue || !queue.isPlaying()) {
+        return await interaction.reply({ content: localize('global:noMusicCurrentlyPlaying'), ephemeral: true });
+      }
+
+      const memberChannel = (interaction.member as GuildMember | null)?.voice.channel;
+      if (!memberChannel || memberChannel.id !== queue.channel?.id) {
+        return await interaction.reply({ content: localize('global:mustBeInSameVoiceChannel'), ephemeral: true });
+      }
+
+      if (queue.tracks.data.length === 0) {
+        return await interaction.reply({ content: localize('global:noTrackInQueue'), ephemeral: true });
+      }
+
+      const methods = ['📴', '🔂', '🔁', '▶️'];
+      const tracks = queue.tracks.data;
+      const totalPages = Math.ceil(tracks.length / 10);
+      let currentPage = 0;
+
+      const generateEmbed = (page: number) => {
+        const start = page * 10;
+        const end = start + 10;
+        const currentTracks = tracks.slice(start, end);
+
+        const tracksDescription = currentTracks
+          .map(
+            (track: Track, i: number) =>
+              `**${start + i + 1}**. ${track.title} | ${track.author} - ${localize('global:requestedBy', {
+                by: track.requestedBy?.username,
+              })}`,
+          )
+          .join('\n');
+
+        const severQueue = localize('global:severQueue', {
+          guild: interaction.guild?.name ?? '',
+          value: methods[queue.repeatMode],
+        });
+
+        return new EmbedBuilder()
+          .setColor(Colors.Default)
+          .setThumbnail(interaction.guild?.iconURL({ size: 2048 }) ?? null)
+          .setAuthor({ name: severQueue, iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }) })
+          .setDescription(`**${localize('global:current')}:** ${queue.currentTrack?.title}\n\n${tracksDescription}`)
+          .setTimestamp()
+          .setFooter({
+            text: `${localize('global:page')} ${page + 1} / ${totalPages}`,
+            iconURL: interaction.member?.avatar ?? undefined,
+          });
+      };
+
+      const generateButtons = (page: number) => {
+        return new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId('first_page')
+            .setLabel('⏪')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(page === 0),
+          new ButtonBuilder()
+            .setCustomId('prev_page')
+            .setLabel('⬅️')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(page === 0),
+          new ButtonBuilder()
+            .setCustomId('next_page')
+            .setLabel('➡️')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(page >= totalPages - 1),
+          new ButtonBuilder()
+            .setCustomId('last_page')
+            .setLabel('⏩')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(page >= totalPages - 1),
+        );
+      };
+
+      const reply = await interaction.reply({
+        embeds: [generateEmbed(currentPage)],
+        components: [generateButtons(currentPage)],
         ephemeral: true,
       });
-    }
-    const player = useDefaultPlayer();
-    const queue = player.nodes.get(interaction.guildId);
 
-    if (!queue) {
-      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return interaction.reply({
-        content: noMusicCurrentlyPlaying,
-        ephemeral: true,
-      });
-    }
-
-    if (!queue.tracks[0]) {
-      const noTrackInQueue = localize('global:noTrackInQueue');
-      return interaction.reply({
-        content: noTrackInQueue,
-        ephemeral: true,
-      });
-    }
-
-    const methods = ['', '🔁', '🔂'];
-
-    const songs = queue.tracks.data.length;
-
-    const nextSongs =
-      songs > 5
-        ? localize('global:queueAndOtherSongsInPlaylist', { count: songs - 5, lng: interaction.locale })
-        : localize('global:inPlaylistNrSongs', { songs, lng: interaction.locale });
-
-    const tracks = queue.tracks.map(
-      (track, i) =>
-        `**${i + 1}** - ${track.title} | ${track.author} ${localize('global:requestedBy', {
-          by: track?.requestedBy?.username,
-          lng: interaction.locale,
-        })}`,
-    );
-
-    const severQueue = localize('global:severQueue', {
-      lng: interaction.locale,
-      guild: interaction.guild?.name ?? '',
-      value: methods[queue.repeatMode],
-    });
-
-    const embed = new EmbedBuilder()
-      .setColor(Colors.Default)
-      .setThumbnail(interaction.guild?.iconURL({ size: 2048 }) ?? null)
-      .setAuthor({
-        name: severQueue,
-        iconURL: interaction.client.user?.displayAvatarURL({ size: 1024 }),
-      })
-      .setDescription(
-        `${localize('global:current')} ${queue.currentTrack?.title}\n\n${tracks
-          .slice(0, 5)
-          .join('\n')}\n\n${nextSongs}`,
-      )
-      .setTimestamp()
-      .setFooter({
-        text: localize('global:defaultFooter'),
-        iconURL: interaction.member?.avatar ?? undefined,
+      const collector = reply.createMessageComponentCollector({
+        time: 60000,
+        filter: (m) => m.user.id === interaction.user.id,
       });
 
-    return interaction.reply({ embeds: [embed] });
+      collector.on('collect', async (inter) => {
+        if (!inter.isButton()) return;
+
+        switch (inter.customId) {
+          case 'first_page':
+            currentPage = 0;
+            break;
+          case 'prev_page':
+            currentPage--;
+            break;
+          case 'next_page':
+            currentPage++;
+            break;
+          case 'last_page':
+            currentPage = totalPages - 1;
+            break;
+        }
+
+        await inter.update({
+          embeds: [generateEmbed(currentPage)],
+          components: [generateButtons(currentPage)],
+        });
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        logger(error).error();
+      } else {
+        logger(String(error)).error();
+      }
+      if (interaction.replied || interaction.deferred) {
+        return await interaction.followUp({ content: localize('global:genericError'), ephemeral: true });
+      }
+      return await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+    }
   },
 };
 

@@ -1,18 +1,25 @@
-import { useMainPlayer } from 'discord-player';
-import { DiscordjsError } from 'discord.js';
-import { logger } from '../logger/logger';
-import { DefaultLoggerMessage } from '../../enums/logger';
+import { Player } from 'discord-player';
+import { Client } from 'discord.js';
+import { logger } from '../logger/logger.js';
+import { PlayerEventManager } from './playerEventManager.js';
 
-export const useDefaultPlayer = () => {
-  const player = useMainPlayer();
+let player: Player | null = null;
+let playerEventManager: PlayerEventManager | null = null;
 
+export const useDefaultPlayer = (): Player => {
   if (!player) {
-    throw new Error(); // throw new DiscordjsError('The Discord player has not been created or initialized yet.');
+    throw new Error('Player has not been initialized.');
+  }
+  return player;
+};
+
+export const initializePlayer = (client: Client): Player => {
+  if (player) {
+    return player;
   }
 
-  if (player.extractors.size === 0) {
-    logger(DefaultLoggerMessage.NoExtractorsRegistered).warning();
-  }
+  player = new Player(client);
+  playerEventManager = new PlayerEventManager(player);
 
   return player;
 };

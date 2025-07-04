@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ChatInputCommandInteraction } from 'discord.js';
+import { ApplicationCommandOptionType, ChatInputCommandInteraction, GuildMember } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
 import { ms } from '../../helpers/time/ms.js';
@@ -25,56 +25,71 @@ export const Seek: PlayerCommand = {
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
-    if (!interaction.guildId) {
-      const genericError = localize('global:genericError');
-
-      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return interaction.reply({
-        content: genericError,
-        ephemeral: true,
-      });
-    }
-    const player = useDefaultPlayer();
-    const queue = player.nodes.get(interaction.guildId);
-
-    if (!queue?.isPlaying()) {
-      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-
-      return interaction.reply({
-        content: noMusicCurrentlyPlaying,
-        ephemeral: true,
-      });
-    }
-
     try {
-      const timeToMS = ms(interaction.options.getString('time'));
-
-      if (queue.currentTrack?.durationMS !== undefined && timeToMS >= queue.currentTrack.durationMS) {
-        const indicatedTimeIsTooHigh = localize('global:indicatedTimeIsTooHigh');
-        const validSkipHint = localize('global:validSkipHint');
-
+      if (!interaction.guildId || !interaction.guild) {
+        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
         return await interaction.reply({
-          content: `${indicatedTimeIsTooHigh}\n${validSkipHint}`,
+          content: localize('global:genericError'),
+          ephemeral: true,
+        });
+      }
+      const player = useDefaultPlayer();
+      const queue = player.nodes.get(interaction.guildId);
+
+      if (!queue?.isPlaying() || !queue.currentTrack) {
+        return await interaction.reply({
+          content: localize('global:noMusicCurrentlyPlaying'),
+          ephemeral: true,
+        });
+      }
+
+      const memberChannel = (interaction.member as GuildMember | null)?.voice.channel;
+      if (!memberChannel || memberChannel.id !== queue.channel?.id) {
+        return await interaction.reply({
+          content: localize('global:mustBeInSameVoiceChannel'),
+          ephemeral: true,
+        });
+      }
+
+      const timeToMS = ms(interaction.options.getString('time', true));
+
+      if (timeToMS >= queue.currentTrack.durationMS) {
+        return await interaction.reply({
+          content: `${localize('global:indicatedTimeIsTooHigh')}\n${localize('global:validSkipHint')}`,
           ephemeral: true,
         });
       }
 
       await queue.node.seek(timeToMS);
-      const timeSetInCurrentTrack = localize('global:timeSetInCurrentTrack', {
-        lng: interaction.locale,
-        time: timeToMS,
-      });
 
       return await interaction.reply({
-        content: timeSetInCurrentTrack,
+        content: localize('global:timeSetInCurrentTrack', {
+          time: timeToMS,
+        }),
       });
-    } catch {
-      const invalidMsFormat = localize('global:invalidMsFormat', {
-        lng: interaction.locale,
-      });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Invalid time value')) {
+        return await interaction.reply({
+          content: localize('global:invalidMsFormat'),
+          ephemeral: true,
+        });
+      }
 
+      if (error instanceof Error) {
+        logger(error).error();
+      } else {
+        logger(String(error)).error();
+      }
+
+      if (interaction.replied || interaction.deferred) {
+        return await interaction.followUp({
+          content: localize('global:genericError'),
+          ephemeral: true,
+        });
+      }
       return await interaction.reply({
-        content: invalidMsFormat,
+        content: localize('global:genericError'),
+        ephemeral: true,
       });
     }
   },

@@ -2,8 +2,7 @@ import {
   ApplicationCommandOptionType,
   ApplicationCommandType,
   ChatInputCommandInteraction,
-  InteractionReplyOptions,
-  MessagePayload,
+  GuildMember,
 } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
@@ -33,90 +32,97 @@ export const Loop: PlayerCommand = {
         { name: localizedString('global:queue'), value: LoopOption.EnableLoopQueue },
         { name: localizedString('global:song'), value: LoopOption.EnableLoopSong },
         { name: localizedString('global:disable'), value: LoopOption.DisableLoop },
+        { name: localizedString('global:autoplay'), value: LoopOption.EnableAutoplay },
       ],
     },
   ],
   type: ApplicationCommandType.ChatInput,
 
   run: async (interaction: ChatInputCommandInteraction) => {
-    const sendResponse = async (options: string | MessagePayload | InteractionReplyOptions) => {
-      if (interaction.replied) {
-        await interaction.followUp(options);
-      } else {
-        await interaction.reply(options);
-      }
-    };
-    const type = interaction.options.data.map((x) => x.value).toString() as LoopOption;
     const { localize } = useLocalizedString(interaction.locale);
-    if (!interaction.guildId) {
-      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      const genericError = localize('global:genericError');
-      return sendResponse({
-        content: genericError,
-        ephemeral: true,
-      });
-    }
-    const player = useDefaultPlayer();
-    const queue = player.nodes.get(interaction.guildId);
-
-    if (!queue?.isPlaying()) {
-      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return sendResponse({
-        content: noMusicCurrentlyPlaying,
-        ephemeral: true,
-      });
-    }
-    const genericError = localize('global:genericError');
-    switch (type) {
-      case LoopOption.EnableLoopQueue: {
-        if (queue.repeatMode === QueueRepeatMode.TRACK) {
-          const disableCurrentLoop = localize('global:disableCurrentLoop');
-
-          return sendResponse({
-            content: disableCurrentLoop,
-            ephemeral: true,
-          });
-        }
-
-        queue.setRepeatMode(QueueRepeatMode.QUEUE);
-
-        const response = localize('global:songRepeatMode');
-
-        // songRepeatMode
-        return sendResponse({
-          content: response,
-        });
-      }
-      case LoopOption.DisableLoop: {
-        queue.setRepeatMode(QueueRepeatMode.OFF);
-
-        return sendResponse({
-          content: localize('global:repeatModeDisabled'),
-        });
-      }
-      case LoopOption.EnableLoopSong: {
-        if (queue.repeatMode === QueueRepeatMode.QUEUE) {
-          const responsec = localize('global:disableCurrentLoop');
-          return sendResponse({
-            content: responsec,
-            ephemeral: true,
-          });
-        }
-
-        queue.setRepeatMode(QueueRepeatMode.TRACK);
-
-        const responsec = localize('global:songRepeatMode');
-
-        return sendResponse({
-          content: responsec,
-        });
-      }
-      default: {
-        return sendResponse({
-          content: genericError,
+    try {
+      if (!interaction.guildId) {
+        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        return await interaction.reply({
+          content: localize('global:genericError'),
           ephemeral: true,
         });
       }
+      const player = useDefaultPlayer();
+      const queue = player.nodes.get(interaction.guildId);
+
+      if (!queue?.isPlaying()) {
+        return await interaction.reply({
+          content: localize('global:noMusicCurrentlyPlaying'),
+          ephemeral: true,
+        });
+      }
+
+      const memberChannel = (interaction.member as GuildMember | null)?.voice.channel;
+      if (!memberChannel || memberChannel.id !== queue.channel?.id) {
+        return await interaction.reply({
+          content: localize('global:mustBeInSameVoiceChannel'),
+          ephemeral: true,
+        });
+      }
+
+      const type = interaction.options.getString('action', true) as LoopOption;
+
+      let replyMessage = '';
+
+      switch (type) {
+        case LoopOption.EnableLoopQueue:
+          if (queue.repeatMode === QueueRepeatMode.QUEUE) {
+            replyMessage = localize('global:loopAlreadyEnabled');
+          } else {
+            queue.setRepeatMode(QueueRepeatMode.QUEUE);
+            replyMessage = localize('global:queueLoopEnabled');
+          }
+          break;
+        case LoopOption.EnableLoopSong:
+          if (queue.repeatMode === QueueRepeatMode.TRACK) {
+            replyMessage = localize('global:loopAlreadyEnabled');
+          } else {
+            queue.setRepeatMode(QueueRepeatMode.TRACK);
+            replyMessage = localize('global:songLoopEnabled');
+          }
+          break;
+        case LoopOption.DisableLoop:
+          if (queue.repeatMode === QueueRepeatMode.OFF) {
+            replyMessage = localize('global:loopAlreadyDisabled');
+          } else {
+            queue.setRepeatMode(QueueRepeatMode.OFF);
+            replyMessage = localize('global:loopDisabled');
+          }
+          break;
+        case LoopOption.EnableAutoplay:
+          if (queue.repeatMode === QueueRepeatMode.AUTOPLAY) {
+            replyMessage = localize('global:autoplayAlreadyEnabled');
+          } else {
+            queue.setRepeatMode(QueueRepeatMode.AUTOPLAY);
+            replyMessage = localize('global:autoplayEnabled');
+          }
+          break;
+        default:
+          return await interaction.reply({
+            content: localize('global:genericError'),
+            ephemeral: true,
+          });
+      }
+
+      return await interaction.reply({
+        content: replyMessage,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        logger(error).error();
+      } else {
+        logger(String(error)).error();
+      }
+      await interaction.reply({
+        content: localize('global:genericError'),
+        ephemeral: true,
+      });
     }
   },
 };

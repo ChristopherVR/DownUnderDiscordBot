@@ -7,6 +7,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { DefaultLoggerMessage } from '../../enums/logger.js';
+import { Track } from 'discord-player';
 
 export const PlayNext: PlayerCommand = {
   name: localizedString('global:playnext'),
@@ -16,9 +17,9 @@ export const PlayNext: PlayerCommand = {
 
   options: [
     {
-      name: localizedString('global:playnext'),
+      name: localizedString('global:song'),
       description: localizedString('global:songToPlayNext'),
-      nameLocalizations: getLocalizations('global:playnext'),
+      nameLocalizations: getLocalizations('global:song'),
       descriptionLocalizations: getLocalizations('global:songToPlayNext'),
       type: ApplicationCommandOptionType.String,
       required: true,
@@ -27,54 +28,57 @@ export const PlayNext: PlayerCommand = {
 
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
-    if (!interaction.guildId) {
-      const genericError = localize('global:genericError');
-      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return interaction.reply({
-        content: genericError,
-        ephemeral: true,
+
+    try {
+      if (!interaction.guildId || !interaction.guild) {
+        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        return await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+      }
+
+      const player = useDefaultPlayer();
+      const queue = player.nodes.get(interaction.guildId);
+
+      if (!queue?.isPlaying()) {
+        return await interaction.reply({ content: localize('global:noMusicCurrentlyPlaying'), ephemeral: true });
+      }
+
+      const memberChannel = (interaction.member as GuildMember | null)?.voice.channel;
+      if (!memberChannel || memberChannel.id !== queue.channel?.id) {
+        return await interaction.reply({ content: localize('global:mustBeInSameVoiceChannel'), ephemeral: true });
+      }
+
+      const song = interaction.options.getString('song', true);
+      await interaction.deferReply({ ephemeral: true });
+
+      const res = await player.search(song, {
+        requestedBy: interaction.member as GuildMember,
+        searchEngine: QueryType.AUTO,
       });
-    }
-    const player = useDefaultPlayer();
-    const queue = player.nodes.get(interaction.guildId);
 
-    if (!queue?.isPlaying()) {
-      const response = localize('global:noMusicCurrentlyPlaying');
-      return interaction.reply({
-        content: response,
-        ephemeral: true,
+      if (!res.tracks.length) {
+        return await interaction.followUp({ content: localize('global:noResultsFound') });
+      }
+
+      if (res.playlist) {
+        return await interaction.followUp({ content: localize('global:playlistsNotSupported') });
+      }
+
+      queue.insertTrack(res.tracks[0] as Track, 0);
+
+      return await interaction.followUp({
+        content: localize('global:trackInsertedIntoQueue', { track: res.tracks[0].title }),
       });
+    } catch (error) {
+      if (error instanceof Error) {
+        logger(error).error();
+      } else {
+        logger(String(error)).error();
+      }
+      if (interaction.replied || interaction.deferred) {
+        return await interaction.followUp({ content: localize('global:genericError'), ephemeral: true });
+      }
+      return await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
     }
-
-    const song = interaction.options.getString('song') ?? '';
-    await interaction.deferReply();
-    const res = await player.search(song, {
-      requestedBy: interaction.member as GuildMember,
-      searchEngine: QueryType.AUTO,
-    });
-
-    if (!res.tracks.length) {
-      const noResultsFound = localize('global:noTracksFoundQueue');
-      return interaction.followUp({
-        content: noResultsFound,
-        ephemeral: true,
-      });
-    }
-
-    if (res.playlist) {
-      const playlistsNotSupported = localize('global:playlistsNotSupported');
-      return interaction.followUp({
-        content: playlistsNotSupported,
-        ephemeral: true,
-      });
-    }
-
-    queue.insertTrack(res.tracks[0], 0);
-    const trackInsertedIntoQueue = localize('global:trackInsertedIntoQueue');
-    return interaction.followUp({
-      content: trackInsertedIntoQueue,
-      ephemeral: true,
-    });
   },
 };
 

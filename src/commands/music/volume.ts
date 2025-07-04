@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, InteractionReplyOptions } from 'discord.js';
+import { ApplicationCommandOptionType, ChatInputCommandInteraction, GuildMember } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
 
@@ -6,20 +6,6 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { DefaultLoggerMessage } from '../../enums/logger.js';
-import { VolumeInputInteraction } from '../../models/commands/volume.js';
-
-const replyToUser = async (interaction: ChatInputCommandInteraction, interactionOptions: InteractionReplyOptions) => {
-  if (interaction.deferred || interaction.replied) {
-    await interaction.deleteReply();
-    return interaction.followUp({
-      ...interactionOptions,
-    });
-  }
-
-  return interaction.reply({
-    ...interactionOptions,
-  });
-};
 
 export const Volume: PlayerCommand = {
   name: localizedString('global:volume'),
@@ -29,60 +15,68 @@ export const Volume: PlayerCommand = {
 
   options: [
     {
-      name: localizedString('volume'),
+      name: localizedString('global:volume'),
       nameLocalizations: getLocalizations('global:volume'),
       description: localizedString('global:amountOfVolume'),
       descriptionLocalizations: getLocalizations('global:amountOfVolume'),
       type: ApplicationCommandOptionType.Number,
       required: true,
-      minValue: 1,
-      maxValue: 100,
     },
   ],
-  run: async (interaction: VolumeInputInteraction) => {
+  run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
-    const genericError = localize('global:genericError');
-    if (!interaction.guildId) {
-      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return replyToUser(interaction, {
-        content: genericError,
-        ephemeral: true,
+    try {
+      if (!interaction.guildId || !interaction.guild) {
+        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        return await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+      }
+
+      const player = useDefaultPlayer();
+      const queue = player.nodes.get(interaction.guildId);
+
+      if (!queue?.isPlaying()) {
+        return await interaction.reply({ content: localize('global:noMusicCurrentlyPlaying'), ephemeral: true });
+      }
+
+      const memberChannel = (interaction.member as GuildMember | null)?.voice.channel;
+      if (!memberChannel || memberChannel.id !== queue.channel?.id) {
+        return await interaction.reply({ content: localize('global:mustBeInSameVoiceChannel'), ephemeral: true });
+      }
+
+      const vol = interaction.options.getNumber('volume', true);
+
+      if (vol < 0 || vol > 200) {
+        return await interaction.reply({
+          content: localize('global:volumeMustBeBetween', { min: 0, max: 200 }),
+          ephemeral: true,
+        });
+      }
+
+      if (queue.node.volume === vol) {
+        return await interaction.reply({
+          content: localize('global:volumeAlreadyTheSame'),
+          ephemeral: true,
+        });
+      }
+
+      const success = queue.node.setVolume(vol);
+
+      return await interaction.reply({
+        content: success
+          ? localize('global:volumeHasBeenModifiedTo', { volume: vol })
+          : localize('global:genericError'),
       });
+    } catch (error) {
+      if (error instanceof Error) {
+        logger(error).error();
+      } else {
+        logger(String(error)).error();
+      }
+      if (interaction.replied || interaction.deferred) {
+        return await interaction.followUp({ content: localize('global:genericError'), ephemeral: true });
+      }
+      return await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
     }
-    const player = useDefaultPlayer();
-    const queue = player.nodes.get(interaction.guildId);
-
-    if (!queue) {
-      const noMusicCurrentlyPlaying = localize('global:noMusicCurrentlyPlaying');
-      return replyToUser(interaction, {
-        ephemeral: true,
-        content: noMusicCurrentlyPlaying,
-      });
-    }
-
-    let vol = interaction.options.getNumber('volume') ?? queue.node.volume ?? 100;
-
-    if (interaction.volume) {
-      vol = interaction.increase ? vol + interaction.volume : vol - interaction.volume;
-    }
-
-    if (queue.node.volume === vol) {
-      const volumeAlreadyTheSame = localize('global:volumeAlreadyTheSame');
-
-      return replyToUser(interaction, {
-        content: volumeAlreadyTheSame,
-        ephemeral: true,
-      });
-    }
-    const success = queue.node.setVolume(vol);
-    const volumeHasBeenModifiedTo = localize('global:volumeHasBeenModifiedTo', {
-      lng: interaction.locale,
-      volume: vol,
-    });
-
-    return replyToUser(interaction, {
-      content: success ? volumeHasBeenModifiedTo : genericError,
-    });
   },
 };
 

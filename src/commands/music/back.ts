@@ -1,4 +1,4 @@
-import { ApplicationCommandType, ChatInputCommandInteraction } from 'discord.js';
+import { ApplicationCommandType, ChatInputCommandInteraction, GuildMember } from 'discord.js';
 import { PlayerCommand } from '../../models/discord.js';
 
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
@@ -16,38 +16,54 @@ export const Back: PlayerCommand = {
   type: ApplicationCommandType.ChatInput,
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
-    if (!interaction.guildId) {
-      logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-      return interaction.reply({
-        content: localize('global:genericError', {
-          lng: interaction.locale,
+
+    try {
+      if (!interaction.guildId) {
+        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        return await interaction.reply({
+          content: localize('global:genericError'),
           ephemeral: true,
-        }),
-      });
-    }
+        });
+      }
 
-    const player = useDefaultPlayer();
-    const queue = player.nodes.get(interaction.guildId);
+      const player = useDefaultPlayer();
+      const queue = player.nodes.get(interaction.guildId);
 
-    if (!queue?.isPlaying()) {
-      const response = localize('global:noMusicCurrentlyPlaying');
-      return interaction.reply({
-        content: response,
+      if (!queue?.isPlaying()) {
+        return await interaction.reply({
+          content: localize('global:noMusicCurrentlyPlaying'),
+          ephemeral: true,
+        });
+      }
+
+      const memberChannel = (interaction.member as GuildMember | null)?.voice.channel;
+      if (!memberChannel || memberChannel.id !== queue.channel?.id) {
+        return await interaction.reply({
+          content: localize('global:mustBeInSameVoiceChannel'),
+          ephemeral: true,
+        });
+      }
+
+      if (!queue.history.previousTrack) {
+        return await interaction.reply({
+          content: localize('global:noMusicPlayedPreviously'),
+          ephemeral: true,
+        });
+      }
+
+      await queue.history.back();
+      await interaction.reply({ content: localize('global:playingPreviousTrack') });
+    } catch (error) {
+      if (error instanceof Error) {
+        logger(error).error();
+      } else {
+        logger(String(error)).error();
+      }
+      await interaction.reply({
+        content: localize('global:genericError'),
         ephemeral: true,
       });
     }
-
-    if (!queue.history.previousTrack) {
-      const response = localize('global:noMusicPlayedPreviously');
-      return interaction.reply({
-        content: response,
-        ephemeral: true,
-      });
-    }
-
-    await queue.history.back();
-    const response = localize('global:playingPreviousTrack');
-    return interaction.reply({ content: response });
   },
 };
 
