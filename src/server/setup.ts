@@ -39,6 +39,6 @@ export const setup = (callback: () => Promise<void> | Awaitable<void>) => {
 
   server.listen(port, hostname, () => {
     void callback();
-    logger(`Server is running at ${protocol}://${hostname}:${port}/`).info();
+    logger.info(`Server is running at ${protocol}://${hostname}:${port}/`);
   });
 };

@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ChatInputCommandInteraction, GuildMember } from 'discord.js';
+import { ApplicationCommandOptionType, ChatInputCommandInteraction, GuildMember, MessageFlags } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
 import { ms } from '../../helpers/time/ms.js';
@@ -6,7 +6,6 @@ import { ms } from '../../helpers/time/ms.js';
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const Seek: PlayerCommand = {
   name: localizedString('global:seek'),
@@ -27,10 +26,10 @@ export const Seek: PlayerCommand = {
     const { localize } = useLocalizedString(interaction.locale);
     try {
       if (!interaction.guildId || !interaction.guild) {
-        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        logger.error('Guild is not defined.');
         return await interaction.reply({
           content: localize('global:genericError'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
       const player = useDefaultPlayer();
@@ -39,7 +38,7 @@ export const Seek: PlayerCommand = {
       if (!queue?.isPlaying() || !queue.currentTrack) {
         return await interaction.reply({
           content: localize('global:noMusicCurrentlyPlaying'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -47,7 +46,7 @@ export const Seek: PlayerCommand = {
       if (!memberChannel || memberChannel.id !== queue.channel?.id) {
         return await interaction.reply({
           content: localize('global:mustBeInSameVoiceChannel'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -56,7 +55,7 @@ export const Seek: PlayerCommand = {
       if (timeToMS >= queue.currentTrack.durationMS) {
         return await interaction.reply({
           content: `${localize('global:indicatedTimeIsTooHigh')}\n${localize('global:validSkipHint')}`,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -64,32 +63,29 @@ export const Seek: PlayerCommand = {
 
       return await interaction.reply({
         content: localize('global:timeSetInCurrentTrack', {
-          time: timeToMS,
+          time: ms(timeToMS),
         }),
+        flags: MessageFlags.Ephemeral,
       });
     } catch (error) {
       if (error instanceof Error && error.message.includes('Invalid time value')) {
         return await interaction.reply({
           content: localize('global:invalidMsFormat'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
-      if (error instanceof Error) {
-        logger(error).error();
-      } else {
-        logger(String(error)).error();
-      }
+      logger.error(error);
 
       if (interaction.replied || interaction.deferred) {
         return await interaction.followUp({
           content: localize('global:genericError'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
       return await interaction.reply({
         content: localize('global:genericError'),
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

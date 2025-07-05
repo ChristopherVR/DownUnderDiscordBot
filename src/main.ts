@@ -1,5 +1,6 @@
+import 'dotenv/config';
 import { Player } from 'discord-player';
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, ChannelType, Collection, TextChannel, MessageFlags } from 'discord.js';
 
 import i18n from './helpers/localization/i18n.js';
 import { setup } from './server/setup.js';
@@ -14,31 +15,32 @@ import {
 } from '@discord-player/extractor';
 import { useLocalizedString } from './helpers/localization/localizedString.js';
 import { logger } from './helpers/logger/logger.js';
-import { DefaultLoggerMessage } from './enums/logger.js';
-import { YoutubeiExtractor } from 'discord-player-youtubei';
 import { initializePlayer, useDefaultPlayer } from './helpers/discord/player.js';
 import { QueueRepeatMode } from 'discord-player';
 import { Queue as displayQueue } from './commands/music/queue.js';
 import { activeController, getControllerPayload } from './helpers/discord/playerEventManager.js';
+import { YoutubeiExtractor } from 'discord-player-youtubei';
 
 const token = process.env.CLIENT_TOKEN;
 
 process.on('uncaughtException', (err) => {
-  logger(err).fatal();
+  logger.fatal(err);
 });
 
 process.on('unhandledRejection', (err: Error) => {
-  logger(err).fatal();
+  logger.fatal(err);
 });
 
 const init = async () => {
   await i18n();
+  logger.info('Localization has been loaded.');
 
   const client = new Client({
     intents:
       GatewayIntentBits.GuildMessages |
       GatewayIntentBits.MessageContent |
       GatewayIntentBits.GuildVoiceStates |
+      GatewayIntentBits.GuildMembers |
       GatewayIntentBits.Guilds,
   });
 
@@ -46,10 +48,36 @@ const init = async () => {
     if (!client.user || !client.application) {
       return;
     }
-    logger(`${client.user.username} is now connected.`).info();
+    logger.info(`${client.user.username} is now connected.`);
 
     const { COMMANDS } = await import('./constants/commands.js');
     await client.application.commands.set(COMMANDS);
+
+    if (process.env.MUSIC_CHANNEL_ID) {
+      try {
+        const musicChannel = await client.channels.fetch(process.env.MUSIC_CHANNEL_ID);
+
+        logger.info({ musicChannel }, 'Music channel fetched');
+        if (musicChannel && musicChannel.type === ChannelType.GuildText) {
+          let fetched: Collection<string, any>;
+          do {
+            fetched = await (musicChannel as TextChannel).messages.fetch();
+            logger.info('Fetching messages');
+            if (fetched.size > 0) {
+              for (const message of fetched.values()) {
+                logger.info(message.id, 'Deleting message.');
+                await message.delete();
+              }
+            }
+          } while (fetched.size > 0);
+          logger.info(`Cleaned up music channel: ${musicChannel.id}`);
+        } else {
+          logger.warn(`Music channel ${process.env.MUSIC_CHANNEL_ID} not found or is not a text channel.`);
+        }
+      } catch (error) {
+        logger.error(error as Error);
+      }
+    }
 
     const { localize } = useLocalizedString();
     const value = localize('activity:default');
@@ -57,7 +85,15 @@ const init = async () => {
   });
 
   client.on('interactionCreate', async (interaction) => {
-    logger(`INTERACTION: ${interaction.type} - USER: ${interaction.user.id} - GUILD: ${interaction.guildId}`).info();
+    logger.info(
+      {
+        type: interaction.type,
+        user: interaction.user.id,
+        guild: interaction.guildId,
+        channel: interaction.channel?.id,
+      },
+      'Interaction received',
+    );
     if (interaction.isChatInputCommand()) {
       const { handleSlashCommand } = await import('./helpers/discord/slashCommand.js');
       await handleSlashCommand(interaction);
@@ -65,7 +101,15 @@ const init = async () => {
     }
 
     if (interaction.isButton()) {
-      logger(`BUTTON: ${interaction.customId} - USER: ${interaction.user.id} - GUILD: ${interaction.guildId}`).info();
+      logger.info(
+        {
+          customId: interaction.customId,
+          user: interaction.user.id,
+          guild: interaction.guildId,
+          channel: interaction.channel?.id,
+        },
+        'Button interaction received',
+      );
       const player = useDefaultPlayer();
       const queue = player.nodes.get(interaction.guildId!);
       if (!queue || !interaction.guildId) return;
@@ -81,11 +125,12 @@ const init = async () => {
           break;
         case 'stop':
           if (queue.currentTrack) {
+            queue.delete();
             if (controller) {
               const stoppedEmbed = new EmbedBuilder().setDescription('⏹️ Music has been stopped.').setColor('Red');
               await controller.edit({ embeds: [stoppedEmbed], components: [] });
+              activeController.delete(interaction.guildId);
             }
-            queue.delete();
           }
           break;
         case 'pause_resume':
@@ -107,18 +152,20 @@ const init = async () => {
         case 'queue':
           {
             if (!queue.tracks || queue.tracks.size === 0) {
-              await interaction.reply({ content: 'The queue is empty.', ephemeral: true });
+              await interaction.reply({ content: 'The queue is empty.', flags: MessageFlags.Ephemeral });
               return;
             }
 
-            const tracks = queue.tracks.map((track, i) => {
-              return `${i + 1}. **${track.title}** ([link](${track.url}))`;
-            });
+            const tracks = queue.tracks
+              .map((track, i) => {
+                return `${i + 1}. **${track.title}** ([link](${track.url}))`;
+              })
+              .slice(0, 10);
             const queueEmbed = new EmbedBuilder()
               .setTitle('Server Queue')
               .setDescription(tracks.join('\n'))
               .setColor('Random');
-            await interaction.reply({ embeds: [queueEmbed], ephemeral: true });
+            await interaction.reply({ embeds: [queueEmbed], flags: MessageFlags.Ephemeral });
           }
           return;
       }
@@ -127,18 +174,17 @@ const init = async () => {
   });
 
   if (!token) {
-    logger(DefaultLoggerMessage.NoClientToken).fatal();
+    logger.fatal('No client token provided.');
     process.exit(1);
   } else {
     await client.login(token);
 
     const player = initializePlayer(client);
 
-    logger('Loading extractors...').info();
+    logger.info('Loading extractors...');
 
     await player.extractors.loadMulti([
       SpotifyExtractor,
-      YoutubeiExtractor,
       SoundCloudExtractor,
       AttachmentExtractor,
       VimeoExtractor,
@@ -146,13 +192,11 @@ const init = async () => {
       ReverbnationExtractor,
     ]);
 
-    if (player.extractors.size === 0) {
-      logger(DefaultLoggerMessage.NoExtractorsRegistered).warning();
-    }
-  }
+    await player.extractors.register(YoutubeiExtractor, {});
 
-  if (localization) {
-    logger('Localization has been loaded.').info();
+    if (player.extractors.size === 0) {
+      logger.warn('No extractors registered.');
+    }
   }
 };
 

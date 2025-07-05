@@ -43,7 +43,7 @@ export const i18n = async () =>
         loadPath: `${protocol}://${hostname}:${port}/locales/{{lng}}/{{ns}}.json`,
       },
     },
-    (error: Error) => error && logger(error).error(),
+    (error: Error) => error && logger.error(error),
   );
 
 globalThis.localization = instance;

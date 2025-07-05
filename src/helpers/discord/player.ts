@@ -1,6 +1,5 @@
 import { Player } from 'discord-player';
 import { Client } from 'discord.js';
-import { logger } from '../logger/logger.js';
 import { PlayerEventManager } from './playerEventManager.js';
 
 let player: Player | null = null;

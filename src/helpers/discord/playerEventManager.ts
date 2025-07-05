@@ -16,15 +16,12 @@ const stopUpdateInterval = (guildId: string) => {
 
 export const getControllerPayload = (queue: GuildQueue) => {
   const track = queue.currentTrack;
-  const embed = new EmbedBuilder().setColor('Random');
+  const embed = new EmbedBuilder().setColor('Red');
 
   const loopButton = new ButtonBuilder().setCustomId('loop').setLabel('🔁').setStyle(ButtonStyle.Secondary);
   switch (queue.repeatMode) {
     case QueueRepeatMode.TRACK:
       loopButton.setLabel('🔂').setStyle(ButtonStyle.Success);
-      break;
-    case QueueRepeatMode.QUEUE:
-      loopButton.setLabel('🔁').setStyle(ButtonStyle.Success);
       break;
     case QueueRepeatMode.AUTOPLAY:
       loopButton.setLabel('▶️').setStyle(ButtonStyle.Success);
@@ -39,7 +36,11 @@ export const getControllerPayload = (queue: GuildQueue) => {
         .setStyle(ButtonStyle.Primary)
         .setDisabled(!queue.history.previousTrack),
       new ButtonBuilder().setCustomId('pause_resume').setLabel('⏯️').setStyle(ButtonStyle.Primary).setDisabled(!track),
-      new ButtonBuilder().setCustomId('skip').setLabel('⏩').setStyle(ButtonStyle.Primary).setDisabled(!track),
+      new ButtonBuilder()
+        .setCustomId('skip')
+        .setLabel('⏩')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(!queue.history.nextTrack),
       new ButtonBuilder().setCustomId('stop').setLabel('⏹️').setStyle(ButtonStyle.Danger).setDisabled(!track),
     ),
     new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -91,26 +92,51 @@ export class PlayerEventManager {
 
   private attachEventListeners() {
     this.player.events.on('audioTrackAdd', (queue: GuildQueue, track: Track) => {
-      logger(`EVENT: audioTrackAdd - GUILD: ${queue.guild.id} - TRACK: ${track.title}`).info();
+      logger.info(
+        {
+          guild: queue.guild.id,
+          track: track.title,
+        },
+        'EVENT: audioTrackAdd',
+      );
     });
 
     this.player.events.on('audioTracksAdd', (queue: GuildQueue, tracks: Track[]) => {
-      logger(`EVENT: audioTracksAdd - GUILD: ${queue.guild.id} - COUNT: ${tracks.length}`).info();
+      logger.info(
+        {
+          guild: queue.guild.id,
+          count: tracks.length,
+        },
+        'EVENT: audioTracksAdd',
+      );
     });
 
     this.player.events.on('playerStart', async (queue: GuildQueue, track: Track) => {
-      logger(`EVENT: playerStart - GUILD: ${queue.guild.id} - TRACK: ${track.title}`).info();
+      logger.info(
+        {
+          guild: queue.guild.id,
+          track: track.title,
+        },
+        'EVENT: playerStart',
+      );
       const metadata = queue.metadata as { channel: TextChannel };
       if (!metadata.channel || !(metadata.channel instanceof TextChannel)) return;
 
-      // Delete old controller if it exists
-      const oldController = activeController.get(queue.guild.id);
-      if (oldController) await oldController.delete().catch(() => {});
-      stopUpdateInterval(queue.guild.id);
-
       const payload = getControllerPayload(queue);
-      const message = await metadata.channel.send(payload);
-      activeController.set(queue.guild.id, message);
+      const controller = activeController.get(queue.guild.id);
+
+      try {
+        if (controller) {
+          await controller.edit(payload);
+        } else {
+          const message = await metadata.channel.send(payload);
+          activeController.set(queue.guild.id, message);
+        }
+      } catch (error) {
+        // If editing fails (e.g., message deleted), send a new one
+        const message = await metadata.channel.send(payload);
+        activeController.set(queue.guild.id, message);
+      }
 
       if (track.duration !== '0:00') {
         const interval = setInterval(async () => {
@@ -128,16 +154,24 @@ export class PlayerEventManager {
           }
         }, 1000); // Update every 1 seconds
         updateIntervals.set(queue.guild.id, interval);
+      } else {
+        stopUpdateInterval(queue.guild.id);
       }
     });
 
     this.player.events.on('playerFinish', (queue: GuildQueue, track: Track) => {
-      logger(`EVENT: playerFinish - GUILD: ${queue.guild.id} - TRACK: ${track.title}`).info();
+      logger.info(
+        {
+          guild: queue.guild.id,
+          track: track.title,
+        },
+        'EVENT: playerFinish',
+      );
       // Interval will be stopped by emptyQueue or the next playerStart
     });
 
     this.player.events.on('disconnect', (queue: GuildQueue) => {
-      logger(`EVENT: disconnect - GUILD: ${queue.guild.id}`).info();
+      logger.info({ guild: queue.guild.id }, 'EVENT: disconnect');
       stopUpdateInterval(queue.guild.id);
       const controller = activeController.get(queue.guild.id);
       if (controller) {
@@ -147,25 +181,21 @@ export class PlayerEventManager {
     });
 
     this.player.events.on('emptyChannel', (queue: GuildQueue) => {
-      logger(`EVENT: emptyChannel - GUILD: ${queue.guild.id}`).info();
+      logger.info({ guild: queue.guild.id }, 'EVENT: emptyChannel');
     });
 
     this.player.events.on('emptyQueue', (queue: GuildQueue) => {
-      logger(`EVENT: emptyQueue - GUILD: ${queue.guild.id}`).info();
+      logger.info({ guild: queue.guild.id }, 'EVENT: emptyQueue');
       stopUpdateInterval(queue.guild.id);
       const controller = activeController.get(queue.guild.id);
       if (controller) {
         controller.delete().catch(() => {});
         activeController.delete(queue.guild.id);
-        const metadata = queue.metadata as { channel: TextChannel };
-        if (metadata.channel) {
-          metadata.channel.send('✅ The queue is empty. Music session has ended!');
-        }
       }
     });
 
     this.player.events.on('error', (queue: GuildQueue, error: Error) => {
-      logger(`EVENT: error - GUILD: ${queue.guild.id}`, error).error();
+      logger.error({ guild: queue.guild.id, error: error }, 'EVENT: error');
     });
   }
 }

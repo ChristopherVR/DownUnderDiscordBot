@@ -39,11 +39,7 @@ export const Meme: Command<ChatInputCommandInteraction> = {
 
       await interaction.followUp({ embeds: [embed] });
     } catch (error) {
-      if (error instanceof Error) {
-        logger(error).error();
-      } else {
-        logger(String(error)).error();
-      }
+      logger.error(error);
       await interaction.followUp({
         content: localize('global:genericError'),
         ephemeral: true,

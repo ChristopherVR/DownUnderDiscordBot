@@ -9,6 +9,7 @@ import {
   EmbedBuilder,
   MessageActionRowComponentBuilder,
   GuildMember,
+  MessageFlags,
 } from 'discord.js';
 import { PlayerTimestamp, QueueRepeatMode } from 'discord-player';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
@@ -21,7 +22,6 @@ import { NowPlayingAction } from '../../enums/nowplaying.js';
 import Save from './save.js';
 import { Loop } from './loop.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const NowPlaying: PlayerCommand = {
   name: localizedString('global:nowplaying'),
@@ -35,10 +35,10 @@ export const NowPlaying: PlayerCommand = {
     const { localize } = useLocalizedString(interaction.locale);
     try {
       if (!interaction.guildId || !interaction.guild) {
-        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        logger.error('Guild is not defined.');
         return await interaction.reply({
           content: localize('global:genericError'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
       const player = useDefaultPlayer();
@@ -48,7 +48,7 @@ export const NowPlaying: PlayerCommand = {
       if (!queue || !queue.isPlaying() || !track) {
         return await interaction.reply({
           content: localize('global:noMusicCurrentlyPlaying'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -56,14 +56,14 @@ export const NowPlaying: PlayerCommand = {
       if (!memberChannel || memberChannel.id !== queue.channel?.id) {
         return await interaction.reply({
           content: localize('global:mustBeInSameVoiceChannel'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
       if (interaction.channel?.type !== ChannelType.GuildText) {
         return await interaction.reply({
           content: localize('global:haveToSendToTextChannel'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -71,8 +71,8 @@ export const NowPlaying: PlayerCommand = {
       try {
         timestamp = queue.node.getTimestamp();
       } catch {
-        logger(DefaultLoggerMessage.UnableToRetrieveCurrentQueueTimestamp).error();
-        return await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+        logger.error('Unable to retrieve current queue timestamp.');
+        return await interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
       }
 
       const trackDuration = timestamp?.progress === Number.MAX_SAFE_INTEGER ? 'infinity (live)' : track?.duration;
@@ -103,74 +103,21 @@ export const NowPlaying: PlayerCommand = {
           .setTimestamp();
       };
 
-      const generateButtons = () => {
-        const isPaused = queue.node.isPaused();
-        return new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-          new ButtonBuilder()
-            .setLabel(localize('global:repeatCapitalise'))
-            .setCustomId(NowPlayingAction.Loop)
-            .setStyle(ButtonStyle.Primary),
-          new ButtonBuilder()
-            .setLabel(isPaused ? localize('global:resumeCapitalise') : localize('global:pauseCapitalise'))
-            .setCustomId(NowPlayingAction.Pause)
-            .setStyle(isPaused ? ButtonStyle.Success : ButtonStyle.Primary),
-          new ButtonBuilder()
-            .setLabel(localize('global:saveTrack'))
-            .setCustomId(NowPlayingAction.SaveTrack)
-            .setStyle(ButtonStyle.Success),
-        );
-      };
-
-      const reply = await interaction.reply({
+      await interaction.reply({
         embeds: [generateEmbed()],
-        components: [generateButtons()],
-        ephemeral: true,
-      });
-
-      const collector = reply.createMessageComponentCollector({
-        time: 60000,
-        filter: (m) => m.user.id === interaction.user.id,
-      });
-
-      collector.on('collect', async (inter) => {
-        if (!inter.isButton()) return;
-
-        switch (inter.customId as NowPlayingAction) {
-          case NowPlayingAction.Loop:
-            queue.setRepeatMode(((queue.repeatMode + 1) % 4) as QueueRepeatMode);
-            break;
-          case NowPlayingAction.Pause:
-            queue.node.setPaused(!queue.node.isPaused());
-            break;
-          case NowPlayingAction.SaveTrack:
-            {
-              const dm = await interaction.user.createDM();
-              await dm.send({
-                content: localize('global:savedTrack', { title: track.title }),
-              });
-            }
-            break;
-        }
-        await inter.update({
-          embeds: [generateEmbed()],
-          components: [generateButtons()],
-        });
+        flags: MessageFlags.Ephemeral,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        logger(error).error();
-      } else {
-        logger(String(error)).error();
-      }
+      logger.error(error);
       if (interaction.replied || interaction.deferred) {
         return await interaction.followUp({
           content: localize('global:genericError'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
       return await interaction.reply({
         content: localize('global:genericError'),
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

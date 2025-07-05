@@ -4,24 +4,18 @@ import {
   ApplicationCommandOptionType,
   ButtonBuilder,
   ButtonStyle,
-  ChannelType,
   ChatInputCommandInteraction,
   EmbedBuilder,
   GuildMember,
-  InteractionCollector,
   MessageActionRowComponentBuilder,
+  MessageFlags,
 } from 'discord.js';
-import {
-  localizedString,
-  LocalizedStringOptions,
-  useLocalizedString,
-} from '../../helpers/localization/localizedString.js';
+import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
 
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../enums/logger.js';
 import fs from 'fs/promises';
 import { join } from 'path';
 
@@ -49,7 +43,7 @@ const playAndQueue = async (
     }
     return track;
   } catch (error) {
-    logger('Error in playAndQueue', error).error();
+    logger.error({ err: error }, 'Error in playAndQueue');
     return null;
   }
 };
@@ -59,11 +53,12 @@ const handleSearch = async (interaction: ChatInputCommandInteraction, queue: Gui
   const query = interaction.options.getString('link-or-query', true);
   const result = await player.search(query, {
     requestedBy: interaction.user,
-    searchEngine: QueryType.AUTO,
+    ignoreCache: true,
+    searchEngine: QueryType.YOUTUBE,
   });
 
   if (!result.hasTracks()) {
-    return interaction.followUp({ content: localize('global:noResultsFound'), ephemeral: true });
+    return interaction.followUp({ content: localize('global:noResultsFound'), flags: MessageFlags.Ephemeral });
   }
 
   const tracks = result.tracks.slice(0, 5);
@@ -77,36 +72,51 @@ const handleSearch = async (interaction: ChatInputCommandInteraction, queue: Gui
       )}`,
     );
 
-  const row = new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-    ...tracks.map((t, i) =>
-      new ButtonBuilder()
-        .setLabel(String(i + 1))
-        .setCustomId(String(i))
-        .setStyle(ButtonStyle.Primary),
-    ),
-    new ButtonBuilder().setLabel(localize('global:cancel')).setCustomId('cancel').setStyle(ButtonStyle.Secondary),
+  const trackButtons = tracks.map((t, i) =>
+    new ButtonBuilder()
+      .setLabel(String(i + 1))
+      .setCustomId(String(i))
+      .setStyle(ButtonStyle.Primary),
   );
 
-  const reply = await interaction.followUp({ embeds: [embed], components: [row] });
+  const components: ActionRowBuilder<MessageActionRowComponentBuilder>[] = [
+    new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(trackButtons),
+  ];
+
+  if (tracks.length === 5) {
+    components.push(
+      new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
+        new ButtonBuilder().setLabel(localize('global:cancel')).setCustomId('cancel').setStyle(ButtonStyle.Secondary),
+      ),
+    );
+  } else {
+    trackButtons.push(
+      new ButtonBuilder().setLabel(localize('global:cancel')).setCustomId('cancel').setStyle(ButtonStyle.Secondary),
+    );
+  }
+
+  const reply = await interaction.followUp({ embeds: [embed], components });
 
   const collector = reply.createMessageComponentCollector({ time: 15000 });
 
   collector.on('collect', async (i) => {
-    await i.deferUpdate();
     collector.stop();
-    await reply.delete().catch(() => {});
-
-    if (i.customId === 'cancel') return;
+    if (i.customId === 'cancel') {
+      await i.update({ content: 'Selection cancelled.', embeds: [], components: [] });
+      return;
+    }
 
     const track = await playAndQueue(interaction, queue, tracks, parseInt(i.customId, 10));
 
     if (track) {
-      const embed = new EmbedBuilder()
+      const successEmbed = new EmbedBuilder()
         .setAuthor({ name: localize('global:songAddedToQueue') })
         .setDescription(`[${track.title}](${track.url})`)
         .setThumbnail(track.thumbnail)
         .setColor('Random');
-      await interaction.followUp({ embeds: [embed] });
+      await i.update({ embeds: [successEmbed], components: [] });
+    } else {
+      await i.update({ content: 'Failed to queue the selected track.', embeds: [], components: [] });
     }
   });
 
@@ -126,7 +136,7 @@ const handlePlaylist = async (interaction: ChatInputCommandInteraction, queue: G
   });
 
   if (!result.hasTracks() || !result.playlist) {
-    return interaction.followUp({ content: localize('global:noPlaylistFound'), ephemeral: true });
+    return interaction.followUp({ content: localize('global:noPlaylistFound'), flags: MessageFlags.Ephemeral });
   }
 
   queue.addTrack(result.tracks);
@@ -137,7 +147,7 @@ const handlePlaylist = async (interaction: ChatInputCommandInteraction, queue: G
     .setDescription(`[${result.playlist.title}](${result.playlist.url})`)
     .setThumbnail(result.playlist.thumbnail)
     .setColor('Random');
-  return interaction.followUp({ embeds: [embed] });
+  return interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
 };
 
 const handleLocalFile = async (interaction: ChatInputCommandInteraction, queue: GuildQueue, player: Player) => {
@@ -146,7 +156,7 @@ const handleLocalFile = async (interaction: ChatInputCommandInteraction, queue: 
   const musicFolderPath = process.env.MUSIC_FOLDER_PATH;
 
   if (!musicFolderPath) {
-    logger(DefaultLoggerMessage.MusicFolderPathNotSet).error();
+    logger.error('Music folder path is not set.');
     throw new Error('Music folder path is not configured.');
   }
 
@@ -155,7 +165,7 @@ const handleLocalFile = async (interaction: ChatInputCommandInteraction, queue: 
     const file = files.find((f) => f.toLowerCase().includes(fileName.toLowerCase()));
 
     if (!file) {
-      return interaction.followUp({ content: localize('global:fileNotFound'), ephemeral: true });
+      return interaction.followUp({ content: localize('global:fileNotFound'), flags: MessageFlags.Ephemeral });
     }
 
     const filePath = join(musicFolderPath, file);
@@ -165,7 +175,7 @@ const handleLocalFile = async (interaction: ChatInputCommandInteraction, queue: 
     });
 
     if (!result.hasTracks()) {
-      return interaction.followUp({ content: localize('global:fileCouldNotBePlayed'), ephemeral: true });
+      return interaction.followUp({ content: localize('global:fileCouldNotBePlayed'), flags: MessageFlags.Ephemeral });
     }
 
     const track = await playAndQueue(interaction, queue, result.tracks, 0);
@@ -178,9 +188,9 @@ const handleLocalFile = async (interaction: ChatInputCommandInteraction, queue: 
       .setAuthor({ name: localize('global:songAddedToQueue') })
       .setDescription(file)
       .setColor('Random');
-    return interaction.followUp({ embeds: [embed] });
+    return interaction.followUp({ embeds: [embed], flags: MessageFlags.Ephemeral });
   } catch (err) {
-    logger('Error handling local file:', err).error();
+    logger.error({ err }, 'Error handling local file:');
     // Re-throw to be caught by the centralized handler
     throw err;
   }
@@ -219,12 +229,15 @@ export const Play: PlayerCommand = {
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
     if (!interaction.guildId || !interaction.guild) {
-      return interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+      return interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
     }
 
     const memberChannel = (interaction.member as GuildMember)?.voice.channel;
     if (!memberChannel) {
-      return interaction.reply({ content: localize('global:connectToVoiceChannelToUseBot'), ephemeral: true });
+      return interaction.reply({
+        content: localize('global:connectToVoiceChannelToUseBot'),
+        flags: MessageFlags.Ephemeral,
+      });
     }
 
     await interaction.deferReply();
@@ -241,13 +254,16 @@ export const Play: PlayerCommand = {
       });
 
     if (interaction.options.getString('link-or-query')) {
+      logger.info('Searching for track or query');
       await handleSearch(interaction, queue, player);
     } else if (interaction.options.getString('playlist-link')) {
+      logger.info('Searching for playlist');
       await handlePlaylist(interaction, queue, player);
     } else if (interaction.options.getString('local-file-name')) {
+      logger.info('Searching for local file');
       await handleLocalFile(interaction, queue, player);
     } else {
-      await interaction.followUp({ content: localize('global:noOptionsProvided'), ephemeral: true });
+      await interaction.followUp({ content: localize('global:noOptionsProvided'), flags: MessageFlags.Ephemeral });
     }
   },
 };

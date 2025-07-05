@@ -3,6 +3,7 @@ import {
   ApplicationCommandType,
   ChatInputCommandInteraction,
   GuildMember,
+  MessageFlags,
 } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
@@ -12,7 +13,6 @@ import { LoopOption } from '../../models/commands/loop.js';
 import { QueueRepeatMode } from 'discord-player';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const Loop: PlayerCommand = {
   name: localizedString('global:loop'),
@@ -42,10 +42,10 @@ export const Loop: PlayerCommand = {
     const { localize } = useLocalizedString(interaction.locale);
     try {
       if (!interaction.guildId) {
-        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        logger.error('Guild is not defined.');
         return await interaction.reply({
           content: localize('global:genericError'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
       const player = useDefaultPlayer();
@@ -54,7 +54,7 @@ export const Loop: PlayerCommand = {
       if (!queue?.isPlaying()) {
         return await interaction.reply({
           content: localize('global:noMusicCurrentlyPlaying'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -62,7 +62,7 @@ export const Loop: PlayerCommand = {
       if (!memberChannel || memberChannel.id !== queue.channel?.id) {
         return await interaction.reply({
           content: localize('global:mustBeInSameVoiceChannel'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -106,22 +106,19 @@ export const Loop: PlayerCommand = {
         default:
           return await interaction.reply({
             content: localize('global:genericError'),
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
       }
 
       return await interaction.reply({
         content: replyMessage,
+        flags: MessageFlags.Ephemeral,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        logger(error).error();
-      } else {
-        logger(String(error)).error();
-      }
+      logger.error(error);
       await interaction.reply({
         content: localize('global:genericError'),
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

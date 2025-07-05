@@ -53,7 +53,7 @@ export const Ask: Command<ChatInputCommandInteraction> = {
 
       await interaction.followUp(response ?? 'No response from AI.');
     } catch (error) {
-      logger('Error in ask command', error).error();
+      logger.error({ err: error }, 'Error in ask command');
       await interaction.followUp({ content: localize('global:genericError'), ephemeral: true });
     }
   },

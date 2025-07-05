@@ -44,7 +44,7 @@ class AIHelper {
 
       return response;
     } catch (error) {
-      logger('Error communicating with OpenAI', error).error();
+      logger.error({ err: error }, 'Error communicating with OpenAI');
       this.clearHistory(userId);
       return 'An error occurred while communicating with OpenAI. Your conversation history has been cleared.';
     }

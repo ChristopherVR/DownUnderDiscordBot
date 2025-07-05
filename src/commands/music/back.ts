@@ -1,11 +1,10 @@
-import { ApplicationCommandType, ChatInputCommandInteraction, GuildMember } from 'discord.js';
+import { ApplicationCommandType, ChatInputCommandInteraction, GuildMember, MessageFlags } from 'discord.js';
 import { PlayerCommand } from '../../models/discord.js';
 
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../enums/logger.js';
 
 export const Back: PlayerCommand = {
   name: localizedString('global:back'),
@@ -19,10 +18,10 @@ export const Back: PlayerCommand = {
 
     try {
       if (!interaction.guildId) {
-        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
+        logger.error('Guild is not defined.');
         return await interaction.reply({
           content: localize('global:genericError'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -32,7 +31,7 @@ export const Back: PlayerCommand = {
       if (!queue?.isPlaying()) {
         return await interaction.reply({
           content: localize('global:noMusicCurrentlyPlaying'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
@@ -40,28 +39,24 @@ export const Back: PlayerCommand = {
       if (!memberChannel || memberChannel.id !== queue.channel?.id) {
         return await interaction.reply({
           content: localize('global:mustBeInSameVoiceChannel'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
       if (!queue.history.previousTrack) {
         return await interaction.reply({
           content: localize('global:noMusicPlayedPreviously'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 
       await queue.history.back();
-      await interaction.reply({ content: localize('global:playingPreviousTrack') });
+      await interaction.reply({ content: localize('global:playingPreviousTrack'), flags: MessageFlags.Ephemeral });
     } catch (error) {
-      if (error instanceof Error) {
-        logger(error).error();
-      } else {
-        logger(String(error)).error();
-      }
+      logger.error(error);
       await interaction.reply({
         content: localize('global:genericError'),
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

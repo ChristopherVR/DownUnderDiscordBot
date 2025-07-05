@@ -1,8 +1,27 @@
-import { ChatInputCommandInteraction } from 'discord.js';
+import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { COMMANDS } from '../../constants/commands.js';
 import { useLocalizedString } from '../localization/localizedString.js';
 import { logger } from '../logger/logger.js';
-import { DefaultLoggerMessage } from '../../enums/logger.js';
+
+const MUSIC_COMMANDS = [
+  'back',
+  'clear',
+  'jump',
+  'loop',
+  'nowplaying',
+  'pause',
+  'play',
+  'playnext',
+  'remove',
+  'resume',
+  'save',
+  'seek',
+  'shuffle',
+  'skip',
+  'stop',
+  'volume',
+  'queue',
+];
 
 export const handleSlashCommand = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   const { localize } = useLocalizedString(interaction.locale);
@@ -10,25 +29,57 @@ export const handleSlashCommand = async (interaction: ChatInputCommandInteractio
   try {
     const command = COMMANDS.find((c) => c.name === interaction.commandName);
     if (!command) {
-      logger(DefaultLoggerMessage.UnableToFindSlashCommand, interaction.commandName).error();
-      await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+      logger.error({ command: interaction.commandName }, 'Unable to find slash command');
+      await interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
       return;
     }
 
-    logger(
-      `COMMAND: ${command.name} - EXECUTING - USER: ${interaction.user.id} - GUILD: ${interaction.guildId}`,
-    ).info();
+    if (
+      process.env.MUSIC_CHANNEL_ID &&
+      MUSIC_COMMANDS.includes(interaction.commandName) &&
+      interaction.channelId !== process.env.MUSIC_CHANNEL_ID
+    ) {
+      await interaction.reply({
+        content: `Music commands can only be used in the designated music channel.`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    logger.info(
+      {
+        command: command.name,
+        user: interaction.user.id,
+        guild: interaction.guildId,
+        channel: interaction.channelId,
+      },
+      `COMMAND: ${command.name} - EXECUTING`,
+    );
     await command.run(interaction);
-    logger(`COMMAND: ${command.name} - SUCCESS - USER: ${interaction.user.id} - GUILD: ${interaction.guildId}`).info();
+    logger.info(
+      {
+        command: command.name,
+        user: interaction.user.id,
+        guild: interaction.guildId,
+        channel: interaction.channelId,
+      },
+      `COMMAND: ${command.name} - SUCCESS`,
+    );
   } catch (err) {
-    logger(
-      `COMMAND: ${interaction.commandName} - FAILED - USER: ${interaction.user.id} - GUILD: ${interaction.guildId}`,
-      err,
-    ).error();
+    logger.error(
+      {
+        command: interaction.commandName,
+        user: interaction.user.id,
+        guild: interaction.guildId,
+        channel: interaction.channelId,
+        error: err,
+      },
+      `COMMAND: ${interaction.commandName} - FAILED`,
+    );
     if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({ content: localize('global:genericError'), ephemeral: true });
+      await interaction.followUp({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
     } else {
-      await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+      await interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
     }
   }
 };

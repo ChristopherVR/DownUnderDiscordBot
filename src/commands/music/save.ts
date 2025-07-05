@@ -1,10 +1,9 @@
-import { ChatInputCommandInteraction, EmbedBuilder, GuildMember } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, GuildMember, MessageFlags } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { PlayerCommand } from '../../models/discord.js';
 
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { logger } from '../../helpers/logger/logger.js';
-import { DefaultLoggerMessage } from '../../enums/logger.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 
 export const Save: PlayerCommand = {
@@ -17,19 +16,25 @@ export const Save: PlayerCommand = {
 
     try {
       if (!interaction.guildId || !interaction.guild) {
-        logger(DefaultLoggerMessage.GuildIsNotDefined).error();
-        return await interaction.reply({ content: localize('global:genericError'), ephemeral: true });
+        logger.error('Guild is not defined.');
+        return await interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
       }
 
       const player = useDefaultPlayer();
       const queue = player.nodes.get(interaction.guildId);
 
       if (!queue?.isPlaying() || !queue.currentTrack) {
-        return await interaction.reply({ content: localize('global:noMusicCurrentlyPlaying'), ephemeral: true });
+        return await interaction.reply({
+          content: localize('global:noMusicCurrentlyPlaying'),
+          flags: MessageFlags.Ephemeral,
+        });
       }
       const memberChannel = (interaction.member as GuildMember | null)?.voice.channel;
       if (!memberChannel || memberChannel.id !== queue.channel?.id) {
-        return await interaction.reply({ content: localize('global:mustBeInSameVoiceChannel'), ephemeral: true });
+        return await interaction.reply({
+          content: localize('global:mustBeInSameVoiceChannel'),
+          flags: MessageFlags.Ephemeral,
+        });
       }
 
       const embed = new EmbedBuilder()
@@ -64,22 +69,21 @@ export const Save: PlayerCommand = {
         });
 
       await interaction.user.send({ embeds: [embed] });
-      await interaction.reply({ content: localize('global:titleOfMusicPmSend'), ephemeral: true });
+      await interaction.reply({
+        content: localize('global:titleOfMusicPmSend'),
+        flags: MessageFlags.Ephemeral,
+      });
     } catch (error) {
-      if (error instanceof Error) {
-        logger(error).error();
-      } else {
-        logger(String(error)).error();
-      }
+      logger.error(error);
       if (interaction.replied || interaction.deferred) {
         return await interaction.followUp({
           content: localize('global:unableToSendPrivateMessag'),
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
       await interaction.reply({
         content: localize('global:unableToSendPrivateMessag'),
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },
