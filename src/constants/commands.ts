@@ -18,6 +18,9 @@ import { Stop } from '../commands/music/stop.js';
 import { Volume } from '../commands/music/volume.js';
 import { Queue } from '../commands/music/queue.js';
 import Hello from '../commands/misc/hello.js';
+import { Shutdown } from '../commands/admin/shutdown.js';
+import { SetActive } from '../commands/admin/set-active.js';
+import { Status } from '../commands/admin/status.js';
 
 export const COMMANDS = [
   Back,
@@ -40,4 +43,31 @@ export const COMMANDS = [
   Ask,
   Meme,
   Hello,
+  Shutdown,
+  SetActive,
+  Status,
 ];
+
+export const MUSIC_COMMANDS = [
+  'back',
+  'clear',
+  'jump',
+  'loop',
+  'nowplaying',
+  'pause',
+  'play',
+  'playnext',
+  'remove',
+  'resume',
+  'save',
+  'seek',
+  'shuffle',
+  'skip',
+  'stop',
+  'volume',
+  'queue',
+];
+
+export const MISC_COMMANDS = ['ask', 'hello', 'meme'];
+
+export const ADMIN_COMMANDS = ['shutdown', 'set-active', 'status'];

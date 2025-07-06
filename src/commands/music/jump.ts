@@ -13,7 +13,7 @@ import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { Track } from 'discord-player';
 
-export const Jump: PlayerCommand = {
+export const Jump = (): PlayerCommand => ({
   name: localizedString('global:jump'),
   description: localizedString('global:jumpDesc'),
   nameLocalizations: getLocalizations('global:jump'),
@@ -106,6 +106,6 @@ export const Jump: PlayerCommand = {
       return await interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
     }
   },
-};
+});
 
 export default Jump;

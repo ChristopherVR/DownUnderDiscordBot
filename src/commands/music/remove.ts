@@ -7,7 +7,7 @@ import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { Track } from 'discord-player';
 
-export const Remove: PlayerCommand = {
+export const Remove = (): PlayerCommand => ({
   name: localizedString('global:remove'),
   description: localizedString('global:removeSongFromQueue'),
   nameLocalizations: getLocalizations('global:remove'),
@@ -111,6 +111,6 @@ export const Remove: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Remove;

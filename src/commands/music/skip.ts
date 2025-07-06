@@ -6,7 +6,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Skip: PlayerCommand = {
+export const Skip = (): PlayerCommand => ({
   name: localizedString('global:skip'),
   description: localizedString('global:skipTrackDesc'),
   nameLocalizations: getLocalizations('global:skip'),
@@ -54,6 +54,6 @@ export const Skip: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Skip;

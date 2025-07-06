@@ -8,7 +8,7 @@ import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { Track } from 'discord-player';
 
-export const PlayNext: PlayerCommand = {
+export const PlayNext = (): PlayerCommand => ({
   name: localizedString('global:playnext'),
   description: localizedString('global:songToPlayNext'),
   nameLocalizations: getLocalizations('global:playnext'),
@@ -53,7 +53,9 @@ export const PlayNext: PlayerCommand = {
       }
 
       const song = interaction.options.getString('song', true);
-      await interaction.deferReply({ ephemeral: true });
+      if (!interaction.deferred) {
+        await interaction.deferReply({ ephemeral: true });
+      }
 
       const res = await player.search(song, {
         requestedBy: interaction.member as GuildMember,
@@ -88,6 +90,6 @@ export const PlayNext: PlayerCommand = {
       return await interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
     }
   },
-};
+});
 
 export default PlayNext;

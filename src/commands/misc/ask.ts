@@ -3,6 +3,7 @@ import {
   ChatInputCommandInteraction,
   ApplicationCommandOptionType,
   ChannelType,
+  MessageFlags,
 } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { aiHelper } from '../../helpers/openai/ai.js';
@@ -10,7 +11,7 @@ import { Command } from '../../models/discord.js';
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Ask: Command<ChatInputCommandInteraction> = {
+export const Ask = (): Command<ChatInputCommandInteraction> => ({
   name: localizedString('global:ask'),
   nameLocalizations: getLocalizations('global:ask'),
   description: localizedString('global:askAi'),
@@ -32,6 +33,9 @@ export const Ask: Command<ChatInputCommandInteraction> = {
   ],
   run: async (interaction: ChatInputCommandInteraction) => {
     const { localize } = useLocalizedString(interaction.locale);
+    if (!interaction.deferred) {
+      await interaction.deferReply();
+    }
 
     try {
       const shouldClear = interaction.options.getBoolean('clear');
@@ -40,23 +44,23 @@ export const Ask: Command<ChatInputCommandInteraction> = {
 
       if (shouldClear) {
         aiHelper.clearHistory(userId);
-        return await interaction.reply({ content: 'Conversation history cleared.', ephemeral: true });
+        return await interaction.editReply({ content: localize('global:conversationHistoryCleared') });
       }
 
       if (!prompt) {
-        return await interaction.reply({ content: 'You must provide a prompt.', ephemeral: true });
+        return await interaction.editReply({ content: localize('global:mustProvidePrompt') });
       }
-
-      await interaction.deferReply();
 
       const response = await aiHelper.ask(prompt, userId);
 
-      await interaction.followUp(response ?? 'No response from AI.');
+      await interaction.followUp(response ?? localize('global:noResponseFromAI'));
     } catch (error) {
       logger.error({ err: error }, 'Error in ask command');
-      await interaction.followUp({ content: localize('global:genericError'), ephemeral: true });
+      if (!(error as any).message.includes('ephemeral')) {
+        await interaction.followUp({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
+      }
     }
   },
-};
+});
 
 export default Ask;

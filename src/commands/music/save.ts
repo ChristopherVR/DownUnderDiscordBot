@@ -6,7 +6,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 
-export const Save: PlayerCommand = {
+export const Save = (): PlayerCommand => ({
   name: localizedString('global:save'),
   description: localizedString('global:saveThisTrack'),
   nameLocalizations: getLocalizations('global:save'),
@@ -87,6 +87,6 @@ export const Save: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Save;

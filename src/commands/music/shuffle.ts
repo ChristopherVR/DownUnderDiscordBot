@@ -6,7 +6,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Shuffle: PlayerCommand = {
+export const Shuffle = (): PlayerCommand => ({
   name: localizedString('global:shuffle'),
   description: localizedString('global:shuffleTheTrack'),
   nameLocalizations: getLocalizations('global:shuffle'),
@@ -61,6 +61,6 @@ export const Shuffle: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Shuffle;

@@ -6,7 +6,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Resume: PlayerCommand = {
+export const Resume = (): PlayerCommand => ({
   name: localizedString('global:resume'),
   description: localizedString('global:playTheTrack'),
   nameLocalizations: getLocalizations('global:resume'),
@@ -64,6 +64,6 @@ export const Resume: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Resume;

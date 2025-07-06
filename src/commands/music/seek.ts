@@ -7,7 +7,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Seek: PlayerCommand = {
+export const Seek = (): PlayerCommand => ({
   name: localizedString('global:seek'),
   description: localizedString('global:skipBackAndForth'),
   nameLocalizations: getLocalizations('global:seek'),
@@ -89,6 +89,6 @@ export const Seek: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Seek;

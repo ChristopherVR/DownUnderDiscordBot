@@ -6,7 +6,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Clear: PlayerCommand = {
+export const Clear = (): PlayerCommand => ({
   name: localizedString('global:clear'),
   description: localizedString('global:clearAllInQueue'),
   nameLocalizations: getLocalizations('global:clear'),
@@ -60,6 +60,6 @@ export const Clear: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Clear;

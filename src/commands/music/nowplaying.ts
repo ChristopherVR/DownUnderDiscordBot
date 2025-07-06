@@ -23,7 +23,7 @@ import Save from './save.js';
 import { Loop } from './loop.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const NowPlaying: PlayerCommand = {
+export const NowPlaying = (): PlayerCommand => ({
   name: localizedString('global:nowplaying'),
   description: localizedString('global:viewWhatIsPlaying'),
   nameLocalizations: getLocalizations('global:nowplaying'),
@@ -121,6 +121,6 @@ export const NowPlaying: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default NowPlaying;

@@ -1,10 +1,19 @@
 import 'dotenv/config';
 import { Player } from 'discord-player';
-import { EmbedBuilder, ChannelType, Collection, TextChannel, MessageFlags } from 'discord.js';
+import {
+  EmbedBuilder,
+  ChannelType,
+  Collection,
+  TextChannel,
+  MessageFlags,
+  Client,
+  GatewayIntentBits,
+  Message,
+} from 'discord.js';
+import { randomUUID } from 'crypto';
 
 import i18n from './helpers/localization/i18n.js';
 import { setup } from './server/setup.js';
-import { GatewayIntentBits, Client, GatewayDispatchEvents, ChatInputCommandInteraction } from 'discord.js';
 import {
   SpotifyExtractor,
   SoundCloudExtractor,
@@ -17,11 +26,44 @@ import { useLocalizedString } from './helpers/localization/localizedString.js';
 import { logger } from './helpers/logger/logger.js';
 import { initializePlayer, useDefaultPlayer } from './helpers/discord/player.js';
 import { QueueRepeatMode } from 'discord-player';
-import { Queue as displayQueue } from './commands/music/queue.js';
-import { activeController, getControllerPayload } from './helpers/discord/playerEventManager.js';
+import { getControllerPayload, activeController } from './helpers/discord/playerEventManager.js';
 import { YoutubeiExtractor } from 'discord-player-youtubei';
+import { handleSlashCommand } from './helpers/discord/slashCommand.js';
+import { getCommands, setCommands } from './commandRegistry.js';
+import {
+  getInstanceId,
+  getStatusMessagePayload,
+  isInstanceActive,
+  setInstanceActive,
+  setStatusMessage,
+  updateStatusMessage,
+} from './instanceManager.js';
 
 const token = process.env.CLIENT_TOKEN;
+let heartbeatInterval: NodeJS.Timeout | null = null;
+const instanceId = getInstanceId();
+
+const shutdown = async (client: Client) => {
+  logger.info('Shutting down gracefully...');
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+  }
+  const statusMessage = getStatusMessagePayload();
+  if (statusMessage) {
+    try {
+      // This is a fire-and-forget, we don't want to wait for it.
+      (client.channels.cache.get(process.env.STATUS_CHANNEL_ID!) as TextChannel).send({
+        content: `❌ OFFLINE [${instanceId}]`,
+      });
+      logger.info('Offline status message sent.');
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to send offline status message on shutdown.');
+    }
+  }
+  client.destroy();
+  logger.info('Client destroyed.');
+  process.exit(0);
+};
 
 process.on('uncaughtException', (err) => {
   logger.fatal(err);
@@ -34,6 +76,11 @@ process.on('unhandledRejection', (err: Error) => {
 const init = async () => {
   await i18n();
   logger.info('Localization has been loaded.');
+
+  const { COMMANDS, MISC_COMMANDS, MUSIC_COMMANDS } = await import('./constants/commands.js');
+  const initializedCommands = COMMANDS.map((c) => c());
+  setCommands(initializedCommands, MISC_COMMANDS, MUSIC_COMMANDS);
+  logger.info('Commands have been loaded.');
 
   const client = new Client({
     intents:
@@ -50,8 +97,7 @@ const init = async () => {
     }
     logger.info(`${client.user.username} is now connected.`);
 
-    const { COMMANDS } = await import('./constants/commands.js');
-    await client.application.commands.set(COMMANDS);
+    await client.application.commands.set(getCommands());
 
     if (process.env.MUSIC_CHANNEL_ID) {
       try {
@@ -82,6 +128,81 @@ const init = async () => {
     const { localize } = useLocalizedString();
     const value = localize('activity:default');
     client.user.setActivity(value);
+
+    if (process.env.STATUS_CHANNEL_ID) {
+      const statusChannel = (await client.channels.fetch(process.env.STATUS_CHANNEL_ID)) as TextChannel;
+
+      const electLeader = async () => {
+        const messages = await statusChannel.messages.fetch({ limit: 100 });
+        const activeInstances = messages.filter((m) => m.content.startsWith('✅ ACTIVE'));
+
+        if (activeInstances.size === 0) {
+          logger.info('No active instances found. Electing self as leader.');
+          setInstanceActive(true);
+        } else {
+          logger.info('Active instance found. Starting as inactive.');
+          setInstanceActive(false);
+        }
+
+        const myStatus = await statusChannel.send(getStatusMessagePayload());
+        setStatusMessage(myStatus);
+      };
+
+      await electLeader();
+
+      // Heartbeat for the active instance
+      heartbeatInterval = setInterval(() => {
+        if (isInstanceActive()) {
+          updateStatusMessage();
+        }
+      }, 30_000); // Every 30 seconds
+
+      // Liveness probe for inactive instances
+      setInterval(async () => {
+        if (!isInstanceActive()) {
+          const messages = await statusChannel.messages.fetch({ limit: 10 });
+          const latestActive = messages.find((m) => m.content.startsWith('✅ ACTIVE'));
+          if (latestActive) {
+            // Check if the timestamp is older than our threshold (e.g., 65 seconds)
+            if (Date.now() - latestActive.createdTimestamp > 65000) {
+              logger.warn('Active instance has missed heartbeats. Forcing re-election.');
+              // We can't trust the old message, so we delete it to ensure a clean slate.
+              await latestActive
+                .delete()
+                .catch((err) => logger.error({ err }, 'Failed to delete stale active message.'));
+              await electLeader();
+            }
+          } else {
+            // No active message found at all.
+            logger.info('No active instance found during liveness probe. Triggering election.');
+            await electLeader();
+          }
+        }
+      }, 70_000); // Every 70 seconds
+
+      // Watch for other instances going offline
+      const messageCollector = statusChannel.createMessageCollector();
+      messageCollector.on('collect', async (message) => {
+        if (message.content.startsWith('❌ OFFLINE')) {
+          const wasActive = message.content.includes('✅ ACTIVE');
+          if (wasActive && !isInstanceActive()) {
+            // The leader went down, a new election is needed.
+            logger.info('Active instance went offline. Re-electing leader.');
+            await electLeader();
+          }
+        }
+        if (message.content.startsWith('SET_ACTIVE')) {
+          const targetId = message.content.split(':')[1];
+          if (targetId === getInstanceId()) {
+            logger.info('Received command to become active instance.');
+            setInstanceActive(true);
+          } else {
+            logger.info('Received command for another instance to become active. Setting self to inactive.');
+            setInstanceActive(false);
+          }
+        }
+      });
+    }
   });
 
   client.on('interactionCreate', async (interaction) => {
@@ -95,7 +216,6 @@ const init = async () => {
       'Interaction received',
     );
     if (interaction.isChatInputCommand()) {
-      const { handleSlashCommand } = await import('./helpers/discord/slashCommand.js');
       await handleSlashCommand(interaction);
       return;
     }
@@ -178,6 +298,9 @@ const init = async () => {
     process.exit(1);
   } else {
     await client.login(token);
+
+    process.on('SIGINT', () => shutdown(client));
+    process.on('SIGTERM', () => shutdown(client));
 
     const player = initializePlayer(client);
 

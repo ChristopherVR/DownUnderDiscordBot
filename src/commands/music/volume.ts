@@ -6,7 +6,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Volume: PlayerCommand = {
+export const Volume = (): PlayerCommand => ({
   name: localizedString('global:volume'),
   nameLocalizations: getLocalizations('global:volume'),
   description: localizedString('global:adjustVolume'),
@@ -80,6 +80,6 @@ export const Volume: PlayerCommand = {
       return await interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
     }
   },
-};
+});
 
 export default Volume;

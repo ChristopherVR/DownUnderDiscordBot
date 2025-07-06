@@ -1,4 +1,4 @@
-import { ApplicationCommandType, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { ApplicationCommandType, ChatInputCommandInteraction, EmbedBuilder, MessageFlags } from 'discord.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { Command } from '../../models/discord.js';
 import getLocalizations from '../../helpers/localization/getLocalizations.js';
@@ -17,7 +17,7 @@ interface Meme {
   preview: string[];
 }
 
-export const Meme: Command<ChatInputCommandInteraction> = {
+export const Meme = (): Command<ChatInputCommandInteraction> => ({
   name: localizedString('global:meme'),
   nameLocalizations: getLocalizations('global:meme'),
   description: localizedString('global:memeDesc'),
@@ -27,7 +27,9 @@ export const Meme: Command<ChatInputCommandInteraction> = {
     const { localize } = useLocalizedString(interaction.locale);
 
     try {
-      await interaction.deferReply();
+      if (!interaction.deferred) {
+        await interaction.deferReply();
+      }
       const { data } = await axios.get<Meme>('https://meme-api.com/gimme');
 
       const embed = new EmbedBuilder()
@@ -35,17 +37,17 @@ export const Meme: Command<ChatInputCommandInteraction> = {
         .setURL(data.postLink)
         .setImage(data.url)
         .setColor('Random')
-        .setFooter({ text: `r/${data.subreddit} • Posted by u/${data.author}` });
+        .setFooter({ text: localize('global:memeFooter', { subreddit: data.subreddit, author: data.author }) });
 
       await interaction.followUp({ embeds: [embed] });
     } catch (error) {
       logger.error(error);
       await interaction.followUp({
         content: localize('global:genericError'),
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },
-};
+});
 
 export default Meme;

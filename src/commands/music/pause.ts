@@ -6,7 +6,7 @@ import { ApplicationCommandType, ChatInputCommandInteraction, GuildMember, Messa
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Pause: PlayerCommand = {
+export const Pause = (): PlayerCommand => ({
   name: localizedString('global:pause'),
   description: localizedString('global:pauseTheCurrentTrack'),
   nameLocalizations: getLocalizations('global:pause'),
@@ -71,6 +71,6 @@ export const Pause: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Pause;

@@ -6,7 +6,7 @@ import getLocalizations from '../../helpers/localization/getLocalizations.js';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Stop: PlayerCommand = {
+export const Stop = (): PlayerCommand => ({
   name: localizedString('global:stop'),
   description: localizedString('global:stopTrack'),
   nameLocalizations: getLocalizations('global:stop'),
@@ -55,6 +55,6 @@ export const Stop: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Stop;

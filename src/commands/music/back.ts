@@ -6,7 +6,7 @@ import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { localizedString, useLocalizedString } from '../../helpers/localization/localizedString.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Back: PlayerCommand = {
+export const Back = (): PlayerCommand => ({
   name: localizedString('global:back'),
   description: localizedString('global:backToPreviousSong'),
   nameLocalizations: getLocalizations('global:back'),
@@ -60,6 +60,6 @@ export const Back: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Back;

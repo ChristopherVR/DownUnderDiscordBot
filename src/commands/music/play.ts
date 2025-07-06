@@ -102,7 +102,7 @@ const handleSearch = async (interaction: ChatInputCommandInteraction, queue: Gui
   collector.on('collect', async (i) => {
     collector.stop();
     if (i.customId === 'cancel') {
-      await i.update({ content: 'Selection cancelled.', embeds: [], components: [] });
+      await i.update({ content: localize('global:selectionCancelled'), embeds: [], components: [] });
       return;
     }
 
@@ -116,7 +116,7 @@ const handleSearch = async (interaction: ChatInputCommandInteraction, queue: Gui
         .setColor('Random');
       await i.update({ embeds: [successEmbed], components: [] });
     } else {
-      await i.update({ content: 'Failed to queue the selected track.', embeds: [], components: [] });
+      await i.update({ content: localize('global:failedToQueueTrack'), embeds: [], components: [] });
     }
   });
 
@@ -196,7 +196,7 @@ const handleLocalFile = async (interaction: ChatInputCommandInteraction, queue: 
   }
 };
 
-export const Play: PlayerCommand = {
+export const Play = (): PlayerCommand => ({
   name: localizedString('global:play'),
   description: localizedString('global:playTrackOrPlaylistByProviding'),
   nameLocalizations: getLocalizations('global:play'),
@@ -240,7 +240,9 @@ export const Play: PlayerCommand = {
       });
     }
 
-    await interaction.deferReply();
+    if (!interaction.deferred) {
+      await interaction.deferReply();
+    }
 
     const player = useDefaultPlayer();
     const queue =
@@ -266,6 +268,6 @@ export const Play: PlayerCommand = {
       await interaction.followUp({ content: localize('global:noOptionsProvided'), flags: MessageFlags.Ephemeral });
     }
   },
-};
+});
 
 export default Play;

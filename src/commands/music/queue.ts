@@ -18,7 +18,7 @@ import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 import { Track } from 'discord-player';
 
-export const Queue: PlayerCommand = {
+export const Queue = (): PlayerCommand => ({
   name: localizedString('global:queue'),
   description: localizedString('global:getSongsFromQueue'),
   nameLocalizations: getLocalizations('global:queue'),
@@ -161,6 +161,6 @@ export const Queue: PlayerCommand = {
       return await interaction.reply({ content: localize('global:genericError'), flags: MessageFlags.Ephemeral });
     }
   },
-};
+});
 
 export default Queue;

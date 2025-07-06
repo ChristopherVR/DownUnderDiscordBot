@@ -14,7 +14,7 @@ import { QueueRepeatMode } from 'discord-player';
 import { useDefaultPlayer } from '../../helpers/discord/player.js';
 import { logger } from '../../helpers/logger/logger.js';
 
-export const Loop: PlayerCommand = {
+export const Loop = (): PlayerCommand => ({
   name: localizedString('global:loop'),
   description: localizedString('global:enableDisableLoopDescription'),
   nameLocalizations: getLocalizations('global:loop'),
@@ -122,6 +122,6 @@ export const Loop: PlayerCommand = {
       });
     }
   },
-};
+});
 
 export default Loop;
