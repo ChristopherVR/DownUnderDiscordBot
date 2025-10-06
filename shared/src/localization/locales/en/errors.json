@@ -1,0 +1,135 @@
+{
+  "connection": {
+    "failed": "Connection failed. Please check your network and try again.",
+    "lost": "Connection lost. Attempting to reconnect...",
+    "timeout": "Connection timeout. Please try again.",
+    "websocket": {
+      "failed": "WebSocket connection failed. Real-time updates may not work.",
+      "disconnected": "WebSocket disconnected. Attempting to reconnect...",
+      "reconnecting": "Reconnecting to server...",
+      "reconnected": "Successfully reconnected to server."
+    },
+    "discord": {
+      "apiError": "Discord API error occurred. Please try again later.",
+      "rateLimited": "Rate limited by Discord. Please wait before trying again.",
+      "unauthorized": "Bot authorization failed. Please check bot permissions."
+    }
+  },
+  "command": {
+    "invalid": "Invalid command. Please check the command syntax.",
+    "unauthorized": "You don't have permission to execute this command.",
+    "failed": "Command execution failed. Please try again.",
+    "notFound": "Command not found.",
+    "validation": {
+      "required": "Required field '{{field}}' is missing.",
+      "invalidType": "Field '{{field}}' must be of type {{type}}.",
+      "outOfRange": "Field '{{field}}' must be between {{min}} and {{max}}.",
+      "invalidChoice": "Field '{{field}}' must be one of: {{choices}}."
+    },
+    "execution": {
+      "timeout": "Command execution timed out.",
+      "botNotReady": "Bot is not ready to execute commands.",
+      "channelNotFound": "Target channel not found.",
+      "permissionDenied": "Bot lacks permission to execute this command."
+    },
+    "guildMissing": "You must specify a guild for this command."
+  },
+  "upload": {
+    "fileTooBig": "File is too large. Maximum size is {{maxSize}}MB.",
+    "invalidFormat": "Invalid file format. Supported formats: {{formats}}.",
+    "failed": "File upload failed. Please try again.",
+    "fileNotFound": "File not found.",
+    "processing": {
+      "failed": "File processing failed. Please check the file format.",
+      "corrupted": "File appears to be corrupted or invalid.",
+      "unsupported": "File format not supported for audio playback."
+    },
+    "storage": {
+      "full": "Storage quota exceeded. Please delete some files first.",
+      "permission": "Permission denied while saving file.",
+      "diskSpace": "Insufficient disk space on server."
+    }
+  },
+  "player": {
+    "trackNotFound": "Track not found or unavailable.",
+    "playbackFailed": "Playback failed. Please try again.",
+    "queueEmpty": "Queue is empty.",
+    "voice": {
+      "notConnected": "Bot is not connected to a voice channel.",
+      "connectionFailed": "Failed to connect to voice channel.",
+      "permissionDenied": "Bot lacks permission to join voice channel.",
+      "channelFull": "Voice channel is full."
+    },
+    "source": {
+      "unavailable": "Audio source is currently unavailable.",
+      "geoblocked": "Content is not available in your region.",
+      "ageRestricted": "Content is age-restricted and cannot be played.",
+      "copyright": "Content blocked due to copyright restrictions."
+    }
+  },
+  "bot": {
+    "notConnected": "Bot is not connected to any voice channel.",
+    "instanceNotFound": "Bot instance not found.",
+    "commandFailed": "Bot command execution failed.",
+    "management": {
+      "setActiveFailed": "Failed to set active bot instance.",
+      "instanceOffline": "Bot instance is currently offline.",
+      "multipleInstances": "Multiple bot instances detected. Please specify which one to use.",
+      "noInstances": "No bot instances are currently running."
+    },
+    "state": {
+      "syncFailed": "Failed to synchronize bot state.",
+      "outdated": "Bot state information is outdated.",
+      "unavailable": "Bot state information is currently unavailable."
+    }
+  },
+  "validation": {
+    "required": "This field is required.",
+    "email": "Please enter a valid email address.",
+    "url": "Please enter a valid URL.",
+    "number": "Please enter a valid number.",
+    "minLength": "Must be at least {{min}} characters long.",
+    "maxLength": "Must be no more than {{max}} characters long."
+  },
+  "network": {
+    "offline": "You appear to be offline. Please check your internet connection.",
+    "slowConnection": "Slow network detected. Some features may be limited.",
+    "serverUnavailable": "Server is temporarily unavailable. Please try again later."
+  },
+  "generic": "An unexpected error occurred. Please try again.",
+  "geneeric": "An unexpected error occurred. Please try again.",
+  "fallback": "Error details are not available.",
+  "retry": "Try Again",
+  "component": {
+    "failed": "Component failed to load properly.",
+    "crashed": "This component has encountered an error and needs to be reloaded."
+  },
+  "api": {
+    "timeout": "Request timed out. Please check your connection and try again.",
+    "unavailable": "Service is temporarily unavailable. Please try again later.",
+    "badRequest": "Invalid request. Please check your input and try again.",
+    "forbidden": "You don't have permission to perform this action.",
+    "notFound": "The requested resource was not found.",
+    "serverError": "Server error occurred. Please try again later."
+  },
+  "guidance": {
+    "musicPlayer": {
+      "play": "Make sure the bot is connected to a voice channel and try again.",
+      "upload": "Check that your file is a supported audio format and under 50MB."
+    },
+    "commandExecutor": {
+      "execute": "Verify all required fields are filled and try again."
+    },
+    "websocket": {
+      "connection": "Check your internet connection. The page will automatically reconnect when possible."
+    },
+    "fileUploader": {
+      "upload": "Ensure your file is a supported audio format (MP3, WAV, FLAC, OGG, M4A) and under the size limit.",
+      "processing": "Try uploading the file again or check if the file is corrupted."
+    },
+    "botManagement": {
+      "setActive": "Make sure the bot instance is online and try again.",
+      "connection": "Check if the bot is properly configured and has the necessary permissions."
+    }
+  }
+}

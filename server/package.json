@@ -1,0 +1,51 @@
+{
+    "name": "discord-dashboard-server",
+    "type": "module",
+    "scripts": {
+        "dev": "tsx watch index.ts",
+        "start": "node dist/index.js",
+        "build": "tsc -p tsconfig.json",
+        "lint": "eslint **/*.ts",
+        "lint:fix": "eslint **/*.ts --fix",
+        "type-check": "tsc --noEmit",
+        "test": "vitest --run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest --coverage"
+    },
+    "dependencies": {
+        "@discord-player/extractor": "^7.1.0",
+        "@discordjs/opus": "^0.10.0",
+        "@discordjs/voice": "latest",
+        "@distube/ytsr": "^2.0.4",
+        "axios": "latest",
+        "cors": "latest",
+        "discord-dashboard-shared": "workspace:*",
+        "discord-player": "latest",
+        "discord-player-youtubei": "^1.5.0",
+        "discord.js": "latest",
+        "dotenv": "latest",
+        "express": "latest",
+        "i18next": "latest",
+        "i18next-http-backend": "latest",
+        "multer": "latest",
+        "pino": "latest",
+        "pino-http": "latest",
+        "uuid": "latest",
+        "ws": "latest",
+        "youtubei.js": "^15.1.1"
+    },
+    "devDependencies": {
+        "@types/cors": "latest",
+        "@types/express": "latest",
+        "@types/multer": "latest",
+        "@types/node": "latest",
+        "@types/supertest": "^6.0.2",
+        "@types/ws": "latest",
+        "pino-pretty": "latest",
+        "supertest": "^7.1.4",
+        "ts-node": "latest",
+        "tsx": "latest",
+        "typescript": "latest",
+        "vitest": "^3.2.4"
+    }
+}

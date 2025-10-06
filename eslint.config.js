@@ -1,86 +1,153 @@
-import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-import eslintPlugin from '@typescript-eslint/eslint-plugin';
 import ts from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
+import reactHooks from 'eslint-plugin-react-hooks';
 
-// Airbnb not compatible with Flat config yet
-// Need to use backwards compatibility util - https://eslint.org/blog/2022/08/new-config-system-part-2/#backwards-compatibility-utility
-// import airbnb from 'eslint-config-airbnb-base';
-
-import imprt from 'eslint-plugin-import'; // 'import' is ambiguous & prettier has trouble
-import prettier from 'eslint-plugin-prettier';
-import deprecation from 'eslint-plugin-deprecation';
-import preferArrow from 'eslint-plugin-prefer-arrow';
-import jsdoc from 'eslint-plugin-jsdoc';
-
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-
-// const compat = new FlatCompat({
-//   baseDirectory: __dirname, // optional; default: process.cwd()
-//   resolvePluginsRelativeTo: __dirname, // optional
-//   recommendedConfig: js.configs.recommended, // optional
-//   allConfig: js.configs.all, // optional
-// });
-
-/** @type { import("eslint").Linter.Config[] } */
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'bin/**', 'build/**', '.eslint.config.js', 'jest.config.js'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'bin/**',
+      'build/**',
+      '.eslint.config.js',
+      'jest.config.js',
+      'client/dist/**',
+      'server/dist/**',
+      'shared/dist/**',
+    ],
   },
-  // mimic extends
-  // ...compat.extends('airbnb'),
+  // Shared TypeScript configuration
   {
-    files: ['**/*.ts'],
+    files: ['shared/**/*.ts'],
     plugins: {
-      eslintPlugin,
-      import: imprt,
       '@typescript-eslint': ts,
-      ts,
-      prettier,
-      'prefer-arrow': preferArrow,
-      jsdoc,
-    },
-    linterOptions: {
-      reportUnusedDisableDirectives: true,
     },
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        ecmaFeatures: { modules: true },
         ecmaVersion: 'latest',
-        project: './tsconfig.json',
+        sourceType: 'module',
       },
-    },
-    settings: {
-      'import/resolver': {
-        node: true,
-        typescript: true,
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
       },
     },
     rules: {
-      ...imprt.configs.recommended.rules,
-      ...prettier.configs['recommended'].rules,
-      ...ts.configs['recommended'].rules,
-      ...ts.configs['recommended-type-checked'].rules,
-      ...ts.configs['stylistic-type-checked'].rules,
-      ...deprecation.configs.recommended.rules,
-      'ts/return-await': 2,
+      ...js.configs.recommended.rules,
+      ...ts.configs.recommended.rules,
       semi: 'error',
       'prefer-const': 'error',
-      'jsdoc/require-example': 'error',
-      'prefer-arrow/prefer-arrow-functions': [
-        'warn',
-        {
-          disallowPrototype: true,
-          singleReturnOnly: false,
-          classPropertiesAllowed: false,
-        },
-      ],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  // Server TypeScript configuration
+  {
+    files: ['server/**/*.ts'],
+    plugins: {
+      '@typescript-eslint': ts,
+    },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        global: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        NodeJS: 'readonly',
+        Express: 'readonly',
+        require: 'readonly',
+      },
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...ts.configs.recommended.rules,
+      semi: 'error',
+      'prefer-const': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  // Client TypeScript/React configuration
+  {
+    files: ['client/**/*.{ts,tsx}'],
+    plugins: {
+      '@typescript-eslint': ts,
+      'react-hooks': reactHooks,
+    },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaFeatures: { jsx: true },
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+      globals: {
+        console: 'readonly',
+        document: 'readonly',
+        fetch: 'readonly',
+        location: 'readonly',
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        clearInterval: 'readonly',
+        WebSocket: 'readonly',
+        window: 'readonly',
+        navigator: 'readonly',
+        confirm: 'readonly',
+        performance: 'readonly',
+        AbortController: 'readonly',
+        URLSearchParams: 'readonly',
+        FormData: 'readonly',
+        XMLHttpRequest: 'readonly',
+        FileList: 'readonly',
+        File: 'readonly',
+        CustomEvent: 'readonly',
+        EventListener: 'readonly',
+        Response: 'readonly',
+        React: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLButtonElement: 'readonly',
+        HTMLHeadingElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLLabelElement: 'readonly',
+        HTMLTableElement: 'readonly',
+        HTMLTableSectionElement: 'readonly',
+        HTMLTableRowElement: 'readonly',
+        HTMLTableCellElement: 'readonly',
+        HTMLTableCaptionElement: 'readonly',
+        HTMLTextAreaElement: 'readonly',
+        HTMLParagraphElement: 'readonly',
+        RequestInit: 'readonly',
+        PerformanceObserver: 'readonly',
+        PerformanceEntry: 'readonly',
+        PerformanceResourceTiming: 'readonly',
+        Performance: 'readonly',
+        Navigator: 'readonly',
+        Window: 'readonly',
+      },
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...ts.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      semi: 'error',
+      'prefer-const': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-empty-object-type': 'off',
     },
   },
 ];

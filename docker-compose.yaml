@@ -1,7 +1,7 @@
 name: down-under-discord
 
 services:
-  downunder:
+  dashboard:
     image: ${DOCKER_REGISTRY}downunder:${TAG}
     build:
       context: .
