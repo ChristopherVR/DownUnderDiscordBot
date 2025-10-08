@@ -62,6 +62,23 @@ export const initializePlayer = async (client: Client, wsManager?: WebSocketMana
     log.error(err);
   });
 
+  player.events.on('connection', (queue) => {
+    queue.dispatcher?.voiceConnection.on('stateChange', (oldState, newState) => {
+      log.debug(`Voice connection state changed from ${oldState.status} to ${newState.status}`);
+      const oldNetworking = Reflect.get(oldState, 'networking');
+      const newNetworking = Reflect.get(newState, 'networking');
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const networkStateChangeHandler = (_: any, newNetworkState: any) => {
+        const newUdp = Reflect.get(newNetworkState, 'udp');
+        clearInterval(newUdp?.keepAliveInterval);
+      };
+
+      oldNetworking?.off('stateChange', networkStateChangeHandler);
+      newNetworking?.on('stateChange', networkStateChangeHandler);
+    });
+  });
+
   await player.extractors.register(AttachmentExtractor, {});
 
   await player.extractors.register(YoutubeiExtractor, {
