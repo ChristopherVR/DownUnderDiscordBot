@@ -16,6 +16,7 @@
         "@discord-player/extractor": "^7.1.0",
         "@discordjs/opus": "^0.10.0",
         "@discordjs/voice": "latest",
+        "@distube/ytdl-core": "^4.16.12",
         "@distube/ytsr": "^2.0.4",
         "axios": "latest",
         "cors": "latest",
