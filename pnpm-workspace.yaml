@@ -1,4 +1,4 @@
 packages:
-  - 'client'
-  - 'server'
-  - 'shared'
+  - packages/*
+
+onlyBuiltDependencies: '["@prisma/client","@prisma/engines","esbuild","prisma"]'

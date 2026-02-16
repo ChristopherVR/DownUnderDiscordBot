@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/database/generated"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  id                   String            @id // Discord guild ID
+  name                 String
+  preferredLanguage    String            @default("en")
+  defaultVolume        Int               @default(65)
+  leaveOnEmpty         Boolean           @default(true)
+  leaveOnEmptyCooldown Int               @default(300000)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  playlists            Playlist[]
+  playHistory          PlayHistory[]
+  queueSnapshots       QueueSnapshot[]
+  userPreferences      UserPreferences[]
+}
+
+model Playlist {
+  id          String          @id @default(uuid())
+  guildId     String
+  userId      String
+  name        String
+  description String?
+  isPublic    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  guild       Guild           @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  tracks      PlaylistTrack[]
+
+  @@index([guildId, userId])
+}
+
+model PlaylistTrack {
+  id         String   @id @default(uuid())
+  playlistId String
+  position   Int
+
+  title      String
+  artist     String?
+  duration   Int      // seconds
+  url        String
+  thumbnail  String?
+  platform   String   // "youtube", "spotify", "soundcloud", "local"
+  platformId String?
+  filePath   String?  // For local files
+
+  addedAt    DateTime @default(now())
+
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, position])
+  @@index([playlistId])
+}
+
+model PlayHistory {
+  id          String    @id @default(uuid())
+  guildId     String
+  userId      String
+
+  title       String
+  artist      String?
+  duration    Int
+  url         String
+  platform    String
+  platformId  String?
+
+  playedAt    DateTime  @default(now())
+  completedAt DateTime?
+
+  guild       Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, playedAt])
+  @@index([userId])
+}
+
+model QueueSnapshot {
+  id              String   @id @default(uuid())
+  guildId         String
+  currentTrackUrl String?
+  currentPosition Int      @default(0)
+  volume          Int      @default(65)
+  loopMode        String   @default("off") // "off", "track", "queue"
+  tracks          String   // JSON array of track objects
+  createdAt       DateTime @default(now())
+
+  guild           Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+}
+
+model UserPreferences {
+  id       String   @id @default(uuid())
+  guildId  String
+  userId   String
+
+  language String   @default("en")
+  volume   Int      @default(65)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+}
+
+model TrackCache {
+  id        String   @id @default(uuid())
+  platform  String
+  platformId String
+  title     String
+  artist    String?
+  duration  Int
+  url       String
+  thumbnail String?
+  metadata  String?  // JSON for extra data
+
+  createdAt DateTime @default(now())
+  lastUsed  DateTime @default(now())
+
+  @@unique([platform, platformId])
+  @@index([lastUsed])
+}

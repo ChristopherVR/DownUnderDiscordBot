@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm config set:*)",
+      "Bash(pnpm run build:bot:*)",
+      "Bash(npx prisma:*)",
+      "Bash(node -e:*)",
+      "Bash(node:*)",
+      "Bash(rustc:*)",
+      "Bash(cargo:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite build)",
+      "Bash(pnpm --filter discord-bot build:*)",
+      "Bash(ls -la \"D:\\\\Development\\\\Personal\\\\DownUnderDiscordBot\\\\packages\"\" 2>/dev/null || echo \"Directory not found, checking alternative structure \")"
+    ]
+  }
+}

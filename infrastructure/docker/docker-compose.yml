@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  bot:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/bot.Dockerfile
+    container_name: down-under-bot
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - PORT=3001
+      - DATABASE_URL=file:./data/bot.db
+      - FFMPEG_PATH=ffmpeg
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID:-}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET:-}
+    volumes:
+      - bot-data:/app/packages/bot/prisma/data
+      - bot-logs:/app/packages/bot/logs
+      - music-uploads:/app/packages/bot/uploads
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:3001/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  bot-data:
+  bot-logs:
+  music-uploads:

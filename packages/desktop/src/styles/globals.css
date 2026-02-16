@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #08080c;
+    --foreground: #f0f0f5;
+    --muted: rgba(255, 255, 255, 0.06);
+    --muted-foreground: #7a7a8e;
+    --accent: #1DB954;
+    --accent-hover: #1ED760;
+    --card: rgba(255, 255, 255, 0.03);
+    --card-hover: rgba(255, 255, 255, 0.07);
+    --border: rgba(255, 255, 255, 0.07);
+    --surface: #0f0f14;
+    --gradient-green: linear-gradient(135deg, #1DB954 0%, #1ED760 100%);
+    --gradient-accent: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    @apply bg-[var(--background)] text-[var(--foreground)] antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/[0.06] bg-white/[0.03] backdrop-blur-xl;
+  }
+  .glass-medium {
+    @apply border border-white/[0.08] bg-white/[0.05] backdrop-blur-2xl;
+  }
+  .glass-heavy {
+    @apply border border-white/[0.1] bg-white/[0.08] backdrop-blur-3xl;
+  }
+  .text-gradient-green {
+    background: linear-gradient(135deg, #1DB954, #1ED760, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-spotify-green to-emerald-400 px-6 py-2.5 text-sm font-semibold text-black shadow-lg shadow-spotify-green/20 transition-all hover:shadow-xl hover:shadow-spotify-green/30 hover:brightness-110 active:scale-[0.98];
+  }
+  .btn-glass {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white active:scale-[0.98];
+  }
+  .card-glass {
+    @apply rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 backdrop-blur-xl transition-all;
+  }
+  .card-glass-hover {
+    @apply card-glass hover:border-white/[0.1] hover:bg-white/[0.06] hover:shadow-lg hover:shadow-black/20;
+  }
+  .input-glass {
+    @apply h-10 w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-white/90 placeholder-white/25 outline-none backdrop-blur-sm transition-all focus:border-spotify-green/50 focus:bg-white/[0.06] focus:shadow-[0_0_0_2px_rgba(29,185,84,0.15)];
+  }
+}
+
+@layer utilities {
+  .glow-green {
+    box-shadow: 0 0 30px rgba(29, 185, 84, 0.25), 0 0 60px rgba(29, 185, 84, 0.1);
+  }
+  .glow-green-sm {
+    box-shadow: 0 0 15px rgba(29, 185, 84, 0.2);
+  }
+}

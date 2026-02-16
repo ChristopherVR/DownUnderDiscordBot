@@ -1,8 +1,0 @@
-name: down-under-discord
-
-services:
-  dashboard:
-    image: ${DOCKER_REGISTRY}downunder:${TAG}
-    build:
-      context: .
-      dockerfile: /Dockerfile

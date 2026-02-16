@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-build:
+    name: Lint, Type-check & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter discord-dashboard-shared build
+
+      - name: Generate Prisma client
+        run: pnpm --filter discord-bot exec prisma generate
+
+      - name: Type-check bot
+        run: pnpm --filter discord-bot type-check
+
+      - name: Type-check desktop
+        run: pnpm --filter discord-bot-desktop type-check
+
+      - name: Build bot
+        run: pnpm --filter discord-bot build
+
+      - name: Build desktop frontend
+        run: pnpm --filter discord-bot-desktop build
+
+  test-bot:
+    name: Test Bot
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter discord-dashboard-shared build
+
+      - name: Generate Prisma client
+        run: pnpm --filter discord-bot exec prisma generate
+
+      - name: Run tests
+        run: pnpm --filter discord-bot test
