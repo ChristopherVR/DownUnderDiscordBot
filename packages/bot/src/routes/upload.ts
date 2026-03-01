@@ -9,9 +9,9 @@ import { tErrors } from 'discord-dashboard-shared/localization';
 const router = expressRouter();
 
 /**
- * Upload single audio file
+ * Upload single media file (audio or video)
  */
-router.post('/single', upload.single('audio'), async (req: Request, res: Response) => {
+router.post('/single', upload.single('media'), async (req: Request, res: Response) => {
   if (!req.file) {
     throw new ValidationError('errors.upload.failed', {
       component: 'FileUploader',
@@ -52,9 +52,9 @@ router.post('/single', upload.single('audio'), async (req: Request, res: Respons
 });
 
 /**
- * Upload multiple audio files
+ * Upload multiple media files (audio and/or video)
  */
-router.post('/multiple', upload.array('audio', 10), async (req: Request, res: Response) => {
+router.post('/multiple', upload.array('media', 50), async (req: Request, res: Response) => {
   const files = req.files as Express.Multer.File[];
 
   if (!files || files.length === 0) {
@@ -117,7 +117,7 @@ router.get('/files', async (req: Request, res: Response) => {
  * Get file by ID
  */
 router.get('/files/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const file = fileManager.getFile(id);
 
   if (!file) {
@@ -143,7 +143,7 @@ router.get('/files/:id', async (req: Request, res: Response) => {
  * Delete file by ID
  */
 router.delete('/files/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const success = await fileManager.removeFile(id);
 
   if (!success) {
@@ -212,7 +212,7 @@ router.post('/cleanup', async (req: Request, res: Response) => {
  * Serve uploaded files
  */
 router.get('/serve/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const file = fileManager.getFile(id);
 
   if (!file) {

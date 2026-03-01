@@ -1,5 +1,4 @@
-﻿import axios from 'axios';
-import { EmbedBuilder, MessageFlags } from 'discord.js';
+﻿import { EmbedBuilder, MessageFlags } from 'discord.js';
 import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
 import type { CommandContext, CommandHandler } from '../types/commands';
 
@@ -12,7 +11,8 @@ export const MemeCommand = (): CommandHandler => ({
         await context.deferReply();
       }
 
-      const { data } = await axios.get('https://meme-api.com/gimme');
+      const res = await fetch('https://meme-api.com/gimme');
+      const data = await res.json();
 
       const embed = new EmbedBuilder()
         .setTitle(data.title)

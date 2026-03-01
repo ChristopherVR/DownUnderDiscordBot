@@ -2877,7 +2877,7 @@ export namespace Prisma {
 
   export type PlaylistGroupByOutputType = {
     id: string
-    guildId: string
+    guildId: string | null
     userId: string
     name: string
     description: string | null
@@ -2912,7 +2912,7 @@ export namespace Prisma {
     isPublic?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    guild?: boolean | GuildDefaultArgs<ExtArgs>
+    guild?: boolean | Playlist$guildArgs<ExtArgs>
     tracks?: boolean | Playlist$tracksArgs<ExtArgs>
     _count?: boolean | PlaylistCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["playlist"]>
@@ -2926,7 +2926,7 @@ export namespace Prisma {
     isPublic?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    guild?: boolean | GuildDefaultArgs<ExtArgs>
+    guild?: boolean | Playlist$guildArgs<ExtArgs>
   }, ExtArgs["result"]["playlist"]>
 
   export type PlaylistSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -2938,7 +2938,7 @@ export namespace Prisma {
     isPublic?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    guild?: boolean | GuildDefaultArgs<ExtArgs>
+    guild?: boolean | Playlist$guildArgs<ExtArgs>
   }, ExtArgs["result"]["playlist"]>
 
   export type PlaylistSelectScalar = {
@@ -2954,26 +2954,26 @@ export namespace Prisma {
 
   export type PlaylistOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "guildId" | "userId" | "name" | "description" | "isPublic" | "createdAt" | "updatedAt", ExtArgs["result"]["playlist"]>
   export type PlaylistInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    guild?: boolean | GuildDefaultArgs<ExtArgs>
+    guild?: boolean | Playlist$guildArgs<ExtArgs>
     tracks?: boolean | Playlist$tracksArgs<ExtArgs>
     _count?: boolean | PlaylistCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type PlaylistIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    guild?: boolean | GuildDefaultArgs<ExtArgs>
+    guild?: boolean | Playlist$guildArgs<ExtArgs>
   }
   export type PlaylistIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    guild?: boolean | GuildDefaultArgs<ExtArgs>
+    guild?: boolean | Playlist$guildArgs<ExtArgs>
   }
 
   export type $PlaylistPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Playlist"
     objects: {
-      guild: Prisma.$GuildPayload<ExtArgs>
+      guild: Prisma.$GuildPayload<ExtArgs> | null
       tracks: Prisma.$PlaylistTrackPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      guildId: string
+      guildId: string | null
       userId: string
       name: string
       description: string | null
@@ -3374,7 +3374,7 @@ export namespace Prisma {
    */
   export interface Prisma__PlaylistClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    guild<T extends GuildDefaultArgs<ExtArgs> = {}>(args?: Subset<T, GuildDefaultArgs<ExtArgs>>): Prisma__GuildClient<$Result.GetResult<Prisma.$GuildPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    guild<T extends Playlist$guildArgs<ExtArgs> = {}>(args?: Subset<T, Playlist$guildArgs<ExtArgs>>): Prisma__GuildClient<$Result.GetResult<Prisma.$GuildPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     tracks<T extends Playlist$tracksArgs<ExtArgs> = {}>(args?: Subset<T, Playlist$tracksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PlaylistTrackPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -3804,6 +3804,25 @@ export namespace Prisma {
      * Limit how many Playlists to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Playlist.guild
+   */
+  export type Playlist$guildArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Guild
+     */
+    select?: GuildSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Guild
+     */
+    omit?: GuildOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GuildInclude<ExtArgs> | null
+    where?: GuildWhereInput
   }
 
   /**
@@ -9819,20 +9838,20 @@ export namespace Prisma {
     OR?: PlaylistWhereInput[]
     NOT?: PlaylistWhereInput | PlaylistWhereInput[]
     id?: StringFilter<"Playlist"> | string
-    guildId?: StringFilter<"Playlist"> | string
+    guildId?: StringNullableFilter<"Playlist"> | string | null
     userId?: StringFilter<"Playlist"> | string
     name?: StringFilter<"Playlist"> | string
     description?: StringNullableFilter<"Playlist"> | string | null
     isPublic?: BoolFilter<"Playlist"> | boolean
     createdAt?: DateTimeFilter<"Playlist"> | Date | string
     updatedAt?: DateTimeFilter<"Playlist"> | Date | string
-    guild?: XOR<GuildScalarRelationFilter, GuildWhereInput>
+    guild?: XOR<GuildNullableScalarRelationFilter, GuildWhereInput> | null
     tracks?: PlaylistTrackListRelationFilter
   }
 
   export type PlaylistOrderByWithRelationInput = {
     id?: SortOrder
-    guildId?: SortOrder
+    guildId?: SortOrderInput | SortOrder
     userId?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
@@ -9848,20 +9867,20 @@ export namespace Prisma {
     AND?: PlaylistWhereInput | PlaylistWhereInput[]
     OR?: PlaylistWhereInput[]
     NOT?: PlaylistWhereInput | PlaylistWhereInput[]
-    guildId?: StringFilter<"Playlist"> | string
+    guildId?: StringNullableFilter<"Playlist"> | string | null
     userId?: StringFilter<"Playlist"> | string
     name?: StringFilter<"Playlist"> | string
     description?: StringNullableFilter<"Playlist"> | string | null
     isPublic?: BoolFilter<"Playlist"> | boolean
     createdAt?: DateTimeFilter<"Playlist"> | Date | string
     updatedAt?: DateTimeFilter<"Playlist"> | Date | string
-    guild?: XOR<GuildScalarRelationFilter, GuildWhereInput>
+    guild?: XOR<GuildNullableScalarRelationFilter, GuildWhereInput> | null
     tracks?: PlaylistTrackListRelationFilter
   }, "id">
 
   export type PlaylistOrderByWithAggregationInput = {
     id?: SortOrder
-    guildId?: SortOrder
+    guildId?: SortOrderInput | SortOrder
     userId?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
@@ -9878,7 +9897,7 @@ export namespace Prisma {
     OR?: PlaylistScalarWhereWithAggregatesInput[]
     NOT?: PlaylistScalarWhereWithAggregatesInput | PlaylistScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Playlist"> | string
-    guildId?: StringWithAggregatesFilter<"Playlist"> | string
+    guildId?: StringNullableWithAggregatesFilter<"Playlist"> | string | null
     userId?: StringWithAggregatesFilter<"Playlist"> | string
     name?: StringWithAggregatesFilter<"Playlist"> | string
     description?: StringNullableWithAggregatesFilter<"Playlist"> | string | null
@@ -10393,13 +10412,13 @@ export namespace Prisma {
     isPublic?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    guild: GuildCreateNestedOneWithoutPlaylistsInput
+    guild?: GuildCreateNestedOneWithoutPlaylistsInput
     tracks?: PlaylistTrackCreateNestedManyWithoutPlaylistInput
   }
 
   export type PlaylistUncheckedCreateInput = {
     id?: string
-    guildId: string
+    guildId?: string | null
     userId: string
     name: string
     description?: string | null
@@ -10417,13 +10436,13 @@ export namespace Prisma {
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    guild?: GuildUpdateOneRequiredWithoutPlaylistsNestedInput
+    guild?: GuildUpdateOneWithoutPlaylistsNestedInput
     tracks?: PlaylistTrackUpdateManyWithoutPlaylistNestedInput
   }
 
   export type PlaylistUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    guildId?: StringFieldUpdateOperationsInput | string
+    guildId?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
@@ -10435,7 +10454,7 @@ export namespace Prisma {
 
   export type PlaylistCreateManyInput = {
     id?: string
-    guildId: string
+    guildId?: string | null
     userId: string
     name: string
     description?: string | null
@@ -10456,7 +10475,7 @@ export namespace Prisma {
 
   export type PlaylistUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    guildId?: StringFieldUpdateOperationsInput | string
+    guildId?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11102,9 +11121,9 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
-  export type GuildScalarRelationFilter = {
-    is?: GuildWhereInput
-    isNot?: GuildWhereInput
+  export type GuildNullableScalarRelationFilter = {
+    is?: GuildWhereInput | null
+    isNot?: GuildWhereInput | null
   }
 
   export type PlaylistTrackListRelationFilter = {
@@ -11246,6 +11265,11 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type GuildScalarRelationFilter = {
+    is?: GuildWhereInput
+    isNot?: GuildWhereInput
   }
 
   export type PlayHistoryCountOrderByAggregateInput = {
@@ -11665,10 +11689,12 @@ export namespace Prisma {
     set?: string | null
   }
 
-  export type GuildUpdateOneRequiredWithoutPlaylistsNestedInput = {
+  export type GuildUpdateOneWithoutPlaylistsNestedInput = {
     create?: XOR<GuildCreateWithoutPlaylistsInput, GuildUncheckedCreateWithoutPlaylistsInput>
     connectOrCreate?: GuildCreateOrConnectWithoutPlaylistsInput
     upsert?: GuildUpsertWithoutPlaylistsInput
+    disconnect?: GuildWhereInput | boolean
+    delete?: GuildWhereInput | boolean
     connect?: GuildWhereUniqueInput
     update?: XOR<XOR<GuildUpdateToOneWithWhereWithoutPlaylistsInput, GuildUpdateWithoutPlaylistsInput>, GuildUncheckedUpdateWithoutPlaylistsInput>
   }
@@ -12078,7 +12104,7 @@ export namespace Prisma {
     OR?: PlaylistScalarWhereInput[]
     NOT?: PlaylistScalarWhereInput | PlaylistScalarWhereInput[]
     id?: StringFilter<"Playlist"> | string
-    guildId?: StringFilter<"Playlist"> | string
+    guildId?: StringNullableFilter<"Playlist"> | string | null
     userId?: StringFilter<"Playlist"> | string
     name?: StringFilter<"Playlist"> | string
     description?: StringNullableFilter<"Playlist"> | string | null
@@ -12330,12 +12356,12 @@ export namespace Prisma {
     isPublic?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
-    guild: GuildCreateNestedOneWithoutPlaylistsInput
+    guild?: GuildCreateNestedOneWithoutPlaylistsInput
   }
 
   export type PlaylistUncheckedCreateWithoutTracksInput = {
     id?: string
-    guildId: string
+    guildId?: string | null
     userId: string
     name: string
     description?: string | null
@@ -12368,12 +12394,12 @@ export namespace Prisma {
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    guild?: GuildUpdateOneRequiredWithoutPlaylistsNestedInput
+    guild?: GuildUpdateOneWithoutPlaylistsNestedInput
   }
 
   export type PlaylistUncheckedUpdateWithoutTracksInput = {
     id?: StringFieldUpdateOperationsInput | string
-    guildId?: StringFieldUpdateOperationsInput | string
+    guildId?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null

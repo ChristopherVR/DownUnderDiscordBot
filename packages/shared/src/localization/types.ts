@@ -5,7 +5,7 @@ export interface CommonTranslations {
   'dashboard.title': string;
   'dashboard.subtitle': string;
   'dashboard.navigation.dashboard': string;
-  'dashboard.navigation.auditLogs': string;
+  'dashboard.navigation.commandLogs': string;
   'dashboard.navigation.commandInvocation': string;
   'dashboard.navigation.musicPlayer': string;
   'dashboard.navigation.botManagement': string;

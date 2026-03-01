@@ -1,9 +1,9 @@
-﻿import { type Client, TextChannel, Message } from 'discord.js';
+﻿import { type Client, type Collection, TextChannel, Message } from 'discord.js';
 import { randomUUID } from 'crypto';
 import { deflateSync, inflateSync } from 'zlib';
 import { hostname } from 'os';
-import type { IStateService } from '../IStateService';
-import type { GuildState, StateDoc, InstanceInfo } from '../schema';
+import type { IStateService, PongResult } from '../IStateService';
+import type { GuildState, StateDoc, InstanceInfo, HeartbeatStatus } from '../schema';
 import type { WebSocketManager } from '../../helpers/websocket';
 
 const HEADER = 'STATE_JSON v1';
@@ -11,7 +11,17 @@ const COMPRESSED_HEADER = 'STATE_JSON_COMPRESSED v1';
 const MAX_MESSAGE_LENGTH = 1900;
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const HEARTBEAT_TIMEOUT = 90000; // 90 seconds (3 missed heartbeats)
+const STALE_INSTANCE_REMOVAL = 7200000; // 2 hours — hard-remove instances with no heartbeat
 const STATE_BACKUP_INTERVAL = 300000; // 5 minutes
+const CAS_MAX_RETRIES = 3;
+const CAS_RETRY_BASE_MS = 100;
+const PIN_CLEANUP_INTERVAL = 10; // clean up pins every N updates
+
+// Ping / Pong protocol markers
+const PING_PREFIX = '[STATE] PING';
+const PONG_PREFIX = '[STATE] PONG';
+const PING_MAX_AGE_MS = 60_000; // Ignore PINGs older than 60 seconds
+const DEFAULT_PING_TIMEOUT_MS = 10_000; // Default timeout waiting for PONG
 
 /**
  * ChannelStateService
@@ -31,6 +41,10 @@ export class ChannelStateService implements IStateService {
   private useMemoryStorage: boolean;
   private memoryState: StateDoc;
   private removeSignalHandlers: Array<() => void> = [];
+  private updateCounter = 0;
+
+  /** Nonces of PINGs this instance has already responded to (avoids duplicate PONGs). */
+  private answeredPingNonces = new Set<string>();
 
   constructor(
     private client: Client,
@@ -245,7 +259,7 @@ export class ChannelStateService implements IStateService {
     }
 
     try {
-      const recent = await ch.messages.fetch({ limit: 50 });
+      const recent = await ch.messages.fetch({ limit: 50 }) as unknown as Collection<string, Message<true>>;
       recent.forEach((msg) => consider(msg));
     } catch (error) {
       console.warn('Failed to fetch recent state messages:', error);
@@ -318,30 +332,55 @@ export class ChannelStateService implements IStateService {
       return doc;
     }
 
-    const { msg, doc } = await this.getOrCreateStateMessage();
+    for (let attempt = 0; attempt < CAS_MAX_RETRIES; attempt++) {
+      const { msg, doc } = await this.getOrCreateStateMessage();
 
-    if (!msg) {
-      throw new Error('Missing state message handle');
+      if (!msg) {
+        throw new Error('Missing state message handle');
+      }
+
+      const before = doc.docVersion;
+
+      await mutator(doc);
+
+      doc.docVersion = before + 1;
+
+      doc.updatedAt = Date.now();
+
+      await msg.edit(this.toContent(doc));
+
+      // Verify the write landed (optimistic concurrency check)
+      try {
+        const refetched = await msg.fetch(true);
+        const verified = this.parse(refetched.content);
+        if (verified && verified.docVersion === doc.docVersion) {
+          // CAS succeeded — periodic pin cleanup
+          this.updateCounter++;
+          if (this.updateCounter % PIN_CLEANUP_INTERVAL === 0) {
+            this.cleanupStalePins(msg.id).catch(() => {});
+          }
+          return doc;
+        }
+      } catch {
+        // Refetch failed — treat as conflict and retry
+      }
+
+      // Conflict detected — wait with jitter then retry
+      const jitter = CAS_RETRY_BASE_MS + Math.random() * CAS_RETRY_BASE_MS * 2;
+      await new Promise((r) => setTimeout(r, jitter));
     }
 
-    const before = doc.docVersion;
+    throw new Error('State update failed after max CAS retries (concurrent conflict)');
+  }
 
-    await mutator(doc);
-
-    doc.docVersion = before + 1;
-
-    doc.updatedAt = Date.now();
-
-    await msg.edit(this.toContent(doc));
-
-    // clean up: unpin older state messages
-
+  /**
+   * Clean up old pinned state messages (called periodically, not on every update)
+   */
+  private async cleanupStalePins(currentMsgId: string): Promise<void> {
     try {
       const ch = await this.getChannel();
-
       const pins = await ch.messages.fetchPinned();
-
-      const others = pins.filter((p) => p.id !== msg.id && this.parse(p.content));
+      const others = pins.filter((p) => p.id !== currentMsgId && this.parse(p.content));
 
       for (const [, m] of others) {
         try {
@@ -353,8 +392,6 @@ export class ChannelStateService implements IStateService {
     } catch {
       // Failed to fetch pinned messages, continue
     }
-
-    return doc;
   }
 
   async getState(): Promise<StateDoc> {
@@ -375,7 +412,8 @@ export class ChannelStateService implements IStateService {
   }
 
   async setActiveInstance(guildId: string, instanceId: string): Promise<GuildState> {
-    let out!: GuildState;
+    const fallback: GuildState = { guildId, activeInstanceId: null, instances: {} };
+    let out: GuildState = fallback;
     await this.update((doc) => {
       const g = (doc.guilds[guildId] ??= { guildId, activeInstanceId: null, instances: {} });
       g.instances[instanceId] ??= {
@@ -399,9 +437,10 @@ export class ChannelStateService implements IStateService {
 
   async setOnline(
     guildId: string,
-    info: Omit<InstanceInfo, 'online' | 'lastHeartbeat'> & { online: boolean; lastHeartbeat?: number },
+    info: Omit<InstanceInfo, 'online' | 'lastHeartbeat' | 'isActive'> & { online: boolean; lastHeartbeat?: number; isActive?: boolean },
   ): Promise<GuildState> {
-    let out!: GuildState;
+    const fallback: GuildState = { guildId, activeInstanceId: null, instances: {} };
+    let out: GuildState = fallback;
     await this.update((doc) => {
       const g = (doc.guilds[guildId] ??= { guildId, activeInstanceId: null, instances: {} });
       const rec = (g.instances[info.instanceId] ??= {
@@ -420,6 +459,31 @@ export class ChannelStateService implements IStateService {
       rec.shardId = info.shardId ?? rec.shardId;
       rec.extra = info.extra ?? rec.extra;
       rec.lastHeartbeat = info.lastHeartbeat ?? Date.now();
+      // Clear forceStopped when an instance sends a heartbeat (it restarted)
+      if (info.online && rec.forceStopped) {
+        rec.forceStopped = false;
+      }
+
+      // Hostname deduplication: if this instance is coming online with a
+      // hostname, remove any OTHER instances with the same hostname that
+      // are offline or have timed-out heartbeats (stale leftovers from
+      // previous process restarts).
+      if (info.online && rec.hostname) {
+        const hn = rec.hostname;
+        const now = Date.now();
+        for (const [otherId, other] of Object.entries(g.instances)) {
+          if (otherId === info.instanceId) continue;
+          if (other.hostname !== hn) continue;
+          // Remove if the other instance is offline or its heartbeat is stale
+          if (!other.online || (now - other.lastHeartbeat) > HEARTBEAT_TIMEOUT) {
+            delete g.instances[otherId];
+            if (g.activeInstanceId === otherId) {
+              g.activeInstanceId = null;
+            }
+          }
+        }
+      }
+
       if (typeof info.isActive === 'boolean') {
         rec.isActive = info.isActive;
         if (info.isActive) {
@@ -450,8 +514,115 @@ export class ChannelStateService implements IStateService {
     }
     const ch = await this.getChannel();
     const nonce = randomUUID();
-    await ch.send(`[STATE] PING ${nonce}${targetInstanceId ? ` ${targetInstanceId}` : ''}`);
+    await ch.send(`${PING_PREFIX} ${nonce}${targetInstanceId ? ` ${targetInstanceId}` : ''}`);
     return nonce;
+  }
+
+  /**
+   * Send a PING and wait for PONG response(s) from the targeted instance(s).
+   * Resolves with an array of PongResults (one per responding instance).
+   * Times out after `timeoutMs` (default 10 s).
+   */
+  async pingAndWait(targetInstanceId?: string, timeoutMs = DEFAULT_PING_TIMEOUT_MS): Promise<PongResult[]> {
+    if (this.useMemoryStorage) {
+      // In memory-only mode we are the only instance, so just echo back immediately.
+      return [{ nonce: 'memory', responderId: this.instanceId, rttMs: 0 }];
+    }
+
+    const ch = await this.getChannel();
+    const nonce = randomUUID();
+    const sentAt = Date.now();
+
+    // Send the PING
+    await ch.send(`${PING_PREFIX} ${nonce}${targetInstanceId ? ` ${targetInstanceId}` : ''}`);
+
+    // Poll the channel for matching PONGs until timeout
+    const results: PongResult[] = [];
+    const deadline = sentAt + timeoutMs;
+
+    while (Date.now() < deadline) {
+      // Short sleep between polls
+      await new Promise((r) => setTimeout(r, 500));
+
+      try {
+        const recent = await ch.messages.fetch({ limit: 30 }) as unknown as Collection<string, Message<true>>;
+        for (const [, msg] of recent) {
+          if (!msg.content.startsWith(PONG_PREFIX)) continue;
+
+          // Format: [STATE] PONG <nonce> <responderId>
+          const parts = msg.content.split(' ');
+          const pongNonce = parts[2];
+          const responderId = parts[3];
+          if (pongNonce !== nonce || !responderId) continue;
+          if (results.some((r) => r.responderId === responderId)) continue;
+
+          const msgTimestamp = msg.editedTimestamp ?? msg.createdTimestamp;
+          results.push({
+            nonce,
+            responderId,
+            rttMs: msgTimestamp - sentAt,
+          });
+
+          // If targeting a specific instance and we got its response, return early
+          if (targetInstanceId && responderId === targetInstanceId) {
+            return results;
+          }
+        }
+      } catch {
+        // Channel fetch failed, retry on next loop
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Poll the state channel for PING messages addressed to this instance
+   * and reply with a PONG.  Called periodically by the heartbeat loop.
+   */
+  async checkForPings(): Promise<void> {
+    if (this.useMemoryStorage) return;
+
+    try {
+      const ch = await this.getChannel();
+      const recent = await ch.messages.fetch({ limit: 30 }) as unknown as Collection<string, Message<true>>;
+      const now = Date.now();
+
+      for (const [, msg] of recent) {
+        if (!msg.content.startsWith(PING_PREFIX)) continue;
+
+        const msgAge = now - msg.createdTimestamp;
+        if (msgAge > PING_MAX_AGE_MS) continue; // Too old, skip
+
+        // Format: [STATE] PING <nonce> [targetInstanceId]
+        const parts = msg.content.split(' ');
+        const nonce = parts[2];
+        const target = parts[3]; // optional
+
+        if (!nonce) continue;
+        if (this.answeredPingNonces.has(nonce)) continue;
+
+        // If target is specified and it's not us, skip
+        if (target && target !== this.instanceId) continue;
+
+        // Respond with PONG
+        this.answeredPingNonces.add(nonce);
+        await ch.send(`${PONG_PREFIX} ${nonce} ${this.instanceId}`);
+
+        // Prune old nonces (keep set from growing unbounded)
+        if (this.answeredPingNonces.size > 200) {
+          const iter = this.answeredPingNonces.values();
+          for (let i = 0; i < 100; i++) iter.next();
+          // Remove oldest half
+          const remaining = new Set<string>();
+          for (const v of iter) remaining.add(v);
+          this.answeredPingNonces.clear();
+          for (const v of remaining) this.answeredPingNonces.add(v);
+        }
+      }
+    } catch (error) {
+      console.warn('checkForPings error:', error);
+    }
   }
 
   /**
@@ -464,6 +635,8 @@ export class ChannelStateService implements IStateService {
       try {
         await this.sendHeartbeat();
         await this.cleanupStaleInstances();
+        // Also check for PING messages addressed to this instance
+        await this.checkForPings();
       } catch (error) {
         console.error('Heartbeat monitoring error:', error);
       }
@@ -494,10 +667,11 @@ export class ChannelStateService implements IStateService {
 
     for (const guildId of guildIds) {
       try {
+        // Omit isActive so the heartbeat preserves whatever active state is currently stored.
+        // Setting isActive here would clear the active instance on every heartbeat cycle.
         await this.setOnline(guildId, {
           instanceId: this.instanceId,
           online: true,
-          isActive: false, // Will be set by setActiveInstance if needed
           hostname: process.env.HOSTNAME || hostname(),
           pid: process.pid,
           shardId: this.client.shard?.ids[0],
@@ -514,25 +688,80 @@ export class ChannelStateService implements IStateService {
   }
 
   /**
-   * Clean up instances that haven't sent heartbeats recently
+   * Clean up instances that haven't sent heartbeats recently.
+   *
+   * Two-tier strategy:
+   *  1. After HEARTBEAT_TIMEOUT (90 s / 3 missed beats): mark the instance **offline**
+   *     and revoke its active status so another instance can take over.
+   *  2. After STALE_INSTANCE_REMOVAL (24 h): hard-delete the instance record from state
+   *     to prevent unbounded growth of abandoned entries.
    */
   private async cleanupStaleInstances(): Promise<void> {
     const now = Date.now();
-    let hasChanges = false;
 
+    // Pre-check: read current state and determine if any work is needed
+    const currentState = await this.getState();
+    let needsWork = false;
+    for (const guild of Object.values(currentState.guilds)) {
+      // Check for stale heartbeats
+      for (const instance of Object.values(guild.instances)) {
+        const age = now - instance.lastHeartbeat;
+        if ((instance.online && age > HEARTBEAT_TIMEOUT) || age > STALE_INSTANCE_REMOVAL) {
+          needsWork = true;
+          break;
+        }
+      }
+      if (needsWork) break;
+
+      // Check for hostname duplicates that can be cleaned up
+      const hostnameMap = new Map<string, number>();
+      for (const inst of Object.values(guild.instances)) {
+        if (inst.hostname) hostnameMap.set(inst.hostname, (hostnameMap.get(inst.hostname) ?? 0) + 1);
+      }
+      for (const count of hostnameMap.values()) {
+        if (count > 1) { needsWork = true; break; }
+      }
+      if (needsWork) break;
+    }
+
+    if (!needsWork) return;
+
+    let markedOffline = false;
+    let removed = false;
     await this.update(async (doc) => {
       for (const guildId of Object.keys(doc.guilds)) {
         const guild = doc.guilds[guildId];
         const instancesToRemove: string[] = [];
 
         for (const [instanceId, instance] of Object.entries(guild.instances)) {
-          if (now - instance.lastHeartbeat > HEARTBEAT_TIMEOUT) {
+          const age = now - instance.lastHeartbeat;
+
+          // Tier 2: hard-remove instances silent for over 24 hours
+          if (age > STALE_INSTANCE_REMOVAL) {
             instancesToRemove.push(instanceId);
-            hasChanges = true;
+            removed = true;
+            continue;
+          }
+
+          // Tier 1: mark as offline after 90 s of missed heartbeats
+          if (instance.online && age > HEARTBEAT_TIMEOUT) {
+            instance.online = false;
+            markedOffline = true;
+
+            // Revoke active status so another instance can take over
+            if (guild.activeInstanceId === instanceId) {
+              guild.activeInstanceId = null;
+            }
+            instance.isActive = false;
+
+            // Broadcast the offline transition via WebSocket
+            if (this.wsManager) {
+              this.wsManager.broadcastBotStatus(guildId, instanceId, 'offline');
+            }
           }
         }
 
-        // Remove stale instances
+        // Remove hard-stale instances
         for (const instanceId of instancesToRemove) {
           delete guild.instances[instanceId];
 
@@ -542,15 +771,47 @@ export class ChannelStateService implements IStateService {
           }
         }
 
-        // If no instances remain, remove the guild
+        // Hostname deduplication pass: when multiple instances share the
+        // same hostname (caused by bot restarts), keep only the one with
+        // the most recent heartbeat and remove the rest.
+        const byHostname = new Map<string, Array<[string, InstanceInfo]>>();
+        for (const [instanceId, instance] of Object.entries(guild.instances)) {
+          if (!instance.hostname) continue;
+          const list = byHostname.get(instance.hostname) ?? [];
+          list.push([instanceId, instance]);
+          byHostname.set(instance.hostname, list);
+        }
+
+        for (const [, entries] of byHostname) {
+          if (entries.length <= 1) continue;
+          // Sort by freshest heartbeat first, then prefer online over offline
+          entries.sort((a, b) => {
+            if (a[1].online !== b[1].online) return a[1].online ? -1 : 1;
+            return b[1].lastHeartbeat - a[1].lastHeartbeat;
+          });
+          // Keep the first (best) instance, remove the rest
+          for (let i = 1; i < entries.length; i++) {
+            const [dupeId] = entries[i];
+            delete guild.instances[dupeId];
+            if (guild.activeInstanceId === dupeId) {
+              guild.activeInstanceId = null;
+            }
+            removed = true;
+          }
+        }
+
+        // If no instances remain, remove the guild entry
         if (Object.keys(guild.instances).length === 0) {
           delete doc.guilds[guildId];
         }
       }
     });
 
-    if (hasChanges) {
-      console.log('Cleaned up stale bot instances');
+    if (markedOffline) {
+      console.log('Marked stale bot instances as offline (heartbeat timeout)');
+    }
+    if (removed) {
+      console.log('Removed duplicate/stale bot instances');
     }
   }
 
@@ -593,7 +854,8 @@ export class ChannelStateService implements IStateService {
    * Set an instance as offline
    */
   async setOffline(guildId: string, instanceId: string): Promise<GuildState> {
-    let out!: GuildState;
+    const fallback: GuildState = { guildId, activeInstanceId: null, instances: {} };
+    let out: GuildState = fallback;
     await this.update((doc) => {
       const g = doc.guilds[guildId];
       if (g && g.instances[instanceId]) {
@@ -605,7 +867,7 @@ export class ChannelStateService implements IStateService {
           g.activeInstanceId = null;
         }
       }
-      out = g || { guildId, activeInstanceId: null, instances: {} };
+      out = g || fallback;
     });
 
     // Broadcast bot status update via WebSocket
@@ -726,6 +988,137 @@ export class ChannelStateService implements IStateService {
     } catch (error) {
       console.error('Error during shutdown:', error);
     }
+  }
+
+  /**
+   * Derive the heartbeat health status for a given instance.
+   *
+   * Tiers (based on time since lastHeartbeat):
+   *  - `stopped`  — forcefully stopped via the dashboard
+   *  - `healthy`  — within one heartbeat interval (30 s)
+   *  - `missed`   — 1 heartbeat missed (30–60 s)
+   *  - `late`     — 2+ heartbeats missed but below timeout (60–90 s)
+   *  - `timeout`  — past the heartbeat timeout (90 s – 2 h)
+   *  - `stale`    — past the stale removal threshold (> 2 h)
+   */
+  getHeartbeatStatus(instance: InstanceInfo): HeartbeatStatus {
+    if (instance.forceStopped) return 'stopped';
+    const age = Date.now() - instance.lastHeartbeat;
+    if (age > STALE_INSTANCE_REMOVAL) return 'stale';
+    if (age > HEARTBEAT_TIMEOUT) return 'timeout';
+    if (age > HEARTBEAT_INTERVAL * 2) return 'late';
+    if (age > HEARTBEAT_INTERVAL) return 'missed';
+    return 'healthy';
+  }
+
+  /**
+   * Forcefully mark an instance as stopped (admin action from the dashboard).
+   * Sets `online = false`, `isActive = false`, `forceStopped = true`,
+   * clears `activeInstanceId` if this was the active instance,
+   * and broadcasts the status change via WebSocket.
+   */
+  async forceStopInstance(guildId: string, instanceId: string): Promise<GuildState> {
+    const fallback: GuildState = { guildId, activeInstanceId: null, instances: {} };
+    let out: GuildState = fallback;
+
+    await this.update((doc) => {
+      const g = doc.guilds[guildId];
+      if (!g || !g.instances[instanceId]) {
+        out = g || fallback;
+        return;
+      }
+
+      const inst = g.instances[instanceId];
+      inst.online = false;
+      inst.isActive = false;
+      inst.forceStopped = true;
+
+      if (g.activeInstanceId === instanceId) {
+        g.activeInstanceId = null;
+      }
+
+      out = g;
+    });
+
+    // Broadcast the forced-stop via WebSocket
+    if (this.wsManager) {
+      this.wsManager.broadcastBotStatus(guildId, instanceId, 'offline');
+    }
+
+    return out;
+  }
+
+  /**
+   * Remove all timed-out and stale instances across every guild.
+   * This is intended for explicit admin cleanup from the dashboard.
+   * It removes any instance whose heartbeat exceeds HEARTBEAT_TIMEOUT
+   * (except the current running instance) and performs hostname dedup.
+   */
+  async removeTimedOutInstances(): Promise<{ removed: number }> {
+    const now = Date.now();
+    let totalRemoved = 0;
+
+    await this.update((doc) => {
+      for (const guildId of Object.keys(doc.guilds)) {
+        const guild = doc.guilds[guildId];
+        const toRemove: string[] = [];
+
+        for (const [instanceId, instance] of Object.entries(guild.instances)) {
+          // Never remove the currently running instance
+          if (instanceId === this.instanceId) continue;
+
+          const age = now - instance.lastHeartbeat;
+          // Remove any instance past heartbeat timeout (offline / unreachable)
+          if (age > HEARTBEAT_TIMEOUT) {
+            toRemove.push(instanceId);
+          }
+        }
+
+        for (const id of toRemove) {
+          delete guild.instances[id];
+          if (guild.activeInstanceId === id) {
+            guild.activeInstanceId = null;
+          }
+          totalRemoved++;
+        }
+
+        // Hostname deduplication — keep only the freshest per hostname
+        const byHostname = new Map<string, Array<[string, InstanceInfo]>>();
+        for (const [instanceId, instance] of Object.entries(guild.instances)) {
+          if (!instance.hostname) continue;
+          const list = byHostname.get(instance.hostname) ?? [];
+          list.push([instanceId, instance]);
+          byHostname.set(instance.hostname, list);
+        }
+
+        for (const [, entries] of byHostname) {
+          if (entries.length <= 1) continue;
+          entries.sort((a, b) => {
+            if (a[1].online !== b[1].online) return a[1].online ? -1 : 1;
+            return b[1].lastHeartbeat - a[1].lastHeartbeat;
+          });
+          for (let i = 1; i < entries.length; i++) {
+            const [dupeId] = entries[i];
+            delete guild.instances[dupeId];
+            if (guild.activeInstanceId === dupeId) {
+              guild.activeInstanceId = null;
+            }
+            totalRemoved++;
+          }
+        }
+
+        // Clean up empty guild entries
+        if (Object.keys(guild.instances).length === 0) {
+          delete doc.guilds[guildId];
+        }
+      }
+    });
+
+    if (totalRemoved > 0) {
+      console.log(`Removed ${totalRemoved} timed-out/stale bot instances`);
+    }
+
+    return { removed: totalRemoved };
   }
 
   /**

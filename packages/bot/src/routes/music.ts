@@ -1,11 +1,21 @@
 import { Request, Response } from 'express';
 import { QueryType, SearchResult } from 'discord-player';
-import { useDefaultPlayer, getPlayerStateManager } from '../helpers/discord/player';
+import {
+  useDefaultPlayer,
+  getPlayerStateManager,
+  createBotAudioPlayer,
+  waitForVoiceReady,
+} from '../helpers/discord/player';
 import { executeCommand } from '../helpers/commands/DiscordBotIntegration';
 import { Track as DashboardTrack } from 'discord-dashboard-shared';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
+import { getAudioStreamUrl } from '../helpers/ytdlp.js';
+import { CustomYouTubeExtractor } from '../extractors/YouTubeExtractor.js';
+import { SpotifyExtractor } from '../extractors/SpotifyExtractor.js';
+import { SoundCloudExtractor } from '../extractors/SoundCloudExtractor.js';
+import { AppleMusicExtractor } from '../extractors/AppleMusicExtractor.js';
 import { ValidationError, NotFoundError } from '../helpers/errorHandler';
 import { expressRouter } from '../helpers/expressRouter';
 import { LogLevel } from '../types/logging';
@@ -23,8 +33,29 @@ const getGuildId = (req: Request): string => {
   return guildId;
 };
 
+// Map extractor identifiers to user-facing platform names
+const identifierToPlatform: Record<string, string> = {
+  [CustomYouTubeExtractor.identifier]: 'youtube',
+  [SpotifyExtractor.identifier]: 'spotify',
+  [SoundCloudExtractor.identifier]: 'soundcloud',
+  [AppleMusicExtractor.identifier]: 'applemusic',
+};
+
+/** Detect platform from a track URL */
+const detectPlatformFromUrl = (url?: string): string | undefined => {
+  if (!url) return undefined;
+  if (/youtu\.?be/i.test(url)) return 'youtube';
+  if (/spotify\.com/i.test(url)) return 'spotify';
+  if (/soundcloud\.com/i.test(url)) return 'soundcloud';
+  if (/music\.apple\.com/i.test(url)) return 'applemusic';
+  return undefined;
+};
+
 // Helper function to convert search results to dashboard tracks
-const convertSearchResultToDashboard = (result: SearchResult): DashboardTrack[] => {
+const convertSearchResultToDashboard = (
+  result: SearchResult,
+  platformHint?: string,
+): (DashboardTrack & { platform?: string })[] => {
   if (!result.tracks || !result.tracks.length) {
     return [];
   }
@@ -37,6 +68,7 @@ const convertSearchResultToDashboard = (result: SearchResult): DashboardTrack[] 
     url: track.url,
     thumbnail: track.thumbnail,
     source: 'online' as const,
+    platform: platformHint ?? detectPlatformFromUrl(track.url),
   }));
 };
 
@@ -51,6 +83,41 @@ const parseDurationToSeconds = (duration: string): number => {
   }
   return 0;
 };
+
+// POST /api/music/connect - Join a voice channel
+router.post('/connect', async (req: Request, res: Response) => {
+  const guildId = getGuildId(req);
+  const { voiceChannelId } = req.body;
+
+  if (!voiceChannelId) {
+    return res.status(400).json({ success: false, error: 'voiceChannelId is required' });
+  }
+
+  const player = useDefaultPlayer();
+  const guild = player.client.guilds.cache.get(guildId);
+  if (!guild) {
+    return res.status(404).json({ success: false, error: tErrors('bot.instanceNotFound') });
+  }
+
+  try {
+    const queue = player.nodes.get(guild) ?? player.nodes.create(guild);
+    if (!queue.connection) {
+      await queue.connect(voiceChannelId, { deaf: true, audioPlayer: createBotAudioPlayer() });
+    }
+
+    enhancedLogger.system(LogLevel.INFO, 'Bot joined voice channel', { guildId, voiceChannelId });
+    res.json({ success: true, voiceChannelId });
+  } catch (error) {
+    enhancedLogger.system(LogLevel.ERROR, 'Failed to join voice channel', {
+      guildId,
+      voiceChannelId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res
+      .status(500)
+      .json({ success: false, error: error instanceof Error ? error.message : 'Failed to join voice channel' });
+  }
+});
 
 // GET /api/music/state - Get current player state
 router.get('/state', async (req: Request, res: Response) => {
@@ -106,8 +173,13 @@ router.get('/search', async (req: Request, res: Response) => {
 });
 
 // POST /api/music/search - Search for music online
+//
+// The custom extractors' validate() only matches URLs, so player.search() with
+// QueryType never routes plain-text search queries to them.  Instead we look up
+// the registered extractor by identifier and call its handle() directly, which
+// includes a search fallback path for every extractor.
 router.post('/search', async (req: Request, res: Response) => {
-  const { query, searchEngine = 'youtube' } = req.body;
+  const { query, searchEngine = 'auto' } = req.body;
 
   if (!query) {
     return res.status(400).json({
@@ -117,49 +189,132 @@ router.post('/search', async (req: Request, res: Response) => {
   }
 
   const player = useDefaultPlayer();
+  const isUrl = /^https?:\/\//.test(query.trim());
 
-  // Map search engine names to QueryType
-  let queryType: QueryType;
-  switch (searchEngine.toLowerCase()) {
-    case 'youtube':
-      queryType = QueryType.YOUTUBE_SEARCH;
-      break;
-    case 'spotify':
-      queryType = QueryType.SPOTIFY_SEARCH;
-      break;
-    case 'soundcloud':
-      queryType = QueryType.SOUNDCLOUD_SEARCH;
-      break;
-    default:
-      queryType = QueryType.AUTO;
-  }
+  try {
+    // For URLs, let discord-player resolve via validate() — that still works.
+    if (isUrl) {
+      const result = await player.search(query, { searchEngine: QueryType.AUTO });
+      const urlPlatform = detectPlatformFromUrl(query);
+      const tracks = convertSearchResultToDashboard(result, urlPlatform);
 
-  const result = await player.search(query, { searchEngine: queryType });
-  const tracks = convertSearchResultToDashboard(result);
+      enhancedLogger.system(LogLevel.INFO, 'Music search completed (URL)', {
+        query,
+        resultCount: tracks.length,
+      });
 
-  enhancedLogger.system(LogLevel.INFO, 'Music search completed', { query, searchEngine, resultCount: tracks.length });
+      return res.json({
+        success: true,
+        data: {
+          query,
+          tracks,
+          playlist: result.playlist
+            ? {
+                title: result.playlist.title,
+                description: result.playlist.description,
+                thumbnail: result.playlist.thumbnail,
+                url: result.playlist.url,
+              }
+            : null,
+        },
+      });
+    }
 
-  res.json({
-    success: true,
-    data: {
-      query,
-      tracks,
-      playlist: result.playlist
-        ? {
+    // --- Text search: call the correct extractor directly ---
+    const engine = searchEngine.toLowerCase();
+
+    // Map engine name → extractor identifier
+    const engineToIdentifier: Record<string, string> = {
+      youtube: CustomYouTubeExtractor.identifier,
+      spotify: SpotifyExtractor.identifier,
+      soundcloud: SoundCloudExtractor.identifier,
+      apple: AppleMusicExtractor.identifier,
+      apple_music: AppleMusicExtractor.identifier,
+      applemusic: AppleMusicExtractor.identifier,
+    };
+
+    // For 'auto', default to YouTube search (most universal)
+    const identifiers =
+      engine === 'auto'
+        ? [CustomYouTubeExtractor.identifier]
+        : [engineToIdentifier[engine] ?? CustomYouTubeExtractor.identifier];
+
+    let tracks: (DashboardTrack & { platform?: string })[] = [];
+    let playlistData: { title: string; description: string; thumbnail: string; url: string } | null = null;
+
+    for (const id of identifiers) {
+      const ext = player.extractors.get(id);
+      if (!ext) {
+        enhancedLogger.system(LogLevel.WARN, `Extractor ${id} not found in registry`);
+        continue;
+      }
+
+      const resolvedPlatform = identifierToPlatform[id] ?? detectPlatformFromUrl(query);
+
+      // Create a minimal search context (no guild interaction needed for search)
+      const fakeContext = { requestedBy: null } as never;
+      const result = await ext.handle(query, fakeContext);
+      if (result && result.tracks && result.tracks.length > 0) {
+        tracks = result.tracks.map((track) => ({
+          id: track.id || uuidv4(),
+          title: track.title,
+          artist: track.author,
+          duration: parseDurationToSeconds(track.duration),
+          url: track.url,
+          thumbnail: track.thumbnail,
+          source: 'online' as const,
+          platform: resolvedPlatform ?? detectPlatformFromUrl(track.url),
+        }));
+
+        if (result.playlist) {
+          playlistData = {
             title: result.playlist.title,
-            description: result.playlist.description,
-            thumbnail: result.playlist.thumbnail,
-            url: result.playlist.url,
-          }
-        : null,
-    },
-  });
+            description: result.playlist.description ?? '',
+            thumbnail: result.playlist.thumbnail ?? '',
+            url: result.playlist.url ?? '',
+          };
+        }
+        break;
+      }
+    }
+
+    enhancedLogger.system(LogLevel.INFO, 'Music search completed', {
+      query,
+      searchEngine,
+      resultCount: tracks.length,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        query,
+        tracks,
+        playlist: playlistData,
+      },
+    });
+  } catch (error) {
+    enhancedLogger.system(LogLevel.ERROR, 'Music search failed', {
+      query,
+      searchEngine,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Search failed',
+    });
+  }
 });
 
 // POST /api/music/play - Play a track or add to queue
 router.post('/play', async (req: Request, res: Response) => {
   const guildId = getGuildId(req);
-  const { query, source = 'online', filePath, playNow = false } = req.body;
+  const { query, source: sourceRaw, platform, filePath: filePathRaw, playNow = false, voiceChannelId } = req.body;
+  // Desktop sends `platform` while older callers use `source` — accept both.
+  const source: string = sourceRaw ?? platform ?? 'online';
+  // When the desktop plays a local file in bot mode it sends the path as `query`
+  // with platform='local' but no separate `filePath` field.
+  const filePath: string | undefined = filePathRaw ?? (source === 'local' && query ? query : undefined);
 
   if (!query && !filePath) {
     throw new ValidationError('errors.validation.required', {
@@ -181,6 +336,34 @@ router.post('/play', async (req: Request, res: Response) => {
     });
   }
 
+  const queue = player.nodes.get(guild) ?? player.nodes.create(guild);
+
+  // Join voice channel if not already connected
+  if (!queue.connection) {
+    if (!voiceChannelId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bot is not in a voice channel. Provide voiceChannelId to connect.',
+        requiresVoiceChannel: true,
+      });
+    }
+
+    try {
+      await queue.connect(voiceChannelId, { deaf: true, audioPlayer: createBotAudioPlayer() });
+      enhancedLogger.system(LogLevel.INFO, 'Bot joined voice channel for playback', { guildId, voiceChannelId });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to join voice channel',
+      });
+    }
+  }
+
+  // Ensure the voice connection is fully ready (UDP handshake + encryption)
+  // before streaming. Without this, FFmpeg finishes transcoding local files
+  // before the connection is ready, causing the audio pipeline to end immediately.
+  await waitForVoiceReady(queue);
+
   let result: SearchResult;
 
   if (source === 'local' && filePath) {
@@ -201,7 +384,10 @@ router.post('/play', async (req: Request, res: Response) => {
     });
   } else {
     // Handle online search and play
-    result = await player.search(query, { searchEngine: QueryType.AUTO });
+    // Use AUTO for URLs (extractors resolve them), YOUTUBE_SEARCH for text queries
+    const isUrl = /^https?:\/\//.test(query.trim());
+    const searchType = isUrl ? QueryType.AUTO : QueryType.YOUTUBE_SEARCH;
+    result = await player.search(query, { searchEngine: searchType });
 
     if (!result || !result.tracks?.length) {
       return res.status(404).json({
@@ -211,7 +397,6 @@ router.post('/play', async (req: Request, res: Response) => {
     }
   }
 
-  const queue = player.nodes.get(guild) ?? player.nodes.create(guild);
   const track = result.tracks[0];
 
   if (playNow || !queue.isPlaying()) {
@@ -336,6 +521,35 @@ router.post('/skip', async (req: Request, res: Response) => {
   });
 });
 
+// POST /api/music/back - Go to previous track
+router.post('/back', async (req: Request, res: Response) => {
+  const guildId = getGuildId(req);
+  const player = useDefaultPlayer();
+  const queue = player.nodes.get(guildId);
+
+  if (!queue || !queue.currentTrack) {
+    return res.status(400).json({
+      success: false,
+      error: 'No music currently playing',
+    });
+  }
+
+  const node = queue.node as { back?: () => unknown };
+  let success = false;
+  if (typeof node.back === 'function') {
+    const result = node.back();
+    const resolved = await Promise.resolve(result as unknown);
+    success = typeof resolved === 'boolean' ? resolved : Boolean(resolved);
+  }
+
+  enhancedLogger.system(LogLevel.INFO, `Track back`, { guildId, success });
+
+  res.json({
+    success,
+    message: success ? tCommands('previous.responses.success') : tCommands('previous.responses.error'),
+  });
+});
+
 // POST /api/music/seek - Seek to position
 router.post('/seek', async (req: Request, res: Response) => {
   const guildId = getGuildId(req);
@@ -438,7 +652,7 @@ router.get('/queue', async (req: Request, res: Response) => {
 // POST /api/music/queue/add - Add track to queue
 router.post('/queue/add', async (req: Request, res: Response) => {
   const guildId = getGuildId(req);
-  const { query, position } = req.body;
+  const { query, position, platform } = req.body;
 
   if (!query) {
     return res.status(400).json({
@@ -448,7 +662,29 @@ router.post('/queue/add', async (req: Request, res: Response) => {
   }
 
   const player = useDefaultPlayer();
-  const result = await player.search(query, { searchEngine: QueryType.AUTO });
+
+  // Handle local files via the state manager (same as the /play endpoint)
+  if (platform === 'local') {
+    const stateManager = getPlayerStateManager();
+    const guild = player.client.guilds.cache.get(guildId);
+    if (!guild) {
+      return res.status(404).json({ success: false, error: tErrors('bot.instanceNotFound') });
+    }
+    // Ensure a queue exists
+    player.nodes.get(guild) ?? player.nodes.create(guild);
+
+    const success = await stateManager.addLocalFile(guildId, query);
+    if (!success) {
+      return res.status(400).json({ success: false, error: 'Failed to add local file to queue' });
+    }
+
+    return res.json({ success: true, message: 'Local file added to queue' });
+  }
+
+  // Use AUTO for URLs, YOUTUBE_SEARCH for plain text queries
+  const isUrl = /^https?:\/\//.test(query.trim());
+  const searchType = isUrl ? QueryType.AUTO : QueryType.YOUTUBE_SEARCH;
+  const result = await player.search(query, { searchEngine: searchType });
 
   if (!result || !result.tracks?.length) {
     return res.status(404).json({
@@ -500,7 +736,7 @@ router.post('/queue/add', async (req: Request, res: Response) => {
 // DELETE /api/music/queue/:index - Remove track from queue
 router.delete('/queue/:index', async (req: Request, res: Response) => {
   const guildId = getGuildId(req);
-  const index = parseInt(req.params.index);
+  const index = parseInt(String(req.params.index));
 
   if (isNaN(index) || index < 0) {
     return res.status(400).json({
@@ -527,6 +763,10 @@ router.delete('/queue/:index', async (req: Request, res: Response) => {
   }
 
   const removedTrack = queue.removeTrack(index);
+
+  // Broadcast updated state so WebSocket clients (desktop UI) reflect the change
+  const stateManager = getPlayerStateManager();
+  stateManager.forceUpdate(guildId);
 
   enhancedLogger.system(LogLevel.INFO, `Track removed from queue`, {
     guildId,
@@ -569,11 +809,67 @@ router.post('/queue/clear', async (req: Request, res: Response) => {
   const clearedCount = queue.tracks.size;
   queue.tracks.clear();
 
+  // Broadcast updated state so WebSocket clients (desktop UI) reflect the change
+  const stateManager = getPlayerStateManager();
+  stateManager.forceUpdate(guildId);
+
   enhancedLogger.system(LogLevel.INFO, `Queue cleared`, { guildId, clearedCount });
 
   res.json({
     success: true,
     message: `Cleared ${clearedCount} tracks from queue`,
+  });
+});
+
+// POST /api/music/queue/move - Move a track to a new position in the queue
+router.post('/queue/move', async (req: Request, res: Response) => {
+  const guildId = getGuildId(req);
+  const { from, to } = req.body;
+
+  if (typeof from !== 'number' || typeof to !== 'number' || from < 0 || to < 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Valid "from" and "to" indices are required',
+    });
+  }
+
+  const player = useDefaultPlayer();
+  const queue = player.nodes.get(guildId);
+
+  if (!queue) {
+    return res.status(404).json({
+      success: false,
+      error: 'No active queue',
+    });
+  }
+
+  if (from >= queue.tracks.size || to >= queue.tracks.size) {
+    return res.status(400).json({
+      success: false,
+      error: 'Track index out of range',
+    });
+  }
+
+  const track = queue.removeTrack(from);
+  if (!track) {
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to remove track from queue',
+    });
+  }
+
+  queue.insertTrack(track, to);
+
+  enhancedLogger.system(LogLevel.INFO, `Track moved in queue`, {
+    guildId,
+    from,
+    to,
+    trackTitle: track.title,
+  });
+
+  res.json({
+    success: true,
+    message: `Track moved from position ${from} to ${to}`,
   });
 });
 
@@ -591,6 +887,10 @@ router.post('/queue/shuffle', async (req: Request, res: Response) => {
   }
 
   queue.tracks.shuffle();
+
+  // Broadcast updated state so WebSocket clients (desktop UI) reflect the change
+  const stateManager = getPlayerStateManager();
+  stateManager.forceUpdate(guildId);
 
   enhancedLogger.system(LogLevel.INFO, `Queue shuffled`, { guildId });
 
@@ -636,6 +936,246 @@ router.get('/local-files', async (req: Request, res: Response) => {
     success: true,
     data: files,
   });
+});
+
+// GET /api/music/stream - Stream audio for local playback on the desktop app.
+// Accepts either a `url` (online track) or `filePath` (uploaded local file) query param.
+// For YouTube URLs it resolves a direct audio stream via yt-dlp and proxies it.
+// For other URLs it uses the built-in fetch to proxy the response.
+// For local files it streams from the uploads/audio directory.
+router.get('/stream', async (req: Request, res: Response) => {
+  const url = req.query.url as string | undefined;
+  const filePath = req.query.filePath as string | undefined;
+
+  if (!url && !filePath) {
+    return res.status(400).json({ success: false, error: 'url or filePath query parameter is required' });
+  }
+
+  try {
+    // --- Local file streaming ---
+    if (filePath) {
+      const audioDir = path.resolve('uploads/audio');
+      const videoDir = path.resolve('uploads/video');
+      const safeName = path.basename(filePath);
+
+      // Check both audio and video upload directories
+      let fullPath = path.join(audioDir, safeName);
+      if (!fs.existsSync(fullPath)) {
+        fullPath = path.join(videoDir, safeName);
+      }
+
+      if (!fs.existsSync(fullPath)) {
+        return res.status(404).json({ success: false, error: 'File not found' });
+      }
+
+      const stat = fs.statSync(fullPath);
+      const ext = path.extname(safeName).toLowerCase().slice(1);
+      const mimeMap: Record<string, string> = {
+        mp3: 'audio/mpeg',
+        wav: 'audio/wav',
+        flac: 'audio/flac',
+        ogg: 'audio/ogg',
+        m4a: 'audio/mp4',
+        aac: 'audio/aac',
+        webm: 'audio/webm',
+        mp4: 'video/mp4',
+        mkv: 'video/x-matroska',
+        avi: 'video/x-msvideo',
+        mov: 'video/quicktime',
+        flv: 'video/x-flv',
+        ogv: 'video/ogg',
+        '3gp': 'video/3gpp',
+      };
+      const contentType = mimeMap[ext] ?? 'application/octet-stream';
+
+      // Support range requests for seeking
+      const range = req.headers.range;
+      if (range) {
+        const parts = range.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+        res.writeHead(206, {
+          'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': end - start + 1,
+          'Content-Type': contentType,
+        });
+        fs.createReadStream(fullPath, { start, end }).pipe(res);
+      } else {
+        res.writeHead(200, {
+          'Content-Length': stat.size,
+          'Content-Type': contentType,
+          'Accept-Ranges': 'bytes',
+        });
+        fs.createReadStream(fullPath).pipe(res);
+      }
+
+      enhancedLogger.system(LogLevel.INFO, 'Streaming local file', { filePath: safeName });
+      return;
+    }
+
+    // --- Online URL streaming ---
+    const trackUrl = url!;
+
+    // Check if it's a YouTube URL
+    const isYouTube = /(?:youtube\.com|youtu\.be)/i.test(trackUrl);
+
+    if (isYouTube) {
+      // Resolve audio stream URL via yt-dlp (youtubei.js decipher is broken)
+      const streamUrl = await getAudioStreamUrl(trackUrl);
+
+      // Proxy the audio stream
+      const audioRes = await fetch(streamUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+      });
+
+      if (!audioRes.ok || !audioRes.body) {
+        return res.status(502).json({ success: false, error: 'Failed to fetch audio stream' });
+      }
+
+      res.writeHead(200, {
+        'Content-Type': audioRes.headers.get('content-type') ?? 'audio/webm',
+        'Content-Length': audioRes.headers.get('content-length') ?? '',
+        'Accept-Ranges': 'bytes',
+      });
+
+      // Pipe the web ReadableStream to the Node response
+      const reader = audioRes.body.getReader();
+      const pump = async (): Promise<void> => {
+        const { done, value } = await reader.read();
+        if (done) {
+          res.end();
+          return;
+        }
+        if (!res.write(value)) {
+          await new Promise<void>((resolve) => res.once('drain', resolve));
+        }
+        return pump();
+      };
+      await pump();
+
+      enhancedLogger.system(LogLevel.INFO, 'Streamed YouTube audio via yt-dlp', { url: trackUrl });
+      return;
+    }
+
+    // Generic URL proxy — for SoundCloud, Spotify resolved URLs, etc.
+    // First try to resolve via discord-player to get the actual track URL
+    const player = useDefaultPlayer();
+    const searchResult = await player.search(trackUrl, { searchEngine: QueryType.AUTO });
+
+    let resolvedUrl = trackUrl;
+    if (searchResult.tracks.length > 0) {
+      // Try to get a streamable URL from the first track
+      resolvedUrl = searchResult.tracks[0].url || trackUrl;
+    }
+
+    const proxyRes = await fetch(resolvedUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+    });
+
+    if (!proxyRes.ok || !proxyRes.body) {
+      return res.status(502).json({ success: false, error: 'Failed to fetch audio from URL' });
+    }
+
+    res.writeHead(200, {
+      'Content-Type': proxyRes.headers.get('content-type') ?? 'audio/mpeg',
+      'Transfer-Encoding': 'chunked',
+    });
+
+    const reader = proxyRes.body.getReader();
+    const pump = async (): Promise<void> => {
+      const { done, value } = await reader.read();
+      if (done) {
+        res.end();
+        return;
+      }
+      if (!res.write(value)) {
+        await new Promise<void>((resolve) => res.once('drain', resolve));
+      }
+      return pump();
+    };
+    await pump();
+
+    enhancedLogger.system(LogLevel.INFO, 'Streamed online audio', { url: trackUrl });
+  } catch (error) {
+    enhancedLogger.system(LogLevel.ERROR, 'Stream failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Stream failed',
+      });
+    } else {
+      res.end();
+    }
+  }
+});
+
+// GET /api/music/stream/local - Stream a local file from a Tauri music folder path.
+// The desktop app sends the full file path, and the bot reads and serves it.
+router.get('/stream/local', async (req: Request, res: Response) => {
+  const filePath = req.query.path as string | undefined;
+  if (!filePath) {
+    return res.status(400).json({ success: false, error: 'path query parameter is required' });
+  }
+
+  try {
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, error: 'File not found' });
+    }
+
+    const stat = fs.statSync(filePath);
+    const ext = path.extname(filePath).toLowerCase().slice(1);
+    const mimeMap: Record<string, string> = {
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      flac: 'audio/flac',
+      ogg: 'audio/ogg',
+      m4a: 'audio/mp4',
+      aac: 'audio/aac',
+      webm: 'audio/webm',
+      mp4: 'video/mp4',
+      mkv: 'video/x-matroska',
+      avi: 'video/x-msvideo',
+      mov: 'video/quicktime',
+      flv: 'video/x-flv',
+      ogv: 'video/ogg',
+      '3gp': 'video/3gpp',
+    };
+    const contentType = mimeMap[ext] ?? 'application/octet-stream';
+
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': end - start + 1,
+        'Content-Type': contentType,
+      });
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+    } else {
+      res.writeHead(200, {
+        'Content-Length': stat.size,
+        'Content-Type': contentType,
+        'Accept-Ranges': 'bytes',
+      });
+      fs.createReadStream(filePath).pipe(res);
+    }
+
+    enhancedLogger.system(LogLevel.INFO, 'Streaming local folder file', { filePath });
+  } catch (error) {
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to stream file',
+      });
+    }
+  }
 });
 
 export default router.getRouter();

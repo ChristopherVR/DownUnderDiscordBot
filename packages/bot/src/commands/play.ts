@@ -11,13 +11,13 @@ import {
 } from 'discord.js';
 import { GuildBasedChannel, GuildMember, PermissionFlagsBits, VoiceBasedChannel } from 'discord.js';
 import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
-import { useDefaultPlayer } from '../helpers/discord/player';
+import { useDefaultPlayer, createBotAudioPlayer, waitForVoiceReady } from '../helpers/discord/player';
 import { CommandHandler, CommandContext } from '../types/commands';
 import { InteractionCommandContext } from '../helpers/commands/CommandContext';
 import fs from 'fs/promises';
 import { join } from 'path';
 import { createLogger } from '../helpers/logger';
-import Innertube from 'youtubei.js';
+import { Innertube } from 'youtubei.js';
 import { URL } from 'node:url';
 
 const log = createLogger('command-play');
@@ -142,12 +142,15 @@ const playAndQueue = async (
   const currentChannelId = queue.connection?.joinConfig.channelId;
   if (!queue.connection || currentChannelId !== voiceChannel.id) {
     try {
-      await queue.connect(voiceChannel);
+      await queue.connect(voiceChannel, { audioPlayer: createBotAudioPlayer() });
     } catch (err) {
       log.error({ err }, 'Failed to connect to voice channel');
       return null;
     }
   }
+
+  // Wait for voice connection to be fully ready before streaming
+  await waitForVoiceReady(queue);
 
   if (!queue.isPlaying()) {
     await queue.node.play(track);

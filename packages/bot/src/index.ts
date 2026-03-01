@@ -4,21 +4,24 @@ import type { Request, RequestHandler } from 'express';
 import path from 'path';
 import { promises as fs } from 'fs';
 import cors from 'cors';
-import { WebSocketServer, WebSocket } from 'ws';
-import http, { IncomingMessage } from 'http';
+import { WebSocketServer } from 'ws';
+import http from 'http';
 import { v4 as uuid } from 'uuid';
 import { fileURLToPath } from 'url';
 import type { Logger } from 'pino';
-import { logger, createLogger } from './helpers/logger';
+import { logger, createLogger, onLogEntry } from './helpers/logger';
 import uploadRoutes from './routes/upload';
 import musicRoutes from './routes/music';
+import playlistRoutes from './routes/playlists';
+import authRoutes, { setBotGuildIds, setBotClient } from './routes/auth';
 import { initializeCommandRoutes } from './routes/commands';
+import { initializeChannelRoutes } from './routes/channels';
 import { createLogsRouter } from './routes/logs';
 import { ensureUploadDir } from './helpers/fileUpload';
 import { WebSocketManager } from './helpers/websocket';
 import { tErrors, initI18n } from 'discord-dashboard-shared/localization';
 
-import { BotStatusMessage, LogMessage, PlayerState, SocketEnvelope, Track, ConnectionInfo } from './types';
+import { LogMessage } from './types';
 import { startBot } from './bot';
 
 // index.ts (or the first file that runs)
@@ -108,64 +111,10 @@ async function main() {
   serverLog.info('Upload directory ready');
 
   // ------------------------------
-  // MOCK DATA
+  // Log storage (used by /api/logs)
   // ------------------------------
-  const botConnected = true;
-  const serverName = 'LoFi Lounge';
-  let channelName = '#music';
-
-  const catalog: Track[] = [
-    {
-      id: 't1',
-      title: 'Coffee Beats',
-      artist: 'DJ Chill',
-      duration: 240,
-      url: 'https://example.com/coffee',
-      source: 'online',
-    },
-    {
-      id: 't2',
-      title: 'Morning Sun',
-      artist: 'Aurora Sky',
-      duration: 198,
-      url: 'https://example.com/sun',
-      source: 'online',
-    },
-    {
-      id: 't3',
-      title: 'Neon Drift',
-      artist: 'Citywave',
-      duration: 260,
-      url: 'https://example.com/neon',
-      source: 'online',
-    },
-    {
-      id: 't4',
-      title: 'Rainy Alley',
-      artist: 'Lo-Fi Crew',
-      duration: 215,
-      url: 'https://example.com/rain',
-      source: 'online',
-    },
-  ];
-
-  const player: PlayerState = {
-    status: 'stopped',
-    track: null,
-    position: 0,
-    volume: 70,
-  };
   const auditLogs: LogMessage[] = [];
   const commandLogs: LogMessage[] = [];
-
-  // Command registry is now handled by the CommandRegistry service
-
-  const connections: ConnectionInfo[] = [
-    { id: 'v1', name: 'General Voice', type: 'voice', connected: true },
-    { id: 'v2', name: 'Chill Vibes', type: 'voice', connected: false },
-    { id: 't1', name: '#music', type: 'text', connected: true },
-    { id: 't2', name: '#bot-commands', type: 'text', connected: true },
-  ];
 
   function pushLog(
     category: 'audit' | 'command' | 'system',
@@ -188,7 +137,7 @@ async function main() {
     else auditLogs.unshift(log); // system logs go to audit logs
     if (auditLogs.length > 1000) auditLogs.pop();
     if (commandLogs.length > 1000) commandLogs.pop();
-    broadcast({ type: 'log', payload: log });
+    broadcastLog({ type: 'log', payload: log });
   }
 
   // ------------------------------
@@ -198,64 +147,34 @@ async function main() {
   const wss = new WebSocketServer({ server, path: '/ws' });
   const wsManager = new WebSocketManager(wss);
 
-  function send(ws: WebSocket, data: SocketEnvelope) {
-    ws.send(JSON.stringify(data));
-  }
-  function broadcast(data: SocketEnvelope) {
-    // Use the enhanced WebSocket manager for broadcasting
-    if (data.type === 'log') {
-      // Convert LogMessage to LogEntry format
-      const logEntry = {
-        ...data.payload,
-        timestamp: data.payload.ts,
-      };
-      wsManager.broadcastLogEntry(logEntry);
-    } else if (data.type === 'player') {
-      // Convert server PlayerState to shared PlayerState format
-      const playerState = {
-        ...data.payload,
-        loop: false, // Default value
-        queue: [], // Default value
-        currentIndex: -1, // Default value
-      };
-      wsManager.broadcastPlayerState(playerState);
-    } else {
-      // Fallback to old broadcast method for compatibility
-      const raw = JSON.stringify(data);
-      wss.clients.forEach((client: WebSocket) => {
-        if (client.readyState === 1) client.send(raw);
-      });
-    }
-  }
-
-  // Legacy WebSocket connection handler for backward compatibility
-  wss.on('connection', (ws: WebSocket, _req: IncomingMessage) => {
-    const status: BotStatusMessage = {
-      connected: botConnected,
-      serverName,
-      channelName,
+  function broadcastLog(data: { type: 'log'; payload: LogMessage }) {
+    const logEntry = {
+      ...data.payload,
+      timestamp: data.payload.ts,
     };
-    send(ws, { type: 'status', payload: status });
-    send(ws, { type: 'player', payload: { ...player } });
-    send(ws, { type: 'connections', payload: connections });
-    auditLogs.slice(0, 200).forEach((l) => send(ws, { type: 'log', payload: l }));
-    commandLogs.slice(0, 200).forEach((l) => send(ws, { type: 'log', payload: l }));
-    pushLog('audit', 'info', 'Client connected to WebSocket');
-  });
+    wsManager.broadcastLogEntry(logEntry);
+  }
 
-  setInterval(() => {
-    if (player.status === 'playing' && player.track) {
-      player.position += 1;
-      if (player.position >= player.track.duration) {
-        const idx = catalog.findIndex((t) => t.id === player.track?.id);
-        const next = catalog[(idx + 1) % catalog.length];
-        player.track = next;
-        player.position = 0;
-        pushLog('audit', 'info', `Now playing: ${next.title} — ${next.artist}`);
-      }
-      broadcast({ type: 'player', payload: { ...player } });
-    }
-  }, 1000);
+  // Wire up the pino logger so every log entry populates the in-memory arrays
+  // and is broadcast to WebSocket clients in real-time.
+  onLogEntry((entry) => {
+    const level = entry.level as string;
+    const msg = String(entry.msg ?? '');
+    const context = (entry.context as string) ?? 'system';
+
+    // Map pino level label to our level type
+    let logLevel: 'info' | 'warn' | 'error' | 'debug' = 'info';
+    if (level === 'warn' || level === 'warning') logLevel = 'warn';
+    else if (level === 'error' || level === 'fatal') logLevel = 'error';
+    else if (level === 'debug' || level === 'trace') logLevel = 'debug';
+
+    // Derive category from context binding
+    let category: 'audit' | 'command' | 'system' = 'system';
+    if (context.toLowerCase().includes('command')) category = 'command';
+    else if (context.toLowerCase().includes('audit')) category = 'audit';
+
+    pushLog(category, logLevel, msg, context, entry as Record<string, unknown>);
+  });
 
   // ------------------------------
   // Start Discord bot + state service
@@ -263,6 +182,16 @@ async function main() {
   serverLog.info('Starting Discord bot');
   const botCtx = await startBot(wsManager);
   serverLog.info({ guildId: botCtx.GUILD_ID }, 'Discord bot started');
+
+  // Sync bot guild IDs for auth route filtering
+  const syncBotGuilds = () => {
+    const ids = new Set(botCtx.client.guilds.cache.map((g) => g.id));
+    setBotGuildIds(ids);
+  };
+  syncBotGuilds();
+  setBotClient(botCtx.client);
+  // Re-sync periodically as bot joins/leaves guilds
+  setInterval(syncBotGuilds, 60_000);
   const _GUILD_ID = botCtx.GUILD_ID;
   const state = botCtx.state;
 
@@ -282,16 +211,321 @@ async function main() {
   // ------------------------------
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+  // Guild voice channels endpoint
+  app.get('/api/guild/:guildId/voice-channels', (req, res) => {
+    const guildId = String(req.params.guildId);
+    const guild = botCtx.client.guilds.cache.get(guildId);
+    if (!guild) {
+      return res.status(404).json({ error: 'Guild not found' });
+    }
+
+    const channels = guild.channels.cache
+      .filter((ch) => ch.type === 2) // GuildVoice = 2
+      .map((ch) => ({
+        id: ch.id,
+        name: ch.name,
+        userCount: 'members' in ch ? ch.members.size : 0,
+      }));
+
+    res.json({ channels });
+  });
+
+  // Bot management endpoint — status info
+  app.get('/api/bot/status', (_req, res) => {
+    const client = botCtx.client;
+    res.json({
+      online: client.isReady(),
+      uptime: client.uptime ?? 0,
+      guilds: client.guilds.cache.size,
+      username: client.user?.username ?? null,
+      avatar: client.user?.displayAvatarURL?.() ?? null,
+    });
+  });
+
+  // Comprehensive dashboard endpoint — aggregates all status info
+  app.get('/api/dashboard', async (_req, res) => {
+    const client = botCtx.client;
+    const wsStats = wsManager.getStats();
+
+    // Gather per-guild player info from the discord-player instance
+    const guildStatuses = client.guilds.cache.map((guild) => {
+      const queue = botCtx.player.nodes.get(guild.id);
+      const isPlaying = queue?.isPlaying() ?? false;
+      const currentTrack = queue?.currentTrack;
+      const queueSize = queue?.tracks.data.length ?? 0;
+      const voiceChannelId = queue?.channel?.id ?? null;
+      const voiceChannelName = queue?.channel?.name ?? null;
+
+      return {
+        guildId: guild.id,
+        guildName: guild.name,
+        guildIcon: guild.iconURL({ size: 64 }),
+        memberCount: guild.memberCount,
+        player: {
+          active: !!queue && (isPlaying || !!currentTrack),
+          isPlaying,
+          currentTrack: currentTrack
+            ? {
+                title: currentTrack.title,
+                artist: currentTrack.author,
+                duration: currentTrack.duration,
+                thumbnail: currentTrack.thumbnail,
+                url: currentTrack.url,
+              }
+            : null,
+          queueSize,
+          voiceChannelId,
+          voiceChannelName,
+        },
+      };
+    });
+
+    // ---  Bot instance tracking from the state service ---
+    let onlineInstancesByGuild: Record<
+      string,
+      Array<{
+        instanceId: string;
+        online: boolean;
+        lastHeartbeat: number;
+        isActive: boolean;
+        forceStopped?: boolean;
+        hostname?: string;
+        pid?: number;
+        shardId?: number;
+        extra?: Record<string, unknown>;
+      }>
+    > = {};
+    let healthStatus = { totalInstances: 0, onlineInstances: 0, guildsWithBots: 0, lastUpdated: 0 };
+
+    try {
+      // Opportunistically clean up stale instances before building the response
+      await state.removeTimedOutInstances();
+
+      // Fetch ALL instances (not just online) so force-stopped / offline ones
+      // still appear in the dashboard with the correct heartbeatStatus.
+      const fullState = await state.getState();
+      for (const [guildId, guild] of Object.entries(fullState.guilds)) {
+        const instances = Object.values(guild.instances);
+        if (instances.length > 0) {
+          onlineInstancesByGuild[guildId] = instances;
+        }
+      }
+      healthStatus = await state.getHealthStatus();
+    } catch (err) {
+      serverLog.warn({ err }, 'Failed to fetch instance state for dashboard');
+    }
+
+    // Build a de-duplicated list of unique bot instances across all guilds
+    const instanceMap = new Map<
+      string,
+      {
+        instanceId: string;
+        hostname: string | null;
+        pid: number | null;
+        shardId: number | null;
+        online: boolean;
+        isActive: boolean;
+        lastHeartbeat: number;
+        uptimeSeconds: number | null;
+        heartbeatStatus: string;
+        forceStopped: boolean;
+        guilds: Array<{ guildId: string; guildName: string; isActiveForGuild: boolean }>;
+      }
+    >();
+
+    for (const [guildId, instances] of Object.entries(onlineInstancesByGuild)) {
+      const guild = client.guilds.cache.get(guildId);
+      const guildName = guild?.name ?? guildId;
+
+      for (const inst of instances) {
+        const existing = instanceMap.get(inst.instanceId);
+        const guildEntry = { guildId, guildName, isActiveForGuild: inst.isActive };
+
+        if (existing) {
+          existing.guilds.push(guildEntry);
+          // upgrade the global 'isActive' flag if active in any guild
+          if (inst.isActive) existing.isActive = true;
+          // keep the freshest heartbeat
+          if (inst.lastHeartbeat > existing.lastHeartbeat) {
+            existing.lastHeartbeat = inst.lastHeartbeat;
+          }
+        } else {
+          const uptimeRaw = (inst.extra as Record<string, unknown> | undefined)?.uptime;
+          instanceMap.set(inst.instanceId, {
+            instanceId: inst.instanceId,
+            hostname: inst.hostname ?? null,
+            pid: inst.pid ?? null,
+            shardId: inst.shardId ?? null,
+            online: inst.online,
+            isActive: inst.isActive,
+            lastHeartbeat: inst.lastHeartbeat,
+            uptimeSeconds: typeof uptimeRaw === 'number' ? Math.floor(uptimeRaw) : null,
+            heartbeatStatus: state.getHeartbeatStatus(inst as import('./state/schema').InstanceInfo),
+            forceStopped: !!(inst as Record<string, unknown>).forceStopped,
+            guilds: [guildEntry],
+          });
+        }
+      }
+    }
+
+    res.json({
+      bot: {
+        online: client.isReady(),
+        uptime: client.uptime ?? 0,
+        username: client.user?.username ?? null,
+        discriminator: client.user?.discriminator ?? null,
+        avatar: client.user?.displayAvatarURL?.({ size: 128 }) ?? null,
+        id: client.user?.id ?? null,
+        guildCount: client.guilds.cache.size,
+        ping: client.ws.ping,
+      },
+      guilds: guildStatuses,
+      instances: {
+        thisInstanceId: botCtx.INSTANCE_ID,
+        health: healthStatus,
+        list: Array.from(instanceMap.values()),
+      },
+      websocket: {
+        totalClients: wsStats.totalClients,
+        activeClients: wsStats.activeClients,
+        totalSubscriptions: wsStats.totalSubscriptions,
+      },
+    });
+  });
+
+  // Force-stop an instance (admin dashboard action)
+  app.post('/api/instances/:instanceId/force-stop', async (req, res) => {
+    const { instanceId } = req.params;
+
+    try {
+      // Force-stop in every guild that contains this instance
+      const doc = await state.getState();
+      const results: Array<{ guildId: string }> = [];
+
+      for (const [guildId, guild] of Object.entries(doc.guilds)) {
+        if (guild.instances[instanceId]) {
+          await state.forceStopInstance(guildId, instanceId);
+          results.push({ guildId });
+        }
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'Instance not found in any guild' });
+      }
+
+      res.json({ success: true, affectedGuilds: results });
+    } catch (error: unknown) {
+      serverLog.error({ err: error }, 'Failed to force-stop instance');
+      res.status(500).json({
+        error: error instanceof Error ? error.message : 'Failed to force-stop instance',
+      });
+    }
+  });
+
+  // Ping a specific bot instance (or all) via the state channel and wait for PONG(s)
+  app.post('/api/instances/ping', async (req, res) => {
+    const { instanceId, timeoutMs } = req.body ?? {};
+
+    try {
+      const results = await state.pingAndWait(
+        instanceId ?? undefined,
+        typeof timeoutMs === 'number' ? timeoutMs : undefined,
+      );
+
+      res.json({
+        success: true,
+        targetInstanceId: instanceId ?? null,
+        responses: results.map((r) => ({
+          instanceId: r.responderId,
+          rttMs: r.rttMs,
+          nonce: r.nonce,
+        })),
+      });
+    } catch (error: unknown) {
+      serverLog.error({ err: error }, 'Ping failed');
+      res.status(500).json({
+        error: error instanceof Error ? error.message : 'Ping failed',
+      });
+    }
+  });
+
+  // Auth routes (Discord OAuth)
+  app.use('/api/auth', authRoutes);
+
+  // Remove all timed-out / stale instances (admin dashboard action)
+  app.delete('/api/instances/stale', async (_req, res) => {
+    try {
+      const result = await state.removeTimedOutInstances();
+      res.json({ success: true, removed: result.removed });
+    } catch (error: unknown) {
+      serverLog.error({ err: error }, 'Failed to remove stale instances');
+      res.status(500).json({
+        error: error instanceof Error ? error.message : 'Failed to remove stale instances',
+      });
+    }
+  });
+
+  // ------------------------------
+  // API command logging middleware
+  // Captures mutating requests from the desktop app as command log entries
+  // so every action taken via the UI is tracked in Command Logs.
+  // ------------------------------
+  const API_LOG_PATHS = ['/api/music', '/api/playlists', '/api/commands', '/api/upload', '/api/instances'];
+  app.use((req, _res, next) => {
+    // Only log mutating requests (POST / PUT / DELETE)
+    if (!['POST', 'PUT', 'DELETE'].includes(req.method)) return next();
+
+    // Only log requests under tracked API paths
+    const matched = API_LOG_PATHS.some((prefix) => req.originalUrl.startsWith(prefix));
+    if (!matched) return next();
+
+    // Derive a human-readable action label from the URL
+    const urlSegments = req.originalUrl.replace(/\?.*$/, '').split('/').filter(Boolean);
+    // e.g. /api/music/play → "music/play", /api/playlists/123/tracks → "playlists/tracks"
+    const actionParts = urlSegments.slice(1); // drop "api"
+    const action = actionParts.join('/');
+
+    const meta: Record<string, unknown> = {
+      method: req.method,
+      path: req.originalUrl,
+      source: 'desktop-api',
+    };
+    if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+      // Include a sanitised copy of the body (strip large payloads)
+      const bodyCopy = { ...req.body };
+      for (const key of Object.keys(bodyCopy)) {
+        if (typeof bodyCopy[key] === 'string' && (bodyCopy[key] as string).length > 200) {
+          bodyCopy[key] = (bodyCopy[key] as string).slice(0, 200) + '…';
+        }
+      }
+      meta.body = bodyCopy;
+    }
+    if (req.headers['x-guild-id']) {
+      meta.guildId = req.headers['x-guild-id'];
+    }
+
+    pushLog('command', 'info', `${req.method} ${action}`, 'desktop-api', meta);
+    next();
+  });
+
   // File upload routes
   app.use('/api/upload', uploadRoutes);
 
   // Music player routes
   app.use('/api/music', musicRoutes);
 
+  // Playlist routes
+  app.use('/api/playlists', playlistRoutes);
+
   // Command system routes
   serverLog.info('Mounting command routes');
   app.use('/api/commands', initializeCommandRoutes(wsManager, botCtx.client));
   serverLog.info('Command routes ready');
+
+  // Channel (chat) routes
+  serverLog.info('Mounting channel routes');
+  app.use('/api/channels', initializeChannelRoutes(botCtx.client, wsManager));
+  serverLog.info('Channel routes ready');
 
   // Logs routes
   app.use('/api/logs', createLogsRouter(auditLogs, commandLogs));
@@ -343,83 +577,6 @@ async function main() {
     }
   });
 
-  // Commands are now handled by the command routes
-
-  // Player
-  app.post('/api/player/play', (req, res) => {
-    const log = withEndpointLog(req, 'player:play');
-    const { trackId } = req.body as { trackId?: string };
-    const track = trackId ? catalog.find((c) => c.id === trackId) : catalog[0];
-    if (!track) {
-      log.warn({ trackId }, 'Play request ignored - track not found');
-      return res.status(404).json({ status: 'fail', message: tErrors('player.trackNotFound') });
-    }
-    player.track = track;
-    player.position = 0;
-    player.status = 'playing';
-    broadcast({ type: 'player', payload: { ...player } });
-    log.info({ trackId: track.id, title: track.title }, 'Playback started');
-    res.json({ status: 'success' });
-  });
-  app.post('/api/player/pause', (req, res) => {
-    const log = withEndpointLog(req, 'player:pause');
-    if (player.status === 'playing') {
-      player.status = 'paused';
-      broadcast({ type: 'player', payload: { ...player } });
-      log.info('Playback paused');
-    } else {
-      log.debug({ status: player.status }, 'Pause request ignored');
-    }
-    res.json({ status: 'success' });
-  });
-  app.post('/api/player/resume', (req, res) => {
-    const log = withEndpointLog(req, 'player:resume');
-    if (player.status === 'paused') {
-      player.status = 'playing';
-      broadcast({ type: 'player', payload: { ...player } });
-      log.info('Playback resumed');
-    } else {
-      log.debug({ status: player.status }, 'Resume request ignored');
-    }
-    res.json({ status: 'success' });
-  });
-  app.post('/api/player/stop', (req, res) => {
-    const log = withEndpointLog(req, 'player:stop');
-    player.status = 'stopped';
-    player.position = 0;
-    broadcast({ type: 'player', payload: { ...player } });
-    log.info('Playback stopped');
-    res.json({ status: 'success' });
-  });
-  app.post('/api/player/next', (req, res) => {
-    const log = withEndpointLog(req, 'player:next');
-    const currentIndex = catalog.findIndex((t) => t.id === player.track?.id);
-    const nextTrack = catalog[(currentIndex + 1) % catalog.length];
-    player.track = nextTrack;
-    player.position = 0;
-    player.status = 'playing';
-    broadcast({ type: 'player', payload: { ...player } });
-    log.info({ trackId: nextTrack.id, title: nextTrack.title }, 'Advanced to next track');
-    res.json({ status: 'success' });
-  });
-  app.post('/api/player/seek', (req, res) => {
-    const log = withEndpointLog(req, 'player:seek');
-    const { seconds } = req.body as { seconds: number };
-    if (!player.track) {
-      log.warn('Seek ignored - no track loaded');
-      return res.status(400).json({ status: 'fail', message: 'No track loaded' });
-    }
-    player.position = Math.max(0, Math.min(player.track.duration, seconds));
-    broadcast({ type: 'player', payload: { ...player } });
-    log.info({ seconds, position: player.position }, 'Seek applied');
-    res.json({ status: 'success' });
-  });
-  app.get('/api/search', (req, res) => {
-    const q = String(req.query.q || '').toLowerCase();
-    const items = catalog.filter((t) => `${t.title} ${t.artist}`.toLowerCase().includes(q)).slice(0, 10);
-    res.json({ items });
-  });
-
   // Instances / State management
   app.get('/api/state', async (_req, res) => res.json(await state.getState()));
   app.get('/api/state/:guildId/instances', async (req, res) => res.json(await state.getGuildState(req.params.guildId)));
@@ -446,43 +603,9 @@ async function main() {
     res.json({ nonce });
   });
 
-  // Connections (mock)
-  app.get('/api/connections', (_req, res) => res.json({ items: connections }));
-  app.post('/api/connections/connect', (req, res) => {
-    const { id } = req.body as { id: string };
-    const c = connections.find((x) => x.id === id);
-    if (!c) {
-      return res.status(404).json({ error: tErrors('connection.discord.unavailable') });
-    }
-
-    if (c.type !== 'voice') {
-      return res.status(400).json({ error: tErrors('connection.discord.permissionDenied') });
-    }
-
-    c.connected = true;
-    channelName = c.name;
-    broadcast({ type: 'connections', payload: connections });
-    res.json({ status: 'success' });
-  });
-  app.post('/api/connections/disconnect', (req, res) => {
-    const { id } = req.body as { id: string };
-    const c = connections.find((x) => x.id === id);
-    if (!c) {
-      return res.status(404).json({ error: tErrors('connection.discord.unavailable') });
-    }
-
-    if (c.type !== 'voice') {
-      return res.status(400).json({ error: tErrors('connection.discord.permissionDenied') });
-    }
-
-    c.connected = false;
-    broadcast({ type: 'connections', payload: connections });
-    res.json({ status: 'success' });
-  });
-
   // Static file serving removed - dashboard is now a Tauri desktop app
 
-  const PORT = Number(process.env.PORT) || 3001;
+  const PORT = Number(process.env.PORT) || 3000;
   serverLog.info('Starting HTTP server');
   server.listen(PORT, () => serverLog.info({ port: PORT }, 'Server listening'));
 

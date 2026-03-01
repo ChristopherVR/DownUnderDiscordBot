@@ -1,107 +1,216 @@
+import { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useBotStore } from '@/stores/useBotStore';
+import { Reorder } from 'framer-motion';
+import { useLayoutStore } from '@/stores/useLayoutStore';
 import {
-  Music,
+  LayoutDashboard,
   ListMusic,
   Search,
   Library,
   Settings,
-  ChevronLeft,
-  ChevronRight,
-  Wifi,
-  WifiOff,
+  PanelLeftClose,
+  PanelLeftOpen,
+  GripVertical,
+  ClipboardList,
+  ScrollText,
 } from 'lucide-react';
+import AppIcon from '@/components/AppIcon';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { to: '/', label: 'Now Playing', icon: Music },
-  { to: '/queue', label: 'Queue', icon: ListMusic },
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+}
+
+const defaultNavItems: NavItem[] = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/search', label: 'Search', icon: Search },
+  { to: '/queue', label: 'Queue', icon: ListMusic },
   { to: '/library', label: 'Library', icon: Library },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/command-logs', label: 'Command Logs', icon: ClipboardList },
+  { to: '/logs', label: 'Logs', icon: ScrollText },
 ];
 
+const navItemMap = new Map(defaultNavItems.map((item) => [item.to, item]));
+
+/** Single draggable nav item */
+function DraggableNavItem({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
+  return (
+    <Reorder.Item
+      value={item.to}
+      className="list-none"
+      style={{ touchAction: 'none' }}
+      whileDrag={{
+        scale: 1.04,
+        zIndex: 50,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+        borderRadius: 8,
+        cursor: 'grabbing',
+      }}
+      transition={{ duration: 0.15 }}
+    >
+      <div className="group/drag relative flex cursor-grab items-center active:cursor-grabbing">
+        {/* Drag handle indicator */}
+        <div
+          className={cn(
+            'pointer-events-none flex shrink-0 items-center justify-center opacity-0 transition-opacity group-hover/drag:opacity-60',
+            collapsed ? 'absolute -left-0.5 z-10 h-full w-4' : 'w-5',
+          )}
+        >
+          <GripVertical size={12} className="text-t-faint" />
+        </div>
+
+        <NavLink
+          draggable={false}
+          to={item.to}
+          title={collapsed ? item.label : undefined}
+          onPointerDown={(_e) => {
+            // Allow drag to start from anywhere on the row —
+            // NavLink only navigates on click (pointerup), so this is safe.
+          }}
+          className={({ isActive }) =>
+            cn(
+              'group relative flex flex-1 items-center rounded-lg py-2.5 text-[13px] font-medium transition-all duration-200',
+              collapsed ? 'justify-center px-2' : 'gap-3 px-3',
+              isActive ? 'text-t-primary' : 'text-t-tertiary hover:text-t-secondary',
+            )
+          }
+          style={({ isActive }) => ({
+            background: isActive ? 'var(--nav-active-bg)' : undefined,
+          })}
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && (
+                <div
+                  className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full"
+                  style={{ background: 'var(--gradient-accent)' }}
+                />
+              )}
+              <item.icon size={18} style={isActive ? { color: 'var(--accent)' } : undefined} />
+              {!collapsed && <span>{item.label}</span>}
+            </>
+          )}
+        </NavLink>
+      </div>
+    </Reorder.Item>
+  );
+}
+
 export default function Sidebar() {
-  const collapsed = useBotStore((s) => s.sidebarCollapsed);
-  const toggle = useBotStore((s) => s.toggleSidebar);
-  const connected = useBotStore((s) => s.connection.connected);
+  const collapsed = useLayoutStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useLayoutStore((s) => s.toggleSidebar);
+  const navOrder = useLayoutStore((s) => s.navOrder);
+  const setNavOrder = useLayoutStore((s) => s.setNavOrder);
+
+  const sidebarWidth = collapsed ? 'w-[60px]' : 'w-[220px]';
+
+  // Derive ordered items from persisted order, falling back to defaults
+  const orderedItems = useMemo(() => {
+    if (!navOrder.length) return defaultNavItems;
+    const items: NavItem[] = [];
+    for (const path of navOrder) {
+      const item = navItemMap.get(path);
+      if (item) items.push(item);
+    }
+    // Append any new items not yet in the saved order
+    for (const item of defaultNavItems) {
+      if (!navOrder.includes(item.to)) items.push(item);
+    }
+    return items;
+  }, [navOrder]);
+
+  // The Reorder.Group works with an array of unique string values
+  const orderedPaths = useMemo(() => orderedItems.map((i) => i.to), [orderedItems]);
+
+  const renderSettingsLink = () => (
+    <NavLink
+      to="/settings"
+      title={collapsed ? 'Settings' : undefined}
+      className={({ isActive }) =>
+        cn(
+          'group relative flex items-center rounded-lg py-2.5 text-[13px] font-medium transition-all duration-200',
+          collapsed ? 'justify-center px-2' : 'gap-3 px-3',
+          isActive ? 'text-t-primary' : 'text-t-tertiary hover:text-t-secondary',
+        )
+      }
+      style={({ isActive }) => ({
+        background: isActive ? 'var(--nav-active-bg)' : undefined,
+      })}
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <div
+              className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full"
+              style={{ background: 'var(--gradient-accent)' }}
+            />
+          )}
+          <Settings size={18} style={isActive ? { color: 'var(--accent)' } : undefined} />
+          {!collapsed && <span>Settings</span>}
+        </>
+      )}
+    </NavLink>
+  );
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-9 z-30 flex flex-col border-r border-white/[0.04] bg-[#0a0a0f]/95 backdrop-blur-2xl transition-all duration-300 ease-out',
-        collapsed ? 'w-[68px]' : 'w-[220px]',
+        'fixed left-0 top-9 z-30 flex flex-col backdrop-blur-2xl transition-all duration-300 ease-in-out',
+        sidebarWidth,
       )}
-      style={{ height: 'calc(100vh - 2.25rem - 5rem)' }}
+      style={{
+        height: 'calc(100vh - 2.25rem - 5rem)',
+        borderRight: '1px solid var(--playerbar-border)',
+        background: 'var(--sidebar-bg)',
+      }}
     >
-      {/* Logo */}
-      <div className={cn('flex items-center gap-3 px-4 py-5', collapsed && 'justify-center px-0')}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-spotify-green to-emerald-400 shadow-glow-green">
-          <Music size={16} className="text-black" />
+      {/* Logo + Collapse toggle */}
+      <div className={cn('flex items-center py-5', collapsed ? 'justify-center px-2' : 'gap-3 px-4')}>
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-glow-green"
+          style={{ background: 'var(--gradient-accent)' }}
+        >
+          <AppIcon size={16} style={{ color: 'var(--btn-primary-fg)' }} />
         </div>
         {!collapsed && (
-          <div className="min-w-0">
-            <span className="text-sm font-bold tracking-tight text-white">Down Under</span>
-            <p className="text-[10px] font-medium uppercase tracking-widest text-white/30">Music Bot</p>
+          <div className="min-w-0 flex-1">
+            <span className="text-sm font-bold tracking-tight text-t-primary">Down Under</span>
+            <p className="text-[10px] font-medium uppercase tracking-widest text-t-faint">Music</p>
           </div>
         )}
       </div>
 
-      {/* Navigation */}
-      <nav className="mt-1 flex flex-1 flex-col gap-0.5 px-2">
-        {navItems.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) =>
-              cn(
-                'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200',
-                isActive
-                  ? 'bg-white/[0.08] text-white'
-                  : 'text-white/40 hover:bg-white/[0.04] hover:text-white/70',
-                collapsed && 'justify-center px-0',
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-spotify-green to-emerald-400" />
-                )}
-                <Icon size={18} className={cn(isActive && 'text-spotify-green')} />
-                {!collapsed && <span>{label}</span>}
-              </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* Connection status */}
-      <div className="border-t border-white/[0.04] px-3 py-3">
-        <div className={cn('flex items-center gap-2', collapsed && 'justify-center')}>
-          {connected ? (
-            <>
-              <div className="relative">
-                <Wifi size={14} className="text-spotify-green" />
-                <div className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-spotify-green" />
-              </div>
-              {!collapsed && <span className="text-[11px] font-medium text-white/30">Connected</span>}
-            </>
-          ) : (
-            <>
-              <WifiOff size={14} className="text-red-400/70" />
-              {!collapsed && <span className="text-[11px] font-medium text-red-400/50">Disconnected</span>}
-            </>
-          )}
-        </div>
+      {/* Collapse / Expand pin */}
+      <div className={cn('px-2', collapsed ? 'flex justify-center' : 'flex justify-end')}>
+        <button
+          onClick={toggleSidebar}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-t-faint transition-colors hover:text-t-secondary"
+          style={{ background: 'transparent' }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--nav-hover-bg)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+        >
+          {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+        </button>
       </div>
 
-      <button
-        onClick={toggle}
-        className="flex h-9 items-center justify-center border-t border-white/[0.04] text-white/20 transition-colors hover:bg-white/[0.04] hover:text-white/50"
+      {/* Main Navigation — drag-and-drop reorderable */}
+      <Reorder.Group
+        as="nav"
+        axis="y"
+        values={orderedPaths}
+        onReorder={setNavOrder}
+        className="mt-1 flex flex-1 flex-col gap-0.5 px-2"
       >
-        {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
+        {orderedItems.map((item) => (
+          <DraggableNavItem key={item.to} item={item} collapsed={collapsed} />
+        ))}
+      </Reorder.Group>
+
+      {/* Settings pinned at bottom */}
+      <div className="px-2 pb-3">{renderSettingsLink()}</div>
     </aside>
   );
 }

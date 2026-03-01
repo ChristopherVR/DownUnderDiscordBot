@@ -5,6 +5,8 @@ import { createLogger } from '../helpers/logger.js';
 const log = createLogger('local-music');
 
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus']);
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.mkv', '.avi', '.mov', '.flv', '.ogv', '.3gp', '.webm']);
+const MEDIA_EXTENSIONS = new Set([...AUDIO_EXTENSIONS, ...VIDEO_EXTENSIONS]);
 
 export interface LocalTrack {
   filePath: string;
@@ -14,6 +16,8 @@ export interface LocalTrack {
   album?: string;
   duration?: number;
   size: number;
+  /** 'audio' or 'video' */
+  mediaType: 'audio' | 'video';
 }
 
 export class LocalMusicService {
@@ -46,7 +50,8 @@ export class LocalMusicService {
           tracks.push(...subTracks);
         } else if (entry.isFile()) {
           const ext = path.extname(entry.name).toLowerCase();
-          if (AUDIO_EXTENSIONS.has(ext)) {
+          if (MEDIA_EXTENSIONS.has(ext)) {
+            const mediaType: 'audio' | 'video' = VIDEO_EXTENSIONS.has(ext) ? 'video' : 'audio';
             try {
               const stat = await fs.stat(fullPath);
               const metadata = await this.extractMetadata(fullPath);
@@ -59,6 +64,7 @@ export class LocalMusicService {
                 album: metadata?.album,
                 duration: metadata?.duration,
                 size: stat.size,
+                mediaType,
               });
             } catch (err) {
               log.warn({ err, file: fullPath }, 'Failed to process local file');
@@ -69,6 +75,7 @@ export class LocalMusicService {
                 title: path.basename(entry.name, ext),
                 artist: 'Unknown Artist',
                 size: 0,
+                mediaType,
               });
             }
           }
@@ -110,9 +117,8 @@ export class LocalMusicService {
     filePath: string,
   ): Promise<{ title?: string; artist?: string; album?: string; duration?: number } | null> {
     try {
-      // Dynamic import — cast needed because TS can't resolve the ESM export map at type-check time
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mm = await (import('music-metadata') as Promise<any>);
+      // Dynamic import for ESM compatibility
+      const mm = await import('music-metadata');
       const metadata = await mm.parseFile(filePath);
 
       return {

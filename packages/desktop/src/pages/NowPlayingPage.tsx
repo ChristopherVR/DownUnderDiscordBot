@@ -1,6 +1,6 @@
 import { useBotStore } from '@/stores/useBotStore';
 import { formatTime } from '@/lib/utils';
-import { Music, Play, Pause, SkipForward, Heart } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, Heart, Monitor, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function NowPlayingPage() {
@@ -9,16 +9,19 @@ export default function NowPlayingPage() {
   const resume = useBotStore((s) => s.resume);
   const skip = useBotStore((s) => s.skip);
   const connected = useBotStore((s) => s.connection.connected);
+  const playbackMode = useBotStore((s) => s.playbackMode);
 
-  if (!connected) {
+  const isAvailable = connected || playbackMode === 'local';
+
+  if (!isAvailable) {
     return (
       <div className="flex h-[calc(100vh-10rem)] flex-col items-center justify-center gap-4">
         <div className="relative">
           <div className="absolute inset-0 animate-pulse rounded-full bg-red-500/10 blur-2xl" />
-          <Music size={56} className="relative text-white/10" />
+          <Music size={56} className="relative text-t-ghost" />
         </div>
-        <p className="text-base font-medium text-white/40">Not connected to bot</p>
-        <p className="text-sm text-white/20">Go to Settings to configure the connection</p>
+        <p className="text-base font-medium text-t-tertiary">Not connected to bot</p>
+        <p className="text-sm text-t-faint">Go to Settings to configure the connection</p>
       </div>
     );
   }
@@ -28,10 +31,10 @@ export default function NowPlayingPage() {
       <div className="flex h-[calc(100vh-10rem)] flex-col items-center justify-center gap-4">
         <div className="relative">
           <div className="absolute inset-0 animate-float rounded-full bg-spotify-green/5 blur-3xl" />
-          <Music size={56} className="relative text-white/10" />
+          <Music size={56} className="relative text-t-ghost" />
         </div>
-        <p className="text-base font-medium text-white/40">Nothing playing</p>
-        <p className="text-sm text-white/20">Search for a track or use a slash command</p>
+        <p className="text-base font-medium text-t-tertiary">Nothing playing</p>
+        <p className="text-sm text-t-faint">Search for a track or use a slash command</p>
       </div>
     );
   }
@@ -76,19 +79,28 @@ export default function NowPlayingPage() {
               </>
             ) : (
               <div className="flex h-72 w-72 items-center justify-center rounded-2xl bg-white/[0.04] shadow-2xl lg:h-80 lg:w-80">
-                <Music size={64} className="text-white/10" />
+                <Music size={64} className="text-t-ghost" />
               </div>
             )}
           </div>
 
           {/* Track info */}
           <div className="text-center">
-            <h1 className="max-w-lg truncate text-2xl font-bold text-white lg:text-3xl">
+            <h1 className="max-w-lg truncate text-2xl font-bold text-t-primary lg:text-3xl">
               {track.title}
             </h1>
-            <p className="mt-2 text-base text-white/40">
+            <p className="mt-2 text-base text-t-tertiary">
               {track.artist ?? 'Unknown Artist'}
             </p>
+            {/* Playback mode badge */}
+            <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${
+              playbackMode === 'local'
+                ? 'bg-spotify-green/10 text-spotify-green'
+                : 'bg-indigo-500/10 text-indigo-400'
+            }`}>
+              {playbackMode === 'local' ? <Monitor size={12} /> : <Radio size={12} />}
+              {playbackMode === 'local' ? 'Playing locally' : 'Playing via bot'}
+            </div>
           </div>
 
           {/* Progress */}
@@ -100,7 +112,7 @@ export default function NowPlayingPage() {
                 transition={{ duration: 0.3 }}
               />
             </div>
-            <div className="flex justify-between text-[11px] font-medium tabular-nums text-white/30">
+            <div className="flex justify-between text-[11px] font-medium tabular-nums text-t-faint">
               <span>{formatTime(player.position)}</span>
               <span>{formatTime(player.duration)}</span>
             </div>
@@ -108,7 +120,7 @@ export default function NowPlayingPage() {
 
           {/* Controls */}
           <div className="flex items-center gap-10">
-            <button className="text-white/25 transition-all hover:scale-110 hover:text-white/60">
+            <button className="text-t-faint transition-all hover:scale-110 hover:text-t-secondary">
               <Heart size={22} />
             </button>
             <button
@@ -123,7 +135,7 @@ export default function NowPlayingPage() {
             </button>
             <button
               onClick={skip}
-              className="text-white/25 transition-all hover:scale-110 hover:text-white/60"
+              className="text-t-faint transition-all hover:scale-110 hover:text-t-secondary"
             >
               <SkipForward size={22} />
             </button>

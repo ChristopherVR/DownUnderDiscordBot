@@ -310,7 +310,7 @@ router.get('/history', (req: Request, res: Response) => {
  * Returns a specific command execution by ID
  */
 router.get('/history/:executionId', (req: Request, res: Response) => {
-  const { executionId } = req.params;
+  const executionId = String(req.params.executionId);
   const log = resolveRequestLog(req).child({ endpoint: 'history:execution', executionId });
   log.debug('Command execution lookup requested');
   const execution = commandRegistry.getCommandExecution(executionId);
@@ -406,7 +406,7 @@ router.get('/guilds', async (req: Request, res: Response) => {
  * Returns available channels for a specific guild
  */
 router.get('/guilds/:guildId/channels', async (req: Request, res: Response) => {
-  const { guildId } = req.params;
+  const guildId = String(req.params.guildId);
   const log = resolveRequestLog(req).child({ endpoint: 'guild-channels', guildId });
   log.debug('Guild channel list requested');
   const channels = await discordIntegration.getAvailableChannels(guildId);

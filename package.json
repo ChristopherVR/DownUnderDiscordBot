@@ -12,8 +12,8 @@
     "dev:shared": "pnpm --filter discord-dashboard-shared dev",
     "dev:bot": "pnpm --filter discord-bot dev",
     "dev:desktop": "pnpm --filter discord-bot-desktop dev",
-    "start": "NODE_ENV=production node packages/bot/dist/src/index.js",
-    "start:prod": "NODE_ENV=production pm2 start packages/bot/dist/src/index.js --name discord-bot",
+    "start": "NODE_ENV=production pnpm --filter discord-bot start",
+    "start:prod": "NODE_ENV=production pm2 start --interpreter tsx packages/bot/src/index.ts --name discord-bot",
     "test": "pnpm run test:shared && pnpm run test:bot",
     "test:shared": "pnpm --filter discord-dashboard-shared test",
     "test:bot": "pnpm --filter discord-bot test",
@@ -36,19 +36,31 @@
     "postinstall": "pnpm run build:shared"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.34.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^9.0.0",
+    "@eslint/eslintrc": "^3.3.4",
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "eslint": "^10.0.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jsdoc": "^60.7.1",
+    "eslint-plugin-jsdoc": "^62.7.1",
     "eslint-plugin-prefer-arrow": "^1.2.3",
-    "eslint-plugin-prettier": "^5.5.4",
-    "eslint-plugin-react": "^7.35.0",
-    "eslint-plugin-react-hooks": "^6.1.0",
-    "prettier": "^3.0.0",
-    "typescript": "^5.0.0"
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "mediaplex"
+    ]
   }
 }

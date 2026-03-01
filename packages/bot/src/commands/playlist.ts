@@ -23,12 +23,14 @@ export const PlaylistCommand = (): CommandHandler => ({
         { name: 'View', value: 'view' },
         { name: 'Play', value: 'play' },
         { name: 'Add Current', value: 'add' },
+        { name: 'Add URL', value: 'add-url' },
+        { name: 'Remove', value: 'remove' },
         { name: 'Delete', value: 'delete' },
       ],
     },
     {
       name: 'name',
-      description: 'Playlist name (for create/view/play/delete)',
+      description: 'Playlist name (for create/view/play/delete/add/remove)',
       type: ApplicationCommandOptionType.String,
       required: false,
     },
@@ -38,11 +40,25 @@ export const PlaylistCommand = (): CommandHandler => ({
       type: ApplicationCommandOptionType.String,
       required: false,
     },
+    {
+      name: 'url',
+      description: 'Track URL to add (for add-url)',
+      type: ApplicationCommandOptionType.String,
+      required: false,
+    },
+    {
+      name: 'position',
+      description: 'Track position to remove (for remove, 1-based)',
+      type: ApplicationCommandOptionType.Integer,
+      required: false,
+    },
   ],
   run: async (context: CommandContext) => {
     const action = context.getString('action');
     const name = context.getString('name');
     const description = context.getString('description');
+    const url = context.getString('url');
+    const position = context.getInteger('position');
     const guildId = context.guildId;
     const userId = context.userId;
 
@@ -135,17 +151,107 @@ export const PlaylistCommand = (): CommandHandler => ({
           return;
         }
 
+        // Detect platform from track URL
+        const trackUrl = currentTrack.url?.toLowerCase() ?? '';
+        let platform = 'unknown';
+        if (trackUrl.includes('youtube.com') || trackUrl.includes('youtu.be')) platform = 'youtube';
+        else if (trackUrl.includes('spotify.com')) platform = 'spotify';
+        else if (trackUrl.includes('soundcloud.com')) platform = 'soundcloud';
+        else if (currentTrack.raw?.source === 'local' || trackUrl.startsWith('/') || trackUrl.match(/^[A-Za-z]:\\/)) platform = 'local';
+
         await playlistRepo.addTrack(targetPlaylist.id, {
           title: currentTrack.title,
           artist: currentTrack.author,
           duration: currentTrack.durationMS ? Math.floor(currentTrack.durationMS / 1000) : 0,
           url: currentTrack.url,
           thumbnail: currentTrack.thumbnail,
-          platform: 'youtube',
+          platform,
         });
 
         await context.reply({
           content: `Added **${currentTrack.title}** to playlist **${targetPlaylist.name}**.`,
+          flags: MessageFlags.Ephemeral,
+        });
+        break;
+      }
+
+      case 'add-url': {
+        if (!name) {
+          await context.reply({ content: 'Please provide a playlist name.', flags: MessageFlags.Ephemeral });
+          return;
+        }
+        if (!url) {
+          await context.reply({ content: 'Please provide a URL to add.', flags: MessageFlags.Ephemeral });
+          return;
+        }
+        const playlists = await playlistRepo.findByGuild(guildId, userId);
+        const targetPlaylist = playlists.find((p) => p.name.toLowerCase() === name.toLowerCase());
+        if (!targetPlaylist) {
+          await context.reply({ content: `Playlist "${name}" not found.`, flags: MessageFlags.Ephemeral });
+          return;
+        }
+
+        await context.deferReply();
+
+        // Search for the track to get metadata
+        const player = useDefaultPlayer();
+        const result = await player.search(url);
+        if (!result.tracks.length) {
+          await context.editReply({ content: 'Could not find a track for that URL.' });
+          return;
+        }
+
+        const foundTrack = result.tracks[0];
+        const foundUrl = foundTrack.url?.toLowerCase() ?? '';
+        let detectedPlatform = 'unknown';
+        if (foundUrl.includes('youtube.com') || foundUrl.includes('youtu.be')) detectedPlatform = 'youtube';
+        else if (foundUrl.includes('spotify.com')) detectedPlatform = 'spotify';
+        else if (foundUrl.includes('soundcloud.com')) detectedPlatform = 'soundcloud';
+
+        await playlistRepo.addTrack(targetPlaylist.id, {
+          title: foundTrack.title,
+          artist: foundTrack.author,
+          duration: foundTrack.durationMS ? Math.floor(foundTrack.durationMS / 1000) : 0,
+          url: foundTrack.url,
+          thumbnail: foundTrack.thumbnail,
+          platform: detectedPlatform,
+        });
+
+        await context.editReply({
+          content: `Added **${foundTrack.title}** to playlist **${targetPlaylist.name}**.`,
+        });
+        break;
+      }
+
+      case 'remove': {
+        if (!name) {
+          await context.reply({ content: 'Please provide a playlist name.', flags: MessageFlags.Ephemeral });
+          return;
+        }
+        if (!position || position < 1) {
+          await context.reply({ content: 'Please provide a valid track position (starting from 1).', flags: MessageFlags.Ephemeral });
+          return;
+        }
+        const playlists = await playlistRepo.findByGuild(guildId, userId);
+        const targetPlaylist = playlists.find((p) => p.name.toLowerCase() === name.toLowerCase());
+        if (!targetPlaylist) {
+          await context.reply({ content: `Playlist "${name}" not found.`, flags: MessageFlags.Ephemeral });
+          return;
+        }
+        const full = await playlistRepo.findById(targetPlaylist.id);
+        if (!full || !full.tracks.length) {
+          await context.reply({ content: 'Playlist is empty.', flags: MessageFlags.Ephemeral });
+          return;
+        }
+        const trackIndex = position - 1;
+        const trackToRemove = full.tracks[trackIndex];
+        if (!trackToRemove) {
+          await context.reply({ content: `Track position ${position} is out of range (1-${full.tracks.length}).`, flags: MessageFlags.Ephemeral });
+          return;
+        }
+        await playlistRepo.removeTrack(targetPlaylist.id, trackToRemove.id);
+        await context.reply({
+          content: `Removed **${trackToRemove.title}** from playlist **${targetPlaylist.name}**.`,
           flags: MessageFlags.Ephemeral,
         });
         break;

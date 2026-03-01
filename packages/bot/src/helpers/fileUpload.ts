@@ -15,14 +15,63 @@ const SUPPORTED_AUDIO_FORMATS = [
   'audio/webm', // WebM Audio
 ];
 
-// File size limits (50MB)
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+// Supported video formats (audio will be extracted for Discord playback)
+const SUPPORTED_VIDEO_FORMATS = [
+  'video/mp4', // MP4
+  'video/webm', // WebM
+  'video/x-matroska', // MKV
+  'video/x-msvideo', // AVI
+  'video/quicktime', // MOV
+  'video/x-flv', // FLV
+  'video/ogg', // OGV
+  'video/3gpp', // 3GP
+];
 
-// Upload directory
+// All supported media formats (audio + video)
+const SUPPORTED_MEDIA_FORMATS = [...SUPPORTED_AUDIO_FORMATS, ...SUPPORTED_VIDEO_FORMATS];
+
+// File size limits (200MB — video files can be large)
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
+
+// Upload directories
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'audio');
+const VIDEO_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'video');
 
 /**
- * Ensure upload directory exists
+ * Check if a MIME type is a video format
+ */
+export function isVideoMimeType(mimeType: string): boolean {
+  return SUPPORTED_VIDEO_FORMATS.includes(mimeType);
+}
+
+/**
+ * Check if a MIME type is an audio format
+ */
+export function isAudioMimeType(mimeType: string): boolean {
+  return SUPPORTED_AUDIO_FORMATS.includes(mimeType);
+}
+
+/**
+ * Check if a file extension is a video format
+ */
+export function isVideoExtension(ext: string): boolean {
+  const videoExts = new Set(['.mp4', '.webm', '.mkv', '.avi', '.mov', '.flv', '.ogv', '.3gp']);
+  return videoExts.has(ext.toLowerCase());
+}
+
+/**
+ * Check if a file extension is a supported media format (audio or video)
+ */
+export function isMediaExtension(ext: string): boolean {
+  const mediaExts = new Set([
+    '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.webm',
+    '.mp4', '.mkv', '.avi', '.mov', '.flv', '.ogv', '.3gp',
+  ]);
+  return mediaExts.has(ext.toLowerCase());
+}
+
+/**
+ * Ensure upload directories exist
  */
 export async function ensureUploadDir(): Promise<void> {
   try {
@@ -30,16 +79,21 @@ export async function ensureUploadDir(): Promise<void> {
   } catch {
     await fs.mkdir(UPLOAD_DIR, { recursive: true });
   }
+  try {
+    await fs.access(VIDEO_UPLOAD_DIR);
+  } catch {
+    await fs.mkdir(VIDEO_UPLOAD_DIR, { recursive: true });
+  }
 }
 
 /**
- * File filter for audio files only
+ * File filter for audio and video files
  */
 function fileFilter(_req: unknown, file: Express.Multer.File, cb: multer.FileFilterCallback): void {
-  if (SUPPORTED_AUDIO_FORMATS.includes(file.mimetype)) {
+  if (SUPPORTED_MEDIA_FORMATS.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error(`Unsupported file format. Supported formats: ${SUPPORTED_AUDIO_FORMATS.join(', ')}`));
+    cb(new Error(`Unsupported file format. Supported formats: ${SUPPORTED_MEDIA_FORMATS.join(', ')}`));
   }
 }
 
@@ -56,10 +110,12 @@ function generateFileName(originalName: string): string {
  * Multer storage configuration
  */
 const storage = multer.diskStorage({
-  destination: async (_req, _file, cb) => {
+  destination: async (_req, file, cb) => {
     try {
       await ensureUploadDir();
-      cb(null, UPLOAD_DIR);
+      // Route video files to the video upload directory
+      const dest = isVideoMimeType(file.mimetype) ? VIDEO_UPLOAD_DIR : UPLOAD_DIR;
+      cb(null, dest);
     } catch (error) {
       cb(error as Error, '');
     }
@@ -78,7 +134,7 @@ export const upload = multer({
   fileFilter,
   limits: {
     fileSize: MAX_FILE_SIZE,
-    files: 10, // Maximum 10 files per request
+    files: 50, // Maximum 50 files per request (supports folder uploads)
   },
 });
 
@@ -117,6 +173,7 @@ export async function extractAudioMetadata(filePath: string): Promise<{
  */
 export async function processUploadedFile(file: Express.Multer.File): Promise<UploadedFile> {
   const metadata = await extractAudioMetadata(file.path);
+  const isVideo = isVideoMimeType(file.mimetype);
 
   const uploadedFile: UploadedFile = {
     id: randomUUID(),
@@ -127,6 +184,7 @@ export async function processUploadedFile(file: Express.Multer.File): Promise<Up
     size: file.size,
     uploadedAt: Date.now(),
     metadata,
+    mediaType: isVideo ? 'video' : 'audio',
   };
 
   return uploadedFile;
@@ -145,10 +203,10 @@ export function validateFile(file: Express.Multer.File): { valid: boolean; error
   }
 
   // Check file format
-  if (!SUPPORTED_AUDIO_FORMATS.includes(file.mimetype)) {
+  if (!SUPPORTED_MEDIA_FORMATS.includes(file.mimetype)) {
     return {
       valid: false,
-      error: `Unsupported file format. Supported formats: ${SUPPORTED_AUDIO_FORMATS.join(', ')}`,
+      error: `Unsupported file format. Supported formats: ${SUPPORTED_MEDIA_FORMATS.join(', ')}`,
     };
   }
 

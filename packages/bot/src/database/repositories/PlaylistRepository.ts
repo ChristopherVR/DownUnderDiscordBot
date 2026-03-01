@@ -2,7 +2,7 @@ import { getDatabase } from '../client.js';
 import type { Playlist, PlaylistTrack } from '../generated/index.js';
 
 export interface CreatePlaylistInput {
-  guildId: string;
+  guildId?: string;
   userId: string;
   name: string;
   description?: string;
@@ -33,6 +33,13 @@ export class PlaylistRepository {
     return this.db.playlist.findUnique({
       where: { id },
       include: { tracks: { orderBy: { position: 'asc' } } },
+    });
+  }
+
+  async findAll(userId?: string): Promise<Playlist[]> {
+    return this.db.playlist.findMany({
+      where: userId ? { OR: [{ userId }, { isPublic: true }] } : undefined,
+      orderBy: { updatedAt: 'desc' },
     });
   }
 
@@ -107,6 +114,13 @@ export class PlaylistRepository {
         where: { id: trackId },
         data: { position: newPosition },
       });
+    });
+  }
+
+  async update(playlistId: string, data: Partial<Pick<Playlist, 'name' | 'description' | 'isPublic'>>): Promise<Playlist> {
+    return this.db.playlist.update({
+      where: { id: playlistId },
+      data,
     });
   }
 

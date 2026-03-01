@@ -132,7 +132,10 @@ export class StateCoordinator extends EventEmitter {
     if (!guildId) {
       return;
     }
-    const activeInstanceId = await this.getActiveInstanceId(guildId);
+    // Always fetch fresh state for the race-critical active-instance check.
+    // A stale cache could allow a non-active instance to process a command.
+    const freshState = await this.refreshGuildState(guildId);
+    const activeInstanceId = freshState.activeInstanceId ?? null;
     if (activeInstanceId && activeInstanceId !== this.localInstanceId) {
       throw new InactiveInstanceError({
         guildId,

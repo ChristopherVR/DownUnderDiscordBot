@@ -174,8 +174,8 @@
       "selectedTitle": "Selected Instance Details"
     }
   },
-  "auditLogs": {
-    "title": "Audit Logs",
+  "commandLogs": {
+    "title": "Command Logs",
     "consoleLogs": "Console Logs",
     "commandLogs": "Command Logs",
     "timestamp": "Timestamp",
@@ -256,7 +256,7 @@
     "dashboard": "Dashboard",
     "musicPlayer": "Music Player",
     "botManagement": "Bot Management",
-    "auditLogs": "Audit Logs",
+    "commandLogs": "Command Logs",
     "commandInvocation": "Commands",
     "settings": "Settings",
     "help": "Help",

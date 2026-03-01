@@ -1,10 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class',
+  darkMode: ['selector', '[data-mode="dark"]'],
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
+        // Theme-aware accent via CSS variables
+        accent: {
+          DEFAULT: 'var(--accent)',
+          hover: 'var(--accent-hover)',
+          light: 'var(--accent-light)',
+        },
+        // Semantic surfaces
+        surface: 'var(--surface)',
+        // Legacy spotify aliases — still valid when accent is "green"
         spotify: {
           green: '#1DB954',
           'green-light': '#1ED760',
@@ -14,7 +23,6 @@ module.exports = {
           'light-gray': '#B3B3B3',
           white: '#FFFFFF',
         },
-        surface: '#0f0f14',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -29,6 +37,7 @@ module.exports = {
         'float-delayed': 'float 8s ease-in-out 2s infinite',
         'gradient-shift': 'gradientShift 10s ease infinite',
         'glow-pulse': 'glowPulse 3s ease-in-out infinite alternate',
+        'now-playing-bar': 'nowPlayingBar 1s ease-in-out infinite alternate',
       },
       keyframes: {
         float: {
@@ -43,10 +52,16 @@ module.exports = {
           from: { opacity: '0.4' },
           to: { opacity: '0.8' },
         },
+        nowPlayingBar: {
+          '0%': { height: '20%' },
+          '100%': { height: '100%' },
+        },
       },
       boxShadow: {
-        'glow-green': '0 0 25px rgba(29, 185, 84, 0.3)',
-        'glow-green-lg': '0 0 40px rgba(29, 185, 84, 0.25), 0 0 80px rgba(29, 185, 84, 0.1)',
+        'glow-green': '0 0 25px var(--accent-glow)',
+        'glow-green-lg': '0 0 40px var(--accent-glow), 0 0 80px color-mix(in srgb, var(--accent-glow) 40%, transparent)',
+        'glow-accent': '0 0 25px var(--accent-glow)',
+        'glow-accent-lg': '0 0 40px var(--accent-glow), 0 0 80px color-mix(in srgb, var(--accent-glow) 40%, transparent)',
       },
     },
   },

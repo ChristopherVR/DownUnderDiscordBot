@@ -4,9 +4,9 @@
   "version": "2.0.0",
   "identifier": "com.downunder.discord-music-bot",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "pnpm dev:web",
     "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "pnpm build:web",
     "frontendDist": "../dist"
   },
   "app": {
@@ -28,7 +28,7 @@
       "iconAsTemplate": true
     },
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' ws://localhost:* http://localhost:*; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; connect-src 'self' ws://localhost:* http://localhost:*; img-src 'self' https: data:; media-src 'self' http://localhost:* blob:; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {

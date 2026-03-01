@@ -6,6 +6,7 @@ import { WebSocketManager } from '../websocket';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 export interface ExtendedPlayerState extends PlayerState {
   guildId: string;
@@ -28,6 +29,7 @@ export class PlayerStateManager {
   private wsManager?: WebSocketManager;
   private guildStates: Map<string, ExtendedPlayerState> = new Map();
   private queueHistory: Map<string, QueueHistoryEntry[]> = new Map();
+  private positionIntervals: Map<string, NodeJS.Timeout> = new Map();
   private localFilesPath: string;
 
   constructor(player: Player, localFilesPath: string = 'uploads/audio') {
@@ -45,17 +47,21 @@ export class PlayerStateManager {
     this.player.events.on('playerStart', (queue: GuildQueue, track: Track) => {
       this.updatePlayerState(queue.guild.id);
       this.addToHistory(queue.guild.id, track);
+      this.startPositionBroadcast(queue.guild.id);
     });
 
     this.player.events.on('playerPause', (queue: GuildQueue) => {
+      this.stopPositionBroadcast(queue.guild.id);
       this.updatePlayerState(queue.guild.id);
     });
 
     this.player.events.on('playerResume', (queue: GuildQueue) => {
       this.updatePlayerState(queue.guild.id);
+      this.startPositionBroadcast(queue.guild.id);
     });
 
     this.player.events.on('playerFinish', (queue: GuildQueue) => {
+      this.stopPositionBroadcast(queue.guild.id);
       this.updatePlayerState(queue.guild.id);
     });
 
@@ -68,12 +74,39 @@ export class PlayerStateManager {
     });
 
     this.player.events.on('disconnect', (queue: GuildQueue) => {
+      this.stopPositionBroadcast(queue.guild.id);
       this.updatePlayerState(queue.guild.id);
     });
 
     this.player.events.on('emptyQueue', (queue: GuildQueue) => {
+      this.stopPositionBroadcast(queue.guild.id);
       this.updatePlayerState(queue.guild.id);
     });
+  }
+
+  /**
+   * Start a 1-second interval that broadcasts the current playback position
+   * so the desktop UI can keep its progress bar in sync.
+   */
+  private startPositionBroadcast(guildId: string): void {
+    this.stopPositionBroadcast(guildId);
+    const interval = setInterval(() => {
+      const queue = this.player.nodes.get(guildId);
+      if (!queue?.isPlaying()) {
+        this.stopPositionBroadcast(guildId);
+        return;
+      }
+      this.updatePlayerState(guildId);
+    }, 1000);
+    this.positionIntervals.set(guildId, interval);
+  }
+
+  private stopPositionBroadcast(guildId: string): void {
+    const interval = this.positionIntervals.get(guildId);
+    if (interval) {
+      clearInterval(interval);
+      this.positionIntervals.delete(guildId);
+    }
   }
 
   public forceUpdate(guildId: string): void {
@@ -152,10 +185,32 @@ export class PlayerStateManager {
       artist: track.author,
       duration: this.parseDurationToSeconds(track.duration),
       url: track.url,
-      cover: track.thumbnail,
+      thumbnail: track.thumbnail,
       source: isLocalFile ? 'local' : 'online',
-      filePath: isLocalFile ? track.url : undefined,
+      filePath: isLocalFile ? this.normalizeFilePath(track.url) : undefined,
     };
+  }
+
+  /**
+   * Normalize a local file path so it matches what the desktop Tauri scan produces.
+   * Strips `file://` prefix and converts forward slashes to native OS separators.
+   */
+  private normalizeFilePath(rawPath: string): string {
+    let p = rawPath;
+    if (p.startsWith('file://')) {
+      try {
+        // Use URL API for correct decoding of percent-encoded chars
+        p = decodeURIComponent(new URL(p).pathname);
+      } catch {
+        p = p.slice(7); // fallback: strip "file://"
+      }
+    }
+    // On Windows, pathname may start with /D:/... — strip leading slash before drive letter
+    if (/^\/[A-Za-z]:/.test(p)) {
+      p = p.slice(1);
+    }
+    // Normalise to OS-native separators
+    return path.normalize(p);
   }
 
   private parseDurationToSeconds(duration: string): number {
@@ -212,21 +267,49 @@ export class PlayerStateManager {
 
   private broadcastStateUpdate(guildId: string, state: ExtendedPlayerState): void {
     if (this.wsManager) {
-      // Convert to basic PlayerState for WebSocket broadcast
-      const basicState: PlayerState = {
-        status: state.status,
-        track: state.track,
-        position: state.position,
+      // Convert to the format the desktop UI expects.
+      // The desktop store's PlayerState uses:
+      //   isPlaying: boolean, currentTrack, position (seconds), duration (seconds),
+      //   volume, loop ('off'|'track'|'queue'), queue
+      // The bot's shared PlayerState uses:
+      //   status ('playing'|'paused'|'stopped'), track, position (ms), loop (boolean)
+      const desktopState = {
+        guildId,
+        isPlaying: state.status === 'playing',
+        currentTrack: state.track ? {
+          title: state.track.title,
+          artist: state.track.artist,
+          duration: state.track.duration,
+          url: state.track.url,
+          thumbnail: state.track.thumbnail,
+          filePath: state.track.filePath,
+          platform: state.track.source,
+          fileName: state.track.filePath ? path.basename(state.track.filePath) : undefined,
+        } : null,
+        position: Math.floor(state.position / 1000), // ms → seconds
+        duration: state.track?.duration ?? 0, // already in seconds from convertTrackToDashboard
         volume: state.volume,
-        loop: state.loop,
-        queue: state.queue,
-        currentIndex: state.currentIndex,
+        loop: state.repeatMode === 'track' ? 'track'
+            : state.repeatMode === 'queue' ? 'queue'
+            : 'off',
+        queue: state.queue.map((t) => ({
+          title: t.title,
+          artist: t.artist,
+          duration: t.duration,
+          url: t.url,
+          thumbnail: t.thumbnail,
+          filePath: t.filePath,
+          platform: t.source,
+          fileName: t.filePath ? path.basename(t.filePath) : undefined,
+        })),
       };
 
+      // The desktop UI expects a different shape than the shared PlayerState type,
+      // so we cast here. The desktop store spreads this directly into its own PlayerState.
       this.wsManager.broadcast({
         type: 'player_state',
-        payload: basicState,
-      });
+        payload: desktopState,
+      } as unknown as import('discord-dashboard-shared').WebSocketMessage);
     }
   }
 
@@ -246,15 +329,27 @@ export class PlayerStateManager {
         throw new Error('No active queue found');
       }
 
-      const fullPath = path.resolve(this.localFilesPath, filePath);
+      // Decode URL-encoded characters (%20 → space, etc.)
+      let normalizedPath = decodeURIComponent(filePath);
+
+      // Strip leading slash from Windows-style paths like /D:/Music/...
+      // (browsers / Tauri produce these from file:// URLs)
+      if (process.platform === 'win32' && /^\/[a-zA-Z]:/.test(normalizedPath)) {
+        normalizedPath = normalizedPath.slice(1);
+      }
+
+      // Only resolve against localFilesPath when the path is relative
+      const fullPath = path.isAbsolute(normalizedPath)
+        ? path.normalize(normalizedPath)
+        : path.resolve(this.localFilesPath, normalizedPath);
 
       // Verify file exists
       if (!fs.existsSync(fullPath)) {
         throw new Error(`Local file not found: ${fullPath}`);
       }
 
-      // Create a file:// URL for the local file
-      const fileUrl = `file://${fullPath}`;
+      // Create a proper file:// URL for the local file
+      const fileUrl = 'file:///' + fullPath.replace(/\\/g, '/');
 
       // Search for the local file using discord-player
       const result = await this.player.search(fileUrl, {
@@ -385,6 +480,9 @@ export class PlayerStateManager {
 
   // Cleanup method
   public cleanup(): void {
+    for (const [guildId] of this.positionIntervals) {
+      this.stopPositionBroadcast(guildId);
+    }
     this.guildStates.clear();
     this.queueHistory.clear();
   }

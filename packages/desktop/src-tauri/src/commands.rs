@@ -67,3 +67,8 @@ pub async fn health_check(host: String, port: u16) -> Result<BotStatus, String> 
         }),
     }
 }
+
+#[tauri::command]
+pub fn is_directory(path: String) -> Result<bool, String> {
+    Ok(std::path::Path::new(&path).is_dir())
+}

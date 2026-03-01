@@ -28,7 +28,7 @@ export interface Track {
   artist: string;
   duration: number;
   url: string;
-  cover?: string;
+  thumbnail?: string;
   source: 'online' | 'local' | 'playlist';
   filePath?: string; // for local files
 }
@@ -106,6 +106,8 @@ export interface UploadedFile {
   mimeType: string;
   size: number;
   uploadedAt: number;
+  /** Whether the file is audio or video */
+  mediaType?: 'audio' | 'video';
   metadata?: {
     duration?: number;
     bitrate?: number;
@@ -203,6 +205,56 @@ export interface SearchResult {
 
 export interface SearchResponse {
   items: SearchResult[];
+}
+
+// Playlist Types
+export type TrackPlatform = 'youtube' | 'spotify' | 'soundcloud' | 'local' | 'unknown';
+
+export interface PlaylistSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  isPublic: boolean;
+  userId: string;
+  trackCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlaylistTrackItem {
+  id: string;
+  title: string;
+  artist: string | null;
+  duration: number;
+  url: string;
+  thumbnail: string | null;
+  platform: TrackPlatform;
+  position: number;
+}
+
+export interface PlaylistDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  isPublic: boolean;
+  trackCount: number;
+  tracks: PlaylistTrackItem[];
+}
+
+export interface CreatePlaylistRequest {
+  name: string;
+  description?: string;
+  isPublic?: boolean;
+}
+
+export interface AddTrackToPlaylistRequest {
+  title: string;
+  artist?: string;
+  duration?: number;
+  url: string;
+  thumbnail?: string;
+  platform?: TrackPlatform;
+  filePath?: string;
 }
 
 export interface LocalFilesResponse {
