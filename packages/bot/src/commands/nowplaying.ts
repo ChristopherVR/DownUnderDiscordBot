@@ -1,4 +1,4 @@
-﻿import { MessageFlags } from 'discord.js';
+import { MessageFlags } from 'discord.js';
 import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
 import { useDefaultPlayer } from '../helpers/discord/player';
 import type { CommandContext, CommandHandler } from '../types/commands';
@@ -26,7 +26,7 @@ export const NowPlayingCommand = (): CommandHandler => ({
         content: tCommands('nowplaying.responses.info', { track: track.title, artist: track.author }),
         flags: MessageFlags.Ephemeral,
       });
-    } catch (error) {
+    } catch (_error) {
       await context.reply({ content: tErrors('generic'), flags: MessageFlags.Ephemeral });
     }
   },

@@ -1,21 +1,21 @@
-﻿import path from "path";
-import fs from "fs";
-import { promises as fsp } from "fs";
-import { randomUUID } from "crypto";
-import type { Express } from "express";
+import path from 'path';
+import fs from 'fs';
+import { promises as fsp } from 'fs';
+import { randomUUID } from 'crypto';
+import type { Express } from 'express';
 import type { UploadedFile } from 'discord-dashboard-shared';
 
-const DEFAULT_UPLOAD_DIR = path.join(process.cwd(), "uploads", "audio");
-const METADATA_FILE = "metadata.json";
+const DEFAULT_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'audio');
+const METADATA_FILE = 'metadata.json';
 const SUPPORTED_AUDIO_TYPES = new Set([
-  "audio/mp3",
-  "audio/mpeg",
-  "audio/wav",
-  "audio/flac",
-  "audio/ogg",
-  "audio/aac",
-  "audio/webm",
-  "audio/mp4",
+  'audio/mp3',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/flac',
+  'audio/ogg',
+  'audio/aac',
+  'audio/webm',
+  'audio/mp4',
 ]);
 const DEFAULT_MAX_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -37,18 +37,18 @@ function normaliseMetadata(raw: unknown): MetadataMap {
   if (Array.isArray(raw)) {
     const map: MetadataMap = {};
     for (const item of raw) {
-      if (item && typeof item === "object" && "id" in item && typeof (item as UploadedFile).id === "string") {
+      if (item && typeof item === 'object' && 'id' in item && typeof (item as UploadedFile).id === 'string') {
         map[(item as UploadedFile).id] = item as UploadedFile;
       }
     }
     return map;
   }
 
-  if (typeof raw === "object") {
+  if (typeof raw === 'object') {
     const entries = raw as Record<string, unknown>;
     const map: MetadataMap = {};
     for (const [key, value] of Object.entries(entries)) {
-      if (value && typeof value === "object") {
+      if (value && typeof value === 'object') {
         map[key] = value as UploadedFile;
       }
     }
@@ -66,15 +66,15 @@ function readMetadata(uploadDir: string): MetadataMap {
       return {};
     }
 
-    const raw = fs.readFileSync(metadataPath, "utf-8");
-    if (typeof raw !== "string" || !raw.trim()) {
+    const raw = fs.readFileSync(metadataPath, 'utf-8');
+    if (typeof raw !== 'string' || !raw.trim()) {
       return {};
     }
 
     const parsed = JSON.parse(raw);
     return normaliseMetadata(parsed);
   } catch (error) {
-    console.warn("Failed to read metadata file, returning empty set:", error);
+    console.warn('Failed to read metadata file, returning empty set:', error);
     return {};
   }
 }
@@ -85,7 +85,11 @@ function writeMetadata(uploadDir: string, metadata: MetadataMap): void {
   fs.writeFileSync(metadataPath, JSON.stringify(metadata));
 }
 
-function createRecord(uploadDir: string, file: Express.Multer.File, overrides: Partial<UploadedFile> = {}): UploadedFile {
+function createRecord(
+  uploadDir: string,
+  file: Express.Multer.File,
+  overrides: Partial<UploadedFile> = {},
+): UploadedFile {
   const ext = path.extname(file.originalname);
   const fileName = file.filename ?? `${randomUUID()}${ext}`;
   const destinationPath = overrides.filePath ?? path.join(uploadDir, fileName);
@@ -126,7 +130,7 @@ class FileManagerService {
         fs.copyFileSync(file.path, record.filePath);
       }
     } catch (error) {
-      console.warn("Failed to copy uploaded file into uploads directory:", error);
+      console.warn('Failed to copy uploaded file into uploads directory:', error);
     }
 
     metadata[record.id] = record;
@@ -242,7 +246,7 @@ class FileManagerService {
 
     const timestamps = files
       .map((file) => file.uploadedAt)
-      .filter((value): value is number => typeof value === "number");
+      .filter((value): value is number => typeof value === 'number');
 
     const oldestFile = timestamps.length ? new Date(Math.min(...timestamps)) : undefined;
     const newestFile = timestamps.length ? new Date(Math.max(...timestamps)) : undefined;
@@ -277,7 +281,7 @@ class FileManagerService {
 
       return deleted;
     } catch (error) {
-      console.error("Error cleaning orphaned files:", error);
+      console.error('Error cleaning orphaned files:', error);
       return 0;
     }
   }
@@ -314,6 +318,3 @@ export const FileManager = {
 
 export { FileManagerService };
 export const fileManager = service;
-
-
-

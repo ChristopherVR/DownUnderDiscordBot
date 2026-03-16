@@ -1,4 +1,4 @@
-﻿import { EventEmitter } from 'node:events';
+import { EventEmitter } from 'node:events';
 import type { IStateService, InstancePresenceInput } from './IStateService';
 import type { GuildState, InstanceInfo } from './schema';
 
@@ -27,7 +27,12 @@ export class InactiveInstanceError extends Error {
   public readonly localInstanceId: string;
   public readonly commandName?: string;
 
-  constructor(params: { guildId: string; activeInstanceId: string | null; localInstanceId: string; commandName?: string }) {
+  constructor(params: {
+    guildId: string;
+    activeInstanceId: string | null;
+    localInstanceId: string;
+    commandName?: string;
+  }) {
     const { guildId, activeInstanceId, localInstanceId, commandName } = params;
     const baseMessage = activeInstanceId
       ? `Instance ${localInstanceId} is not active for guild ${guildId}. Active instance: ${activeInstanceId}.`

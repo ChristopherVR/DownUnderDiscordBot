@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import { randomUUID } from 'crypto';
 import type { WebSocketMessage, PlayerState, LogEntry, CommandExecution } from 'discord-dashboard-shared';
+import type { StreamStatusUpdate } from 'discord-dashboard-shared';
 
 export interface WebSocketClient {
   id: string;
@@ -106,10 +107,10 @@ export class WebSocketManager {
 
       // Handle pong responses
       ws.on('pong', () => {
-        const client = this.clients.get(clientId);
-        if (client) {
-          client.isAlive = true;
-          client.lastPing = Date.now();
+        const pongClient = this.clients.get(clientId);
+        if (pongClient) {
+          pongClient.isAlive = true;
+          pongClient.lastPing = Date.now();
         }
       });
 
@@ -313,6 +314,18 @@ export class WebSocketManager {
     const message: WebSocketMessage = {
       type: 'player_state',
       payload: playerState,
+    };
+
+    this.broadcast(message);
+  }
+
+  /**
+   * Broadcast stream status update (fallback / buffering indicators)
+   */
+  public broadcastStreamStatus(status: StreamStatusUpdate): void {
+    const message: WebSocketMessage = {
+      type: 'stream_status',
+      payload: status,
     };
 
     this.broadcast(message);

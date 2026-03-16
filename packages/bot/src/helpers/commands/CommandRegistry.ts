@@ -1,4 +1,4 @@
-﻿import {
+import {
   CommandDefinition,
   CommandOption,
   CommandExecution,
@@ -368,8 +368,6 @@ export class CommandRegistry {
         const responses = dashboardContext.getResponses();
         if (responses.length || result !== undefined) {
           execution.result = { result, responses };
-        } else if (result !== undefined) {
-          execution.result = result;
         }
       } else if (result !== undefined) {
         execution.result = result;

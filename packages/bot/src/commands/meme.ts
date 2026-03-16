@@ -1,4 +1,4 @@
-﻿import { EmbedBuilder, MessageFlags } from 'discord.js';
+import { EmbedBuilder, MessageFlags } from 'discord.js';
 import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
 import type { CommandContext, CommandHandler } from '../types/commands';
 
@@ -22,7 +22,7 @@ export const MemeCommand = (): CommandHandler => ({
         .setFooter({ text: `From r/${data.subreddit} by ${data.author}` });
 
       await context.followUp({ embeds: [embed] });
-    } catch (error) {
+    } catch (_error) {
       await context.followUp({ content: tErrors('generic'), flags: MessageFlags.Ephemeral });
     }
   },

@@ -1,4 +1,4 @@
-﻿import { GuildQueue, Player, QueryType, Track } from 'discord-player';
+import { GuildQueue, Player, QueryType, Track } from 'discord-player';
 import {
   ActionRowBuilder,
   ApplicationCommandOptionType,
@@ -14,6 +14,7 @@ import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
 import { useDefaultPlayer, createBotAudioPlayer, waitForVoiceReady } from '../helpers/discord/player';
 import { CommandHandler, CommandContext } from '../types/commands';
 import { InteractionCommandContext } from '../helpers/commands/CommandContext';
+import { CustomYouTubeExtractor } from '../extractors/YouTubeExtractor';
 import fs from 'fs/promises';
 import { join } from 'path';
 import { createLogger } from '../helpers/logger';
@@ -23,6 +24,36 @@ import { URL } from 'node:url';
 const log = createLogger('command-play');
 
 // Format a duration given in seconds (number or numeric string) to mm:ss
+const PLATFORM_EMOJI: Record<string, string> = {
+  youtube: '🔴',
+  spotify: '🟢',
+  soundcloud: '🟠',
+  applemusic: '🍎',
+  local: '📁',
+};
+
+const PLATFORM_LABEL: Record<string, string> = {
+  youtube: 'YouTube',
+  spotify: 'Spotify',
+  soundcloud: 'SoundCloud',
+  applemusic: 'Apple Music',
+  local: 'Local File',
+};
+
+/** Detect a platform name from a track URL or path */
+const detectPlatform = (url?: string): string | undefined => {
+  if (!url) return undefined;
+  if (/youtu\.?be/i.test(url)) return 'youtube';
+  if (/spotify\.com/i.test(url)) return 'spotify';
+  if (/soundcloud\.com/i.test(url)) return 'soundcloud';
+  if (/music\.apple\.com/i.test(url)) return 'applemusic';
+  if (/^([a-zA-Z]:\\|\/|file:\/\/)/.test(url)) return 'local';
+  return undefined;
+};
+
+/** Check whether a URL is a web link (safe to use in markdown links) */
+const isWebUrl = (url?: string): boolean => !!url && /^https?:\/\//i.test(url);
+
 const formatDuration = (d?: string | number | null): string | undefined => {
   if (d == null) return undefined;
   const seconds = typeof d === 'number' ? d : parseInt(String(d), 10);
@@ -174,7 +205,18 @@ const handleInteractiveSelection = async (
   tracks: Track[],
 ): Promise<void> => {
   const interaction = context.interactionInstance;
-  const selectionText = tracks.map((track, index) => `**${index + 1}**. ${track.title} — ${track.author}`).join('\n');
+  const selectionText = tracks
+    .map((track, index) => {
+      const source = detectPlatform(track.url) ?? 'youtube';
+      const sourceEmoji = PLATFORM_EMOJI[source] ?? '🔗';
+      const sourceLabel = PLATFORM_LABEL[source] ?? source;
+      const sourceTag = `${sourceEmoji} ${sourceLabel}`;
+      const titlePart = isWebUrl(track.url) ? `[${track.title}](${track.url})` : track.title;
+      const duration = formatDuration(track.duration) ?? '';
+      const durationPart = duration ? ` · ${duration}` : '';
+      return `**${index + 1}.** ${titlePart}\n   ${track.author ?? 'Unknown'}${durationPart} · ${sourceTag}`;
+    })
+    .join('\n\n');
 
   const embed = new EmbedBuilder()
     .setColor('Random')
@@ -264,64 +306,79 @@ const handleSearch = async (
   player: Player,
   query: string,
 ): Promise<void> => {
-  const result = await player.search(query, {
-    requestedBy: context.username ?? 'dashboard',
-    ignoreCache: true,
-    searchEngine: QueryType.YOUTUBE,
-  });
+  const isUrl = /^https?:\/\//.test(query.trim());
+  let result;
 
-  if (!result.tracks.length) {
-    if (URL.canParse(query)) {
+  if (isUrl) {
+    // URLs work fine through player.search() since validate() matches them
+    result = await player.search(query, {
+      requestedBy: context.username ?? 'dashboard',
+      ignoreCache: true,
+      searchEngine: QueryType.AUTO,
+    });
+
+    // Fallback for YouTube URLs that player.search() couldn't resolve
+    if (!result.tracks.length && URL.canParse(query)) {
       const res = await Innertube.create();
-
       const uarl = new URL(query);
 
-      // Support both full YouTube URLs (youtube.com/watch?v=ID) and short youtu.be/ID
       let vidId = uarl.searchParams.get('v');
       if (!vidId) {
-        // For youtu.be links the pathname contains the id as '/ID'
         const pathname = (uarl.pathname || '').replace(/^\//, '');
         if (pathname) {
-          // strip any extra segments or query-like parts (shouldn't be present in pathname)
           vidId = pathname.split('/')[0];
         }
       }
-
       if (!vidId) {
-        // If we still don't have an id, attempt to extract from the raw query as a last resort
-        // e.g., links like https://www.youtube.com/clip/Ugkx... may not have v param
         const match = query.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
         if (match) vidId = match[1];
       }
 
-      if (!vidId) {
-        // Unable to determine a video id; fall back to original behavior (will cause notFound)
-        vidId = undefined as unknown as string;
+      if (vidId) {
+        const info = await res.getBasicInfo(vidId);
+        const urlTrack = new Track(player, {
+          url: query,
+          title: info.basic_info.title,
+          author: info.basic_info.author,
+          thumbnail: info.basic_info.thumbnail ? info.basic_info.thumbnail[0].url : undefined,
+          requestedBy: context.username as unknown as User,
+          queryType: QueryType.YOUTUBE,
+          description: info.basic_info.short_description,
+          duration: formatDuration(info.basic_info.duration),
+        });
+        result.setTracks([urlTrack]);
       }
-
-      const info = await res.getBasicInfo(vidId!);
-
-      const urlTrack = new Track(player, {
-        url: query,
-        title: info.basic_info.title,
-        author: info.basic_info.author,
-        thumbnail: info.basic_info.thumbnail ? info.basic_info.thumbnail[0].url : undefined,
-        requestedBy: context.username as unknown as User,
-        queryType: QueryType.YOUTUBE,
-        description: info.basic_info.short_description,
-        duration: formatDuration(info.basic_info.duration),
-      });
-
-      result.setTracks([urlTrack]);
     }
-
-    if (!result.tracks.length) {
-      await context.followUp({
-        content: tCommands('play.responses.notFound', { query }),
-        flags: MessageFlags.Ephemeral,
+  } else {
+    // Plain-text search: custom extractors' validate() only matches URLs,
+    // so player.search() never routes text queries to them.  Call the
+    // extractor's handle() directly (same approach the desktop app uses).
+    const ext = player.extractors.get(CustomYouTubeExtractor.identifier);
+    if (ext) {
+      const extResult = await ext.handle(query, { requestedBy: null } as never);
+      result = await player.search(query, {
+        requestedBy: context.username ?? 'dashboard',
+        ignoreCache: true,
+        searchEngine: QueryType.YOUTUBE,
       });
-      return;
+      if (extResult?.tracks?.length) {
+        result.setTracks(extResult.tracks);
+      }
+    } else {
+      result = await player.search(query, {
+        requestedBy: context.username ?? 'dashboard',
+        ignoreCache: true,
+        searchEngine: QueryType.YOUTUBE,
+      });
     }
+  }
+
+  if (!result.tracks.length) {
+    await context.followUp({
+      content: tCommands('play.responses.notFound', { query }),
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
   }
 
   const tracks = result.tracks.slice(0, 5);

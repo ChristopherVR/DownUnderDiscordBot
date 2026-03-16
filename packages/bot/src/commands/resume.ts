@@ -1,4 +1,4 @@
-﻿import { MessageFlags } from 'discord.js';
+import { MessageFlags } from 'discord.js';
 import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
 import { useDefaultPlayer } from '../helpers/discord/player';
 import type { CommandContext, CommandHandler } from '../types/commands';
@@ -26,7 +26,7 @@ export const ResumeCommand = (): CommandHandler => ({
         content: success ? tCommands('resume.responses.success') : tCommands('resume.responses.error'),
         flags: MessageFlags.Ephemeral,
       });
-    } catch (error) {
+    } catch (_error) {
       await context.reply({ content: tErrors('generic'), flags: MessageFlags.Ephemeral });
     }
   },

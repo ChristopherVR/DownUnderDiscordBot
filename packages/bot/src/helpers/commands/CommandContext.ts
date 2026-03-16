@@ -1,11 +1,10 @@
-﻿import {
+import {
   ChatInputCommandInteraction,
   Guild,
   GuildMember,
   GuildBasedChannel,
   InteractionEditReplyOptions,
   InteractionReplyOptions,
-  MessageFlags,
   User,
 } from 'discord.js';
 
@@ -134,12 +133,6 @@ export class InteractionCommandContext implements CommandContext {
   }
 
   private normalizeReply<T extends InteractionReplyOptions | InteractionEditReplyOptions>(options: T): T {
-    if ('flags' in options && options.flags !== undefined) {
-      const flags = options.flags;
-      if (typeof flags === 'number' && flags === MessageFlags.Ephemeral) {
-        return { ...options, ephemeral: true };
-      }
-    }
     return options;
   }
 }

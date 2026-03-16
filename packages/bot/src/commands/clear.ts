@@ -1,4 +1,4 @@
-﻿import { MessageFlags } from 'discord.js';
+import { MessageFlags } from 'discord.js';
 import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
 import { useDefaultPlayer } from '../helpers/discord/player';
 import type { CommandContext, CommandHandler } from '../types/commands';
@@ -23,7 +23,7 @@ export const ClearCommand = (): CommandHandler => ({
 
       queue.delete();
       await context.reply({ content: tCommands('clear.responses.success'), flags: MessageFlags.Ephemeral });
-    } catch (error) {
+    } catch (_error) {
       await context.reply({ content: tErrors('generic'), flags: MessageFlags.Ephemeral });
     }
   },

@@ -6,7 +6,6 @@ import { WebSocketManager } from '../websocket';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 
 export interface ExtendedPlayerState extends PlayerState {
   guildId: string;
@@ -276,22 +275,22 @@ export class PlayerStateManager {
       const desktopState = {
         guildId,
         isPlaying: state.status === 'playing',
-        currentTrack: state.track ? {
-          title: state.track.title,
-          artist: state.track.artist,
-          duration: state.track.duration,
-          url: state.track.url,
-          thumbnail: state.track.thumbnail,
-          filePath: state.track.filePath,
-          platform: state.track.source,
-          fileName: state.track.filePath ? path.basename(state.track.filePath) : undefined,
-        } : null,
+        currentTrack: state.track
+          ? {
+              title: state.track.title,
+              artist: state.track.artist,
+              duration: state.track.duration,
+              url: state.track.url,
+              thumbnail: state.track.thumbnail,
+              filePath: state.track.filePath,
+              platform: state.track.source,
+              fileName: state.track.filePath ? path.basename(state.track.filePath) : undefined,
+            }
+          : null,
         position: Math.floor(state.position / 1000), // ms → seconds
         duration: state.track?.duration ?? 0, // already in seconds from convertTrackToDashboard
         volume: state.volume,
-        loop: state.repeatMode === 'track' ? 'track'
-            : state.repeatMode === 'queue' ? 'queue'
-            : 'off',
+        loop: state.repeatMode === 'track' ? 'track' : state.repeatMode === 'queue' ? 'queue' : 'off',
         queue: state.queue.map((t) => ({
           title: t.title,
           artist: t.artist,

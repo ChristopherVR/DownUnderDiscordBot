@@ -300,55 +300,53 @@ export class EnhancedLogger {
   }
 }
 
-export class LoggingUtils {
-  static formatMetadata(metadata: Partial<LogMetadata>): LogMetadata {
-    return {
-      category: LogCategory.SYSTEM,
-      timestamp: new Date().toISOString(),
-      level: LogLevel.INFO,
-      ...metadata,
-    } as LogMetadata;
-  }
+export function formatMetadata(metadata: Partial<LogMetadata>): LogMetadata {
+  return {
+    category: LogCategory.SYSTEM,
+    timestamp: new Date().toISOString(),
+    level: LogLevel.INFO,
+    ...metadata,
+  } as LogMetadata;
+}
 
-  static createLogEntry(message: string, metadata: LogMetadata): LogEntry {
-    return {
-      id: randomUUID(),
-      timestamp: metadata.timestamp ?? new Date().toISOString(),
-      level: metadata.level ?? LogLevel.INFO,
-      category: metadata.category ?? LogCategory.SYSTEM,
-      message,
-      metadata,
+export function createLogEntry(message: string, metadata: LogMetadata): LogEntry {
+  return {
+    id: randomUUID(),
+    timestamp: metadata.timestamp ?? new Date().toISOString(),
+    level: metadata.level ?? LogLevel.INFO,
+    category: metadata.category ?? LogCategory.SYSTEM,
+    message,
+    metadata,
+  };
+}
+
+export function sanitizeMetadata(metadata: LogMetadata): LogMetadata {
+  const sanitized: LogMetadata = { ...metadata };
+  const errorInfo = sanitized.error as ErrorInfo | undefined;
+
+  if (errorInfo?.stack) {
+    const stackLines = errorInfo.stack.split('\n');
+    sanitized.error = {
+      ...errorInfo,
+      stack: stackLines.slice(0, 5).join('\n'),
     };
   }
 
-  static sanitizeMetadata(metadata: LogMetadata): LogMetadata {
-    const sanitized: LogMetadata = { ...metadata };
-    const errorInfo = sanitized.error as ErrorInfo | undefined;
+  return sanitized;
+}
 
-    if (errorInfo?.stack) {
-      const stackLines = errorInfo.stack.split('\n');
-      sanitized.error = {
-        ...errorInfo,
-        stack: stackLines.slice(0, 5).join('\n'),
-      };
-    }
+export function extractUserContext(interaction: {
+  user?: { id?: string; username?: string };
+  guild?: { id?: string };
+  guildId?: string;
+  channel?: { id?: string };
+}): Pick<AuditMetadata, 'userId' | 'guildId' | 'channelId' | 'username'> {
+  const guildId = interaction?.guildId ?? interaction?.guild?.id ?? 'unknown';
 
-    return sanitized;
-  }
-
-  static extractUserContext(interaction: {
-    user?: { id?: string; username?: string };
-    guild?: { id?: string };
-    guildId?: string;
-    channel?: { id?: string };
-  }): Pick<AuditMetadata, 'userId' | 'guildId' | 'channelId' | 'username'> {
-    const guildId = interaction?.guildId ?? interaction?.guild?.id ?? 'unknown';
-
-    return {
-      userId: interaction?.user?.id ?? 'unknown',
-      guildId,
-      channelId: interaction?.channel?.id,
-      username: interaction?.user?.username ?? 'unknown',
-    };
-  }
+  return {
+    userId: interaction?.user?.id ?? 'unknown',
+    guildId,
+    channelId: interaction?.channel?.id,
+    username: interaction?.user?.username ?? 'unknown',
+  };
 }

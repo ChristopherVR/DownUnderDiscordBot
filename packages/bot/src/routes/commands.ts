@@ -2,8 +2,16 @@ import { Request, Response } from 'express';
 import { CommandRegistry } from '../helpers/commands/CommandRegistry';
 import { DiscordBotIntegration, registerDiscordIntegration } from '../helpers/commands/DiscordBotIntegration';
 import { WebSocketManager } from '../helpers/websocket';
-import { CommandExecution, CommandDefinition, CommandOption } from 'discord-dashboard-shared';
-import { Client, Events, ApplicationCommandOptionType, ApplicationCommandType, ApplicationCommandData, ApplicationCommandOptionData, ChatInputApplicationCommandData } from 'discord.js';
+import { CommandExecution, CommandOption } from 'discord-dashboard-shared';
+import {
+  Client,
+  Events,
+  ApplicationCommandOptionType,
+  ApplicationCommandType,
+  ApplicationCommandData,
+  ApplicationCommandOptionData,
+  ChatInputApplicationCommandData,
+} from 'discord.js';
 import { ValidationError } from '../helpers/errorHandler';
 import { expressRouter } from '../helpers/expressRouter';
 import { tErrors } from 'discord-dashboard-shared/localization';
@@ -151,7 +159,6 @@ const ensureSlashCommandsRegistered = async (client?: Client): Promise<void> => 
     commandsRegistered = true;
   }
 };
-
 
 export function initializeCommandRoutes(wsManagerInstance: CommandBroadcast, discordClient?: Client) {
   commandLog.info({ hasDiscordClient: Boolean(discordClient) }, 'Initializing command routes');
@@ -445,14 +452,3 @@ router.post('/validate-context', async (req: Request, res: Response) => {
 });
 
 export default router.getRouter();
-
-
-
-
-
-
-
-
-
-
-

@@ -8,14 +8,10 @@ const log = createLogger('applemusic-extractor');
 // Album: https://music.apple.com/{storefront}/album/{name}/{albumId}
 // Playlist: https://music.apple.com/{storefront}/playlist/{name}/{playlistId}
 // Song direct: https://music.apple.com/{storefront}/song/{name}/{trackId}
-const AM_TRACK_REGEX =
-  /^(?:https?:\/\/)?(?:music\.apple\.com)\/([a-z]{2})\/album\/[^/]+\/(\d+)\?i=(\d+)/;
-const AM_SONG_REGEX =
-  /^(?:https?:\/\/)?(?:music\.apple\.com)\/([a-z]{2})\/song\/[^/]+\/(\d+)/;
-const AM_ALBUM_REGEX =
-  /^(?:https?:\/\/)?(?:music\.apple\.com)\/([a-z]{2})\/album\/[^/]+\/(\d+)(?:\?.*)?$/;
-const AM_PLAYLIST_REGEX =
-  /^(?:https?:\/\/)?(?:music\.apple\.com)\/([a-z]{2})\/playlist\/[^/]+\/(pl\.\w+)/;
+const AM_TRACK_REGEX = /^(?:https?:\/\/)?(?:music\.apple\.com)\/([a-z]{2})\/album\/[^/]+\/(\d+)\?i=(\d+)/;
+const AM_SONG_REGEX = /^(?:https?:\/\/)?(?:music\.apple\.com)\/([a-z]{2})\/song\/[^/]+\/(\d+)/;
+const AM_ALBUM_REGEX = /^(?:https?:\/\/)?(?:music\.apple\.com)\/([a-z]{2})\/album\/[^/]+\/(\d+)(?:\?.*)?$/;
+const AM_PLAYLIST_REGEX = /^(?:https?:\/\/)?(?:music\.apple\.com)\/([a-z]{2})\/playlist\/[^/]+\/(pl\.\w+)/;
 
 const ITUNES_LOOKUP_URL = 'https://itunes.apple.com/lookup';
 const ITUNES_SEARCH_URL = 'https://itunes.apple.com/search';
@@ -134,10 +130,7 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
     return url.replace('100x100bb', '600x600bb');
   }
 
-  private itunesResultToTrack(
-    result: ItunesResult,
-    context: ExtractorSearchContext,
-  ): Track {
+  private itunesResultToTrack(result: ItunesResult, context: ExtractorSearchContext): Track {
     const track = new Track(this.context.player, {
       title: result.trackName ?? 'Unknown',
       author: result.artistName ?? 'Unknown Artist',
@@ -189,11 +182,7 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
   /*  URL handlers                                                       */
   /* ------------------------------------------------------------------ */
 
-  private async handleTrack(
-    trackId: string,
-    country: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handleTrack(trackId: string, country: string, context: ExtractorSearchContext) {
     try {
       const data = await this.itunesLookup({ id: trackId, country, entity: 'song' });
       const song = data.results.find((r) => r.wrapperType === 'track');
@@ -211,11 +200,7 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
     }
   }
 
-  private async handleAlbum(
-    albumId: string,
-    country: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handleAlbum(albumId: string, country: string, context: ExtractorSearchContext) {
     try {
       const data = await this.itunesLookup({
         id: albumId,
@@ -224,9 +209,7 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
       });
 
       // First result is the album/collection, rest are songs
-      const albumInfo = data.results.find(
-        (r) => r.wrapperType === 'collection',
-      );
+      const albumInfo = data.results.find((r) => r.wrapperType === 'collection');
       const songs = data.results.filter((r) => r.wrapperType === 'track');
 
       if (songs.length === 0) {
@@ -258,11 +241,7 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
     }
   }
 
-  private async handlePlaylist(
-    playlistId: string,
-    country: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handlePlaylist(playlistId: string, country: string, _context: ExtractorSearchContext) {
     try {
       // The public iTunes API doesn't support playlist lookups directly.
       // Apple Music playlists require the Apple Music API with a developer token.
@@ -270,8 +249,8 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
       log.warn(
         { playlistId, country },
         'Apple Music playlist resolution requires Apple Music API credentials. ' +
-        'Playlist URL detection is supported, but full track listing requires a developer token. ' +
-        'Consider sharing individual track or album links instead.',
+          'Playlist URL detection is supported, but full track listing requires a developer token. ' +
+          'Consider sharing individual track or album links instead.',
       );
 
       return this.createResponse(null, []);
@@ -281,10 +260,7 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
     }
   }
 
-  async handleSearch(
-    query: string,
-    context: ExtractorSearchContext,
-  ) {
+  async handleSearch(query: string, context: ExtractorSearchContext) {
     try {
       const data = await this.itunesSearch(query, { limit: 10 });
       const tracks = data.results

@@ -1,4 +1,4 @@
-﻿import { MessageFlags, ApplicationCommandType } from 'discord.js';
+import { MessageFlags, ApplicationCommandType } from 'discord.js';
 import { tCommands, tCommon } from 'discord-dashboard-shared/localization';
 import type { CommandContext, CommandHandler } from '../types/commands';
 

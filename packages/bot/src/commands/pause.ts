@@ -1,4 +1,4 @@
-﻿import { MessageFlags } from 'discord.js';
+import { MessageFlags } from 'discord.js';
 import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
 import { useDefaultPlayer } from '../helpers/discord/player';
 import type { CommandContext, CommandHandler } from '../types/commands';

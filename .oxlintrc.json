@@ -10,13 +10,16 @@
       "error",
       {
         "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_"
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
       }
     ],
     "prefer-const": "error",
     "typescript/no-explicit-any": "warn",
     "typescript/no-empty-object-type": "off",
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+    "import/no-unassigned-import": "off",
+    "import/no-named-as-default-member": "off"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "build/**", "coverage/**", "packages/bot/src/database/generated/**"]
 }

@@ -1,4 +1,4 @@
-﻿// Core State Management Types
+// Core State Management Types
 export interface GlobalState {
   guilds: Record<string, GuildState>;
   lastUpdated: number;
@@ -130,7 +130,15 @@ export type WebSocketMessage =
   | { type: 'player_state'; payload: PlayerState }
   | { type: 'log_entry'; payload: LogEntry }
   | { type: 'command_result'; payload: CommandExecution }
-  | { type: 'connection_update'; payload: ConnectionInfo[] };
+  | { type: 'connection_update'; payload: ConnectionInfo[] }
+  | { type: 'stream_status'; payload: StreamStatusUpdate };
+
+export interface StreamStatusUpdate {
+  videoId: string;
+  status: 'resolving' | 'fallback' | 'streaming' | 'error';
+  client: 'ANDROID' | 'WEB' | 'yt-dlp';
+  message?: string;
+}
 
 export interface BotStatusUpdate {
   guildId: string;

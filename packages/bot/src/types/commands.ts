@@ -1,4 +1,4 @@
-﻿import type { CommandContext } from '../helpers/commands/CommandContext';
+import type { CommandContext } from '../helpers/commands/CommandContext';
 import type { ApplicationCommandType } from 'discord.js';
 import type { DiscordCommandOption } from 'discord-dashboard-shared';
 

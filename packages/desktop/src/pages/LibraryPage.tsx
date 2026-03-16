@@ -165,6 +165,7 @@ export default function LibraryPage() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localFiles.length]); // re-run only when file count changes, not every render
 
   // File watcher: watch music folders and auto-refresh on changes
@@ -462,16 +463,18 @@ export default function LibraryPage() {
 
               // Resolve individual files and merge into localFiles
               if (files.length > 0) {
-                const resolved = await invoke<Array<{
-                  file_path: string;
-                  file_name: string;
-                  title: string;
-                  artist: string;
-                  album?: string;
-                  duration?: number;
-                  size: number;
-                  media_type?: string;
-                }>>('resolve_dropped_paths', { paths: files });
+                const resolved = await invoke<
+                  Array<{
+                    file_path: string;
+                    file_name: string;
+                    title: string;
+                    artist: string;
+                    album?: string;
+                    duration?: number;
+                    size: number;
+                    media_type?: string;
+                  }>
+                >('resolve_dropped_paths', { paths: files });
 
                 if (resolved.length > 0) {
                   const newTracks: Track[] = resolved.map((t) => ({

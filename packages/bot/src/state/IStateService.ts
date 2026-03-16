@@ -1,4 +1,4 @@
-﻿import type { StateDoc, GuildState, InstanceInfo, HeartbeatStatus } from './schema';
+import type { StateDoc, GuildState, InstanceInfo, HeartbeatStatus } from './schema';
 
 export interface InstancePresenceInput {
   instanceId: string;

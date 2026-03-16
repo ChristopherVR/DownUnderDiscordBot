@@ -5,6 +5,7 @@ import {
   getPlayerStateManager,
   createBotAudioPlayer,
   waitForVoiceReady,
+  isConnectionHealthy,
 } from '../helpers/discord/player';
 import { executeCommand } from '../helpers/commands/DiscordBotIntegration';
 import { Track as DashboardTrack } from 'discord-dashboard-shared';
@@ -100,11 +101,20 @@ router.post('/connect', async (req: Request, res: Response) => {
   }
 
   try {
-    const queue = player.nodes.get(guild) ?? player.nodes.create(guild);
+    let queue = player.nodes.get(guild) ?? player.nodes.create(guild);
+
+    // Destroy stale connections so we start fresh
+    if (queue.connection && !isConnectionHealthy(queue)) {
+      enhancedLogger.system(LogLevel.WARN, 'Stale voice connection detected, reconnecting', { guildId });
+      queue.delete();
+      queue = player.nodes.create(guild);
+    }
+
     if (!queue.connection) {
       await queue.connect(voiceChannelId, { deaf: true, audioPlayer: createBotAudioPlayer() });
     }
 
+    await waitForVoiceReady(queue);
     enhancedLogger.system(LogLevel.INFO, 'Bot joined voice channel', { guildId, voiceChannelId });
     res.json({ success: true, voiceChannelId });
   } catch (error) {
@@ -114,7 +124,7 @@ router.post('/connect', async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : String(error),
     });
     res
-      .status(500)
+      .status(502)
       .json({ success: false, error: error instanceof Error ? error.message : 'Failed to join voice channel' });
   }
 });
@@ -336,7 +346,15 @@ router.post('/play', async (req: Request, res: Response) => {
     });
   }
 
-  const queue = player.nodes.get(guild) ?? player.nodes.create(guild);
+  let queue = player.nodes.get(guild) ?? player.nodes.create(guild);
+
+  // If the existing connection is in a bad state (disconnected/destroyed),
+  // tear it down so we can create a fresh one.
+  if (queue.connection && !isConnectionHealthy(queue)) {
+    enhancedLogger.system(LogLevel.WARN, 'Stale voice connection detected, reconnecting', { guildId });
+    queue.delete();
+    queue = player.nodes.create(guild);
+  }
 
   // Join voice channel if not already connected
   if (!queue.connection) {
@@ -362,7 +380,17 @@ router.post('/play', async (req: Request, res: Response) => {
   // Ensure the voice connection is fully ready (UDP handshake + encryption)
   // before streaming. Without this, FFmpeg finishes transcoding local files
   // before the connection is ready, causing the audio pipeline to end immediately.
-  await waitForVoiceReady(queue);
+  try {
+    await waitForVoiceReady(queue);
+  } catch {
+    // Voice connection failed to become ready (e.g. UDP handshake timed out).
+    // Clean up so the next attempt starts fresh.
+    queue.delete();
+    return res.status(502).json({
+      success: false,
+      error: 'Voice connection timed out. Discord voice server may be unreachable — please try again.',
+    });
+  }
 
   let result: SearchResult;
 
@@ -671,7 +699,7 @@ router.post('/queue/add', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: tErrors('bot.instanceNotFound') });
     }
     // Ensure a queue exists
-    player.nodes.get(guild) ?? player.nodes.create(guild);
+    const _queue = player.nodes.get(guild) ?? player.nodes.create(guild);
 
     const success = await stateManager.addLocalFile(guildId, query);
     if (!success) {

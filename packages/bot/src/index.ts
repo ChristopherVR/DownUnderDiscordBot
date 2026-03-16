@@ -281,7 +281,7 @@ async function main() {
     });
 
     // ---  Bot instance tracking from the state service ---
-    let onlineInstancesByGuild: Record<
+    const onlineInstancesByGuild: Record<
       string,
       Array<{
         instanceId: string;

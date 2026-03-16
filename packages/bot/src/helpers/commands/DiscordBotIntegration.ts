@@ -1,4 +1,4 @@
-﻿import {
+import {
   ApplicationCommandOptionType,
   ChatInputCommandInteraction,
   Client,
@@ -27,7 +27,10 @@ export class DiscordBotIntegration {
   }
 
   public async handleChatInputInteraction(interaction: ChatInputCommandInteraction): Promise<void> {
-    integrationLog.debug({ command: interaction.commandName, guildId: interaction.guildId }, 'Handling chat input interaction');
+    integrationLog.debug(
+      { command: interaction.commandName, guildId: interaction.guildId },
+      'Handling chat input interaction',
+    );
 
     if (!this.client) {
       integrationLog.warn('Discarding interaction - Discord client not set on integration');
@@ -55,7 +58,10 @@ export class DiscordBotIntegration {
     const execution = await this.commandRegistry.executeCommand(interaction.commandName, args, context);
 
     if (execution.status === 'error') {
-      integrationLog.warn({ command: interaction.commandName, error: execution.error }, 'Slash command execution failed');
+      integrationLog.warn(
+        { command: interaction.commandName, error: execution.error },
+        'Slash command execution failed',
+      );
       await this.respondWithError(interaction, execution.error);
     }
   }
@@ -102,10 +108,7 @@ export class DiscordBotIntegration {
     return args;
   }
 
-  private async respondWithError(
-    interaction: ChatInputCommandInteraction,
-    message?: string,
-  ): Promise<void> {
+  private async respondWithError(interaction: ChatInputCommandInteraction, message?: string): Promise<void> {
     const content = message ?? tErrors('generic');
 
     try {
@@ -131,7 +134,10 @@ export class DiscordBotIntegration {
     channelId?: string,
     userId?: string,
   ): Promise<CommandExecution> {
-    integrationLog.info({ command: commandName, guildId, channelId, userId, argKeys: Object.keys(args) }, 'Dispatching Discord command');
+    integrationLog.info(
+      { command: commandName, guildId, channelId, userId, argKeys: Object.keys(args) },
+      'Dispatching Discord command',
+    );
 
     if (!this.client) {
       throw new Error('Discord client not initialized');
@@ -141,7 +147,10 @@ export class DiscordBotIntegration {
     const context = new DashboardCommandContext(contextOptions);
 
     const execution = await this.commandRegistry.executeCommand(commandName, args, context);
-    integrationLog.info({ command: commandName, guildId, channelId, executionId: execution.id }, 'Discord command execution completed');
+    integrationLog.info(
+      { command: commandName, guildId, channelId, executionId: execution.id },
+      'Discord command execution completed',
+    );
 
     return execution;
   }
@@ -193,7 +202,10 @@ export class DiscordBotIntegration {
       try {
         member = await guild.members.fetch(userId);
       } catch (error) {
-        integrationLog.warn({ guildId: guild.id, userId, err: error }, 'Failed to fetch guild member for command context');
+        integrationLog.warn(
+          { guildId: guild.id, userId, err: error },
+          'Failed to fetch guild member for command context',
+        );
       }
     }
 
@@ -269,9 +281,7 @@ export class DiscordBotIntegration {
     }
   }
 
-  public async getAvailableChannels(
-    guildId: string,
-  ): Promise<Array<{ id: string; name: string; type: string }>> {
+  public async getAvailableChannels(guildId: string): Promise<Array<{ id: string; name: string; type: string }>> {
     if (!this.client) {
       return [];
     }
@@ -313,9 +323,7 @@ export const executeCommand = (
   return activeIntegration.executeCommand(commandName, args, guildId, channelId, userId);
 };
 
-export const handleChatInputInteraction = async (
-  interaction: ChatInputCommandInteraction,
-): Promise<void> => {
+export const handleChatInputInteraction = async (interaction: ChatInputCommandInteraction): Promise<void> => {
   if (!activeIntegration) {
     integrationLog.warn('Discord bot integration not initialised for slash interaction');
     if (!interaction.replied) {

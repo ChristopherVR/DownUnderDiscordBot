@@ -1,4 +1,4 @@
-﻿import {
+import {
   ChatInputCommandInteraction,
   ApplicationCommandOptionType,
   MessageFlags,
@@ -98,4 +98,3 @@ export const SetActiveCommand = () => ({
 });
 
 export default SetActiveCommand;
-

@@ -19,7 +19,8 @@ export default function VideoPreview() {
   const isVideo = currentTrack?.mediaType === 'video';
 
   useEffect(() => {
-    if (!containerRef.current || !localAudio || !isVideo || !showVideoPreview) return;
+    const container = containerRef.current;
+    if (!container || !localAudio || !isVideo || !showVideoPreview) return;
 
     // The localAudio element is actually a <video> when mediaType is 'video'.
     // Attach it into the container so the video is visible.
@@ -31,12 +32,12 @@ export default function VideoPreview() {
       videoEl.style.objectFit = 'contain';
       videoEl.style.borderRadius = '0.5rem';
 
-      containerRef.current.appendChild(videoEl);
+      container.appendChild(videoEl);
 
       return () => {
         // Don't pause when detaching — just remove from DOM
-        if (containerRef.current?.contains(videoEl)) {
-          containerRef.current.removeChild(videoEl);
+        if (container.contains(videoEl)) {
+          container.removeChild(videoEl);
         }
       };
     }
@@ -47,22 +48,20 @@ export default function VideoPreview() {
   return (
     <div
       className={`fixed z-50 overflow-hidden rounded-xl border border-white/[0.08] bg-black/90 shadow-2xl shadow-black/60 backdrop-blur-xl transition-all duration-300 ${
-        expanded
-          ? 'bottom-24 left-1/2 h-[60vh] w-[60vw] -translate-x-1/2'
-          : 'bottom-24 right-4 h-48 w-80'
+        expanded ? 'bottom-24 left-1/2 h-[60vh] w-[60vw] -translate-x-1/2' : 'bottom-24 right-4 h-48 w-80'
       }`}
-      style={{
-        '--text-primary': 'rgba(255, 255, 255, 0.9)',
-        '--text-secondary': 'rgba(255, 255, 255, 0.6)',
-        '--text-tertiary': 'rgba(255, 255, 255, 0.4)',
-        borderColor: 'rgba(255, 255, 255, 0.08)',
-      } as React.CSSProperties}
+      style={
+        {
+          '--text-primary': 'rgba(255, 255, 255, 0.9)',
+          '--text-secondary': 'rgba(255, 255, 255, 0.6)',
+          '--text-tertiary': 'rgba(255, 255, 255, 0.4)',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+        } as React.CSSProperties
+      }
     >
       {/* Header bar */}
       <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent px-3 py-2">
-        <span className="truncate text-[11px] font-medium text-t-secondary">
-          {currentTrack.title}
-        </span>
+        <span className="truncate text-[11px] font-medium text-t-secondary">{currentTrack.title}</span>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setExpanded(!expanded)}
