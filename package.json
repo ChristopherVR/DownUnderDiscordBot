@@ -14,7 +14,7 @@
     "dev:desktop": "pnpm --filter discord-bot-desktop dev",
     "start": "NODE_ENV=production pnpm --filter discord-bot start",
     "start:prod": "NODE_ENV=production pm2 start --interpreter tsx packages/bot/src/index.ts --name discord-bot",
-    "test": "pnpm run test:shared && pnpm run test:bot",
+    "test": "pnpm run test:shared && pnpm run test:bot && pnpm run test:desktop",
     "test:shared": "pnpm --filter discord-dashboard-shared test",
     "test:bot": "pnpm --filter discord-bot test",
     "test:desktop": "pnpm --filter discord-bot-desktop test",
@@ -23,8 +23,8 @@
     "lint:bot": "pnpm --filter discord-bot lint",
     "lint:shared": "pnpm --filter discord-dashboard-shared lint",
     "lint:fix": "pnpm run lint:bot -- --fix && pnpm run lint:shared -- --fix",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format": "oxfmt --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "oxfmt --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "db:generate": "pnpm --filter discord-bot db:generate",
     "db:push": "pnpm --filter discord-bot db:push",
     "db:migrate": "pnpm --filter discord-bot db:migrate",
@@ -33,27 +33,28 @@
     "clean:windows": "if exist packages\\bot\\dist rmdir /s /q packages\\bot\\dist && if exist packages\\shared\\dist rmdir /s /q packages\\shared\\dist",
     "health-check": "curl -f http://localhost:3001/health || exit 1",
     "precommit": "pnpm run lint && pnpm run format:check && pnpm run test",
-    "postinstall": "pnpm run build:shared"
+    "postinstall": "pnpm run build:shared",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.4",
-    "@eslint/js": "^10.0.1",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^10.0.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jsdoc": "^62.7.1",
-    "eslint-plugin-prefer-arrow": "^1.2.3",
-    "eslint-plugin-prettier": "^5.5.5",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "prettier": "^3.8.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "oxfmt": "^0.40.0",
+    "oxlint": "^1.55.0",
     "typescript": "^5.9.3"
   },
   "workspaces": [
     "packages/*"
   ],
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "oxlint --deny-warnings",
+      "oxfmt --check"
+    ],
+    "*.{js,jsx,json,md}": [
+      "oxfmt --check"
+    ]
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "@prisma/client",
@@ -61,6 +62,11 @@
       "esbuild",
       "prisma",
       "mediaplex"
-    ]
+    ],
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "@tailwindcss/vite>vite": "8"
+      }
+    }
   }
 }

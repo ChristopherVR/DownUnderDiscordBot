@@ -1,7 +1,7 @@
-import express from "express";
-import request from "supertest";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { initializeCommandRoutes } from "../../../routes/commands";
+import express from 'express';
+import request from 'supertest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { initializeCommandRoutes } from '../../../src/routes/commands';
 
 type BroadcastOnly = { broadcastCommandResult: ReturnType<typeof vi.fn> };
 
@@ -16,8 +16,10 @@ const commandRegistryMock = vi.hoisted(() => ({
   validateArguments: vi.fn(),
 }));
 
-vi.mock("../../../helpers/commands/CommandRegistry", () => {
-  const CommandRegistry = vi.fn().mockImplementation(() => commandRegistryMock);
+vi.mock('../../../src/helpers/commands/CommandRegistry', () => {
+  const CommandRegistry = vi.fn().mockImplementation(function () {
+    return commandRegistryMock;
+  });
   return { CommandRegistry };
 });
 
@@ -28,16 +30,20 @@ const discordIntegrationMock = vi.hoisted(() => ({
   getAvailableChannels: vi.fn(),
 }));
 
-vi.mock("../../../helpers/commands/DiscordBotIntegration", () => ({
-  DiscordBotIntegration: vi.fn().mockImplementation(() => discordIntegrationMock),
+vi.mock('../../../src/helpers/commands/DiscordBotIntegration', () => ({
+  DiscordBotIntegration: vi.fn().mockImplementation(function () {
+    return discordIntegrationMock;
+  }),
   registerDiscordIntegration: vi.fn(),
 }));
 
-vi.mock("../../../helpers/websocket", () => ({
-  WebSocketManager: vi.fn().mockImplementation(() => ({ broadcastCommandResult: vi.fn() })),
+vi.mock('../../../src/helpers/websocket', () => ({
+  WebSocketManager: vi.fn().mockImplementation(function () {
+    return { broadcastCommandResult: vi.fn() };
+  }),
 }));
 
-describe("Commands API routes", () => {
+describe('Commands API routes', () => {
   let app: express.Application;
   let wsManager: BroadcastOnly;
 
@@ -45,29 +51,29 @@ describe("Commands API routes", () => {
     vi.clearAllMocks();
 
     Object.values(commandRegistryMock).forEach((maybeMock) => {
-      if (typeof maybeMock === "function" && "mockReset" in maybeMock) {
+      if (typeof maybeMock === 'function' && 'mockReset' in maybeMock) {
         maybeMock.mockReset();
       }
     });
 
     Object.values(discordIntegrationMock).forEach((maybeMock) => {
-      if (typeof maybeMock === "function" && "mockReset" in maybeMock) {
+      if (typeof maybeMock === 'function' && 'mockReset' in maybeMock) {
         maybeMock.mockReset();
       }
     });
 
     commandRegistryMock.getCommandDefinitions.mockReturnValue([
-      { name: "play", description: "Play music", options: [] },
+      { name: 'play', description: 'Play music', options: [] },
     ]);
     commandRegistryMock.getCommandHistory.mockReturnValue([
-      { id: "1", command: "play", arguments: {}, timestamp: Date.now(), status: "success" },
+      { id: '1', command: 'play', arguments: {}, timestamp: Date.now(), status: 'success' },
     ]);
     commandRegistryMock.getCommandExecution.mockReturnValue({
-      id: "1",
-      command: "play",
+      id: '1',
+      command: 'play',
       arguments: {},
       timestamp: Date.now(),
-      status: "success",
+      status: 'success',
     });
     commandRegistryMock.getStats.mockReturnValue({
       totalCommands: 1,
@@ -79,66 +85,72 @@ describe("Commands API routes", () => {
     commandRegistryMock.validateArguments.mockReturnValue({ valid: true, errors: [] });
     commandRegistryMock.loadKnownCommands.mockResolvedValue();
 
-    discordIntegrationMock.executeCommand.mockResolvedValue({ success: true, id: "exec-1" });
+    discordIntegrationMock.executeCommand.mockResolvedValue({ success: true, id: 'exec-1' });
     discordIntegrationMock.validateCommandExecution.mockResolvedValue({ valid: true });
-    discordIntegrationMock.getAvailableGuilds.mockResolvedValue([{ id: "guild-1", name: "Guild One" }]);
+    discordIntegrationMock.getAvailableGuilds.mockResolvedValue([{ id: 'guild-1', name: 'Guild One' }]);
     discordIntegrationMock.getAvailableChannels.mockResolvedValue([
-      { id: "channel-1", name: "#general", type: "text" },
+      { id: 'channel-1', name: '#general', type: 'text' },
     ]);
 
     wsManager = { broadcastCommandResult: vi.fn() };
 
     app = express();
     app.use(express.json());
-    app.use("/api/commands", initializeCommandRoutes(wsManager));
+    app.use('/api/commands', initializeCommandRoutes(wsManager));
   });
 
-  it("returns command definitions", async () => {
-    const response = await request(app).get("/api/commands/registry").expect(200);
+  it('returns command definitions', async () => {
+    const response = await request(app).get('/api/commands/registry').expect(200);
     expect(response.body.success).toBe(true);
     expect(response.body.commands).toHaveLength(1);
   });
 
-  it("executes commands through the integration layer", async () => {
+  it('executes commands through the integration layer', async () => {
     const response = await request(app)
-      .post("/api/commands/execute")
-      .send({ command: "play", arguments: { query: "song" } })
+      .post('/api/commands/execute')
+      .send({ command: 'play', arguments: { query: 'song' } })
       .expect(200);
 
-    expect(discordIntegrationMock.executeCommand).toHaveBeenCalledWith("play", { query: "song" }, undefined, undefined, undefined);
+    expect(discordIntegrationMock.executeCommand).toHaveBeenCalledWith(
+      'play',
+      { query: 'song' },
+      undefined,
+      undefined,
+      undefined,
+    );
     expect(wsManager.broadcastCommandResult).toHaveBeenCalled();
     expect(response.body.success).toBe(true);
   });
 
-  it("returns execution history entries", async () => {
-    const response = await request(app).get("/api/commands/history").expect(200);
+  it('returns execution history entries', async () => {
+    const response = await request(app).get('/api/commands/history').expect(200);
     expect(response.body.history).toHaveLength(1);
   });
 
-  it("handles missing execution lookups", async () => {
+  it('handles missing execution lookups', async () => {
     commandRegistryMock.getCommandExecution.mockReturnValueOnce(undefined);
-    const response = await request(app).get("/api/commands/history/unknown").expect(404);
+    const response = await request(app).get('/api/commands/history/unknown').expect(404);
     expect(response.body.success).toBe(false);
   });
 
-  it("clears execution history", async () => {
-    await request(app).delete("/api/commands/history").expect(200);
+  it('clears execution history', async () => {
+    await request(app).delete('/api/commands/history').expect(200);
     expect(commandRegistryMock.clearHistory).toHaveBeenCalled();
   });
 
-  it("validates incoming arguments", async () => {
+  it('validates incoming arguments', async () => {
     const response = await request(app)
-      .post("/api/commands/validate")
-      .send({ command: "play", arguments: {} })
+      .post('/api/commands/validate')
+      .send({ command: 'play', arguments: {} })
       .expect(200);
     expect(response.body.validation.valid).toBe(true);
   });
 
-  it("exposes guild and channel helpers", async () => {
-    const guildResponse = await request(app).get("/api/commands/guilds").expect(200);
+  it('exposes guild and channel helpers', async () => {
+    const guildResponse = await request(app).get('/api/commands/guilds').expect(200);
     expect(guildResponse.body.guilds).toHaveLength(1);
 
-    const channelResponse = await request(app).get("/api/commands/guilds/guild-1/channels").expect(200);
+    const channelResponse = await request(app).get('/api/commands/guilds/guild-1/channels').expect(200);
     expect(channelResponse.body.channels).toHaveLength(1);
   });
 });

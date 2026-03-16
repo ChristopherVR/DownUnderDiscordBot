@@ -1,5 +1,5 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ChannelStateService } from '../../../state/channel/ChannelStateService';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ChannelStateService } from '../../../src/state/channel/ChannelStateService';
 import type { InstanceInfo } from 'discord-dashboard-shared';
 
 describe('ChannelStateService (memory mode)', () => {

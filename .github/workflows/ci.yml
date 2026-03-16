@@ -119,8 +119,29 @@ jobs:
       - name: Build desktop frontend
         run: pnpm --filter discord-bot-desktop build:web
 
-  test:
-    name: Test
+  test-shared:
+    name: Test Shared
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run shared tests
+        run: pnpm --filter discord-dashboard-shared test
+
+  test-bot:
+    name: Test Bot
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -145,3 +166,27 @@ jobs:
 
       - name: Run bot tests
         run: pnpm --filter discord-bot test
+
+  test-desktop:
+    name: Test Desktop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter discord-dashboard-shared build
+
+      - name: Run desktop tests
+        run: pnpm --filter discord-bot-desktop test

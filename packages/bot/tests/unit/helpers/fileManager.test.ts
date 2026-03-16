@@ -6,7 +6,7 @@ import fs from 'fs';
 vi.mock('fs');
 
 // Import after mocking
-import { FileManager } from '../../../helpers/fileManager';
+import { FileManager } from '../../../src/helpers/fileManager';
 
 describe('FileManager', () => {
   let fileManager: typeof FileManager;

@@ -35,6 +35,52 @@ vi.mock('discord-player', () => ({
     stop: vi.fn(),
     skip: vi.fn(),
   })),
+  BaseExtractor: class BaseExtractor {
+    static identifier = 'mock-extractor';
+    context: Record<string, unknown> = {};
+    createResponse(playlist: unknown, tracks: unknown[]) {
+      return { playlist, tracks };
+    }
+    async activate() {}
+    async deactivate() {}
+    async validate(_query: string): Promise<boolean> {
+      return false;
+    }
+    async handle(_query: string): Promise<{ playlist: unknown; tracks: unknown[] }> {
+      return { playlist: null, tracks: [] };
+    }
+    async stream(_track: unknown): Promise<unknown> {
+      return '';
+    }
+  },
+  Track: class Track {
+    constructor(
+      public player: unknown,
+      public options: Record<string, unknown>,
+    ) {}
+  },
+  Playlist: class Playlist {
+    constructor(
+      public player: unknown,
+      public options: Record<string, unknown>,
+    ) {}
+  },
+  QueryType: {
+    AUTO: 0,
+    YOUTUBE: 1,
+    YOUTUBE_PLAYLIST: 2,
+    SOUNDCLOUD_TRACK: 3,
+    SOUNDCLOUD_PLAYLIST: 4,
+    SOUNDCLOUD: 5,
+    SPOTIFY_SONG: 6,
+    SPOTIFY_ALBUM: 7,
+    SPOTIFY_PLAYLIST: 8,
+    YOUTUBE_SEARCH: 9,
+    YOUTUBE_VIDEO: 10,
+    SOUNDCLOUD_SEARCH: 11,
+    FILE: 12,
+    AUTO_SEARCH: 13,
+  },
 }));
 
 // Mock file system operations

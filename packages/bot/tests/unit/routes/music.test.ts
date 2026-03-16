@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import musicRouter from '../../../routes/music';
+import musicRouter from '../../../src/routes/music';
 
 const stateManagerMock = {
   getPlayerState: vi.fn().mockReturnValue({ status: 'playing' }),
@@ -48,12 +48,12 @@ const playerMock = {
   },
 };
 
-vi.mock('../../../helpers/discord/player', () => ({
+vi.mock('../../../src/helpers/discord/player', () => ({
   useDefaultPlayer: () => playerMock,
   getPlayerStateManager: () => stateManagerMock,
 }));
 
-vi.mock('../../../helpers/commands/DiscordBotIntegration', () => ({
+vi.mock('../../../src/helpers/commands/DiscordBotIntegration', () => ({
   executeCommand: vi.fn().mockResolvedValue({
     success: true,
     results: [
@@ -68,7 +68,7 @@ vi.mock('../../../helpers/commands/DiscordBotIntegration', () => ({
   }),
 }));
 
-import { executeCommand } from '../../../helpers/commands/DiscordBotIntegration';
+import { executeCommand } from '../../../src/helpers/commands/DiscordBotIntegration';
 
 const GUILD_HEADER = { 'x-guild-id': 'guild-1' };
 
@@ -110,11 +110,7 @@ describe('Music API Routes', () => {
   });
 
   it('POST /api/music/seek succeeds with valid payload', async () => {
-    const response = await request(app)
-      .post('/api/music/seek')
-      .set(GUILD_HEADER)
-      .send({ position: 42 })
-      .expect(200);
+    const response = await request(app).post('/api/music/seek').set(GUILD_HEADER).send({ position: 42 }).expect(200);
     expect(response.body.success).toBe(true);
   });
 });

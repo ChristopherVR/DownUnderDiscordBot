@@ -2,13 +2,13 @@ import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { expressRouter } from '../../helpers/expressRouter';
+import { expressRouter } from '../../src/helpers/expressRouter';
 
 const mockLogger = vi.hoisted(() => ({
   error: vi.fn(),
 }));
 
-vi.mock('../../helpers/logger', () => ({
+vi.mock('../../src/helpers/logger', () => ({
   logger: mockLogger,
 }));
 
