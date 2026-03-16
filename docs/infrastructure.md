@@ -204,23 +204,19 @@ az role assignment create \
 
 **Concurrency:** Cancels previous runs for the same branch
 
-#### Job: `lint-and-build`
+The CI pipeline runs 7 parallelized jobs for fast feedback:
 
-1. Checkout code
-2. Set up pnpm 10 and Node.js 22 (with cache)
-3. `pnpm install --frozen-lockfile`
-4. Build shared package
-5. Generate Prisma client
-6. Type-check bot package
-7. Type-check desktop package
-8. Build bot
-9. Build desktop frontend (Vite)
+| Job             | Description                                          |
+| --------------- | ---------------------------------------------------- |
+| `lint`          | Runs oxlint + oxfmt format check across all packages |
+| `type-check`    | TypeScript type checking for bot, desktop, shared    |
+| `build-bot`     | Full bot build (shared + Prisma + TypeScript)        |
+| `build-desktop` | Desktop frontend build (Vite web target)             |
+| `test-shared`   | Shared package test suite                            |
+| `test-bot`      | Bot package test suite                               |
+| `test-desktop`  | Desktop package test suite                           |
 
-#### Job: `test-bot` (depends on `lint-and-build`)
-
-1. Same setup (checkout, pnpm, Node.js)
-2. Build shared + generate Prisma
-3. Run bot test suite (`pnpm --filter discord-bot test`)
+All jobs use Node.js 22, pnpm 10, and GitHub Actions cache for faster installs.
 
 ### Bot Deploy Workflow (`.github/workflows/deploy-bot.yml`)
 
@@ -228,7 +224,7 @@ az role assignment create \
 
 **Environment:** `production`
 
-#### Job: `build-and-deploy`
+#### Job: `build-and-push`
 
 1. Checkout code
 2. Log in to Azure Container Registry (ACR)
@@ -236,8 +232,11 @@ az role assignment create \
    - `<acr>/down-under-bot:<commit-sha>` (immutable)
    - `<acr>/down-under-bot:latest` (rolling)
 4. Push both tags to ACR
-5. Log in to Azure (service principal)
-6. Deploy to Azure Container Apps (`downunder-prod-bot`)
+
+#### Job: `deploy` (depends on `build-and-push`)
+
+1. Log in to Azure (service principal)
+2. Deploy to Azure Container Apps (`downunder-prod-bot`)
 
 **Required secrets:**
 

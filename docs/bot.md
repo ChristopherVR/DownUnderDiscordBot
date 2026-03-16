@@ -35,7 +35,7 @@ pnpm build
 pnpm start
 ```
 
-The bot starts an Express server on the configured port (default 3001) and connects to Discord using the provided token.
+The bot starts an Express server on the configured port (default 3000, recommended 3001 via `.env`) and connects to Discord using the provided token.
 
 ---
 
@@ -43,25 +43,28 @@ The bot starts an Express server on the configured port (default 3001) and conne
 
 Configure these in `packages/bot/.env`:
 
-| Variable                  | Required | Default              | Description                                           |
-| ------------------------- | -------- | -------------------- | ----------------------------------------------------- |
-| `CLIENT_TOKEN`            | Yes      | --                   | Discord bot token from the Developer Portal           |
-| `GUILD_ID`                | Yes      | --                   | Discord server (guild) ID for command registration    |
-| `PORT`                    | No       | `3001`               | HTTP/WebSocket server port                            |
-| `HOST`                    | No       | `localhost`          | Server bind address                                   |
-| `DATABASE_URL`            | No       | `file:./data/bot.db` | SQLite database file path (Prisma format)             |
-| `FFMPEG_PATH`             | No       | `ffmpeg`             | Path to FFmpeg binary                                 |
-| `MUSIC_FOLDER_PATH`       | No       | --                   | Default local music folder to scan                    |
-| `MUSIC_CHANNEL_ID`        | No       | --                   | Discord channel ID for music notifications            |
-| `STATE_CHANNEL_ID`        | No       | --                   | Discord channel for multi-instance state coordination |
-| `STATE_BACKEND`           | No       | `channel`            | State persistence backend (`channel`)                 |
-| `OPEN_AI_TOKEN`           | No       | --                   | OpenAI API key (for `/ask` command)                   |
-| `SPOTIFY_CLIENT_ID`       | No       | --                   | Spotify API client ID (enables Spotify search)        |
-| `SPOTIFY_CLIENT_SECRET`   | No       | --                   | Spotify API client secret                             |
-| `DISCORD_CLIENT_ID`       | No       | --                   | Discord application client ID                         |
-| `ENVIRONMENT`             | No       | `development`        | Environment name                                      |
-| `PROTOCOL`                | No       | `http`               | Protocol for external URLs                            |
-| `EXTERNAL_DNS_NAME_OR_IP` | No       | --                   | Public hostname or IP                                 |
+| Variable                  | Required | Default              | Description                                                                   |
+| ------------------------- | -------- | -------------------- | ----------------------------------------------------------------------------- |
+| `CLIENT_TOKEN`            | Yes      | --                   | Discord bot token from the Developer Portal                                   |
+| `GUILD_ID`                | Yes      | --                   | Discord server (guild) ID for command registration                            |
+| `PORT`                    | No       | `3000`               | HTTP/WebSocket server port (`.env.example` uses 3001)                         |
+| `HOST`                    | No       | `localhost`          | Server bind address                                                           |
+| `DATABASE_URL`            | No       | `file:./data/bot.db` | SQLite database file path (Prisma format)                                     |
+| `FFMPEG_PATH`             | No       | `ffmpeg`             | Path to FFmpeg binary                                                         |
+| `MUSIC_FOLDER_PATH`       | No       | --                   | Default local music folder to scan                                            |
+| `MUSIC_CHANNEL_ID`        | No       | --                   | Discord channel ID for music notifications                                    |
+| `STATE_CHANNEL_ID`        | No       | --                   | Discord channel for multi-instance state coordination                         |
+| `STATE_BACKEND`           | No       | `channel`            | State persistence backend (`channel`)                                         |
+| `OPEN_AI_TOKEN`           | No       | --                   | OpenAI API key (for `/ask` command)                                           |
+| `SPOTIFY_CLIENT_ID`       | No       | --                   | Spotify API client ID (enables Spotify search)                                |
+| `SPOTIFY_CLIENT_SECRET`   | No       | --                   | Spotify API client secret                                                     |
+| `DISCORD_CLIENT_ID`       | No       | --                   | Discord application client ID (auto-detected from token if unset)             |
+| `DISCORD_CLIENT_SECRET`   | No       | --                   | Discord OAuth2 client secret (enables OAuth login)                            |
+| `DISCORD_REDIRECT_URI`    | No       | auto                 | OAuth2 redirect URI (defaults to `http://localhost:{PORT}/api/auth/callback`) |
+| `JWT_SECRET`              | No       | dev default          | Secret for signing JWT auth tokens                                            |
+| `ENVIRONMENT`             | No       | `development`        | Environment name                                                              |
+| `PROTOCOL`                | No       | `http`               | Protocol for external URLs                                                    |
+| `EXTERNAL_DNS_NAME_OR_IP` | No       | --                   | Public hostname or IP                                                         |
 
 ---
 
@@ -71,23 +74,39 @@ When the bot starts (`packages/bot/src/index.ts`):
 
 1. Loads environment variables from `.env`
 2. Initializes i18n localization system (locale files from `packages/shared/`)
-3. Creates Express app with CORS
-4. Creates WebSocket server on `/ws` path
-5. Calls `startBot()` which:
+3. Creates Express app with CORS and JSON body parsing
+4. Creates HTTP server and WebSocket server on `/ws` path
+5. Sets up logging infrastructure (Pino with rotation)
+6. Calls `startBot()` which:
    - Creates Discord.js client with required intents (Guilds, GuildMessages, MessageContent, GuildVoiceStates)
    - Initializes the music `Player` with `registerExtractors()`
    - Sets up slash command handling via `CommandRegistry`
    - Creates `StateCoordinator` for distributed state
    - Starts a heartbeat (every 15s) for instance presence
    - Logs in to Discord
-6. Mounts API routes (`/api/upload`, `/api/music`, `/api/commands`, `/api/logs`)
-7. Starts listening on the configured port
+7. Mounts API routes:
+   - `/api/health` -- health check
+   - `/api/locales` -- i18n locale bundles
+   - `/api/bot/status` -- bot online status
+   - `/api/dashboard` -- comprehensive system status aggregation
+   - `/api/guild/:guildId/voice-channels` -- guild voice channels
+   - `/api/instances/*` -- instance management (force-stop, ping, stale cleanup)
+   - `/api/auth` -- Discord OAuth2 authentication
+   - `/api/upload` -- file upload endpoints
+   - `/api/music` -- music player endpoints
+   - `/api/playlists` -- playlist CRUD endpoints
+   - `/api/commands` -- command registry and execution
+   - `/api/channels` -- Discord channel messages (chat)
+   - `/api/logs` -- audit and command logs
+   - `/api/websocket/*` -- WebSocket stats and broadcast
+   - `/api/state/*` -- state coordination management
+8. Starts listening on the configured port
 
 ---
 
 ## Slash Commands
 
-All 27 commands are in `packages/bot/src/commands/`. They use a unified `CommandContext` abstraction that works with both Discord interactions and dashboard API calls.
+All 26 commands are in `packages/bot/src/commands/`. They use a unified `CommandContext` abstraction that works with both Discord interactions and dashboard API calls.
 
 ### Playback Commands
 
@@ -173,6 +192,25 @@ The bot exposes a REST API on the same port as the WebSocket server. All endpoin
 | ------ | ------------- | ------------------------------------ |
 | `GET`  | `/api/health` | Health check, returns `{ ok: true }` |
 
+### Bot Status & Dashboard
+
+| Method | Path                                 | Description                                                             |
+| ------ | ------------------------------------ | ----------------------------------------------------------------------- |
+| `GET`  | `/api/bot/status`                    | Bot online status, username, and avatar                                 |
+| `GET`  | `/api/dashboard`                     | Comprehensive system status (bot, guilds, player states, instances, WS) |
+| `GET`  | `/api/guild/:guildId/voice-channels` | Voice channels in a guild                                               |
+
+### Authentication (`/api/auth`)
+
+| Method | Path             | Description                                              |
+| ------ | ---------------- | -------------------------------------------------------- |
+| `GET`  | `/discord`       | Returns Discord OAuth2 authorization URL                 |
+| `GET`  | `/callback`      | Handles OAuth callback, exchanges code for JWT token     |
+| `GET`  | `/user`          | Returns authenticated user profile (requires Bearer JWT) |
+| `GET`  | `/guilds`        | Returns user's guilds cross-referenced with bot's guilds |
+| `GET`  | `/status`        | Returns OAuth configuration status                       |
+| `GET`  | `/quick-connect` | Returns bot's guild list without OAuth (fallback)        |
+
 ### Music Player (`/api/music`)
 
 | Method   | Path             | Body                            | Description                                           |
@@ -196,6 +234,20 @@ The bot exposes a REST API on the same port as the WebSocket server. All endpoin
 | `POST`   | `/search`        | `{ query, searchEngine }`       | Search for tracks (POST)                              |
 | `GET`    | `/local-files`   | --                              | List uploaded audio files                             |
 
+### Playlists (`/api/playlists`)
+
+| Method   | Path                           | Body / Headers                                | Description                   |
+| -------- | ------------------------------ | --------------------------------------------- | ----------------------------- |
+| `GET`    | `/`                            | `x-guild-id` header or `?guildId=`            | List playlists                |
+| `GET`    | `/:id`                         | --                                            | Get playlist with tracks      |
+| `POST`   | `/`                            | `{ name, description?, isPublic? }` + headers | Create a playlist             |
+| `PUT`    | `/:id`                         | `{ name?, description?, isPublic? }`          | Update playlist metadata      |
+| `DELETE` | `/:id`                         | --                                            | Delete a playlist             |
+| `POST`   | `/:id/tracks`                  | `{ title, artist?, url?, platform, ... }`     | Add track to playlist         |
+| `DELETE` | `/:id/tracks/:trackId`         | --                                            | Remove track from playlist    |
+| `PUT`    | `/:id/tracks/:trackId/reorder` | `{ position }`                                | Reorder track within playlist |
+| `POST`   | `/:id/play`                    | --                                            | Play entire playlist (queues) |
+
 ### Commands (`/api/commands`)
 
 | Method   | Path                   | Body                              | Description                 |
@@ -209,6 +261,13 @@ The bot exposes a REST API on the same port as the WebSocket server. All endpoin
 | `POST`   | `/validate`            | `{ command, args }`               | Validate command arguments  |
 | `GET`    | `/guilds`              | --                                | List available guilds       |
 | `GET`    | `/guilds/:id/channels` | --                                | List channels in a guild    |
+
+### Channels (`/api/channels`)
+
+| Method | Path                   | Body / Query      | Description                                         |
+| ------ | ---------------------- | ----------------- | --------------------------------------------------- |
+| `GET`  | `/:channelId/messages` | `?limit=&before=` | Fetch recent messages from a text channel (max 100) |
+| `POST` | `/:channelId/messages` | `{ content }`     | Send a message to a text channel as the bot         |
 
 ### File Uploads (`/api/upload`)
 
@@ -231,6 +290,32 @@ The bot exposes a REST API on the same port as the WebSocket server. All endpoin
 | `GET`    | `/`      | `?type=&query=&level=&category=&limit=&offset=&sort=` | Get logs       |
 | `GET`    | `/stats` | --                                                    | Log statistics |
 | `DELETE` | `/`      | `?type=&level=`                                       | Clear logs     |
+
+### Instance Management
+
+| Method   | Path                                    | Body                          | Description                                 |
+| -------- | --------------------------------------- | ----------------------------- | ------------------------------------------- |
+| `POST`   | `/api/instances/:instanceId/force-stop` | --                            | Force-stop a bot instance across all guilds |
+| `POST`   | `/api/instances/ping`                   | `{ instanceId?, timeoutMs? }` | Ping instance(s) and wait for PONG          |
+| `DELETE` | `/api/instances/stale`                  | --                            | Remove all timed-out / stale instances      |
+
+### State Management (`/api/state`)
+
+| Method | Path                  | Body                     | Description                             |
+| ------ | --------------------- | ------------------------ | --------------------------------------- |
+| `GET`  | `/`                   | --                       | Get full state document                 |
+| `GET`  | `/:guildId/instances` | --                       | Get instances for a guild               |
+| `POST` | `/:guildId/active`    | `{ instanceId }`         | Set active instance for a guild         |
+| `POST` | `/:guildId/online`    | `{ instanceId, online }` | Set instance online/offline for a guild |
+| `POST` | `/ping`               | `{ targetInstanceId? }`  | Send a ping via the state channel       |
+
+### WebSocket Management
+
+| Method | Path                       | Body                | Description                           |
+| ------ | -------------------------- | ------------------- | ------------------------------------- |
+| `GET`  | `/api/websocket/stats`     | --                  | WebSocket connection statistics       |
+| `GET`  | `/api/websocket/clients`   | --                  | List connected WebSocket clients      |
+| `POST` | `/api/websocket/broadcast` | `{ type, payload }` | Broadcast a message to all WS clients |
 
 ---
 
@@ -427,13 +512,16 @@ Extractors are registered in `packages/bot/src/extractors/index.ts` via `registe
 
 ### Supported Platforms
 
-| Platform    | Extractor                                   | How It Works                                                                 |
-| ----------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
-| YouTube     | `YoutubeiExtractor`                         | Direct streaming via youtubei.js. Primary playback engine.                   |
-| Spotify     | YouTube bridge                              | Resolves Spotify metadata, finds matching YouTube stream. No Premium needed. |
-| SoundCloud  | Built-in discord-player                     | Uses `QueryType.SOUNDCLOUD_SEARCH` for search and streaming.                 |
-| Local files | `AttachmentExtractor` + `LocalMusicService` | Discord attachments or local file paths. ID3 tag parsing.                    |
-| Auto        | discord-player routing                      | Automatically detects platform from URL or searches YouTube.                 |
+| Platform    | Extractor                | Class Name               | How It Works                                                                  |
+| ----------- | ------------------------ | ------------------------ | ----------------------------------------------------------------------------- |
+| YouTube     | `YouTubeExtractor.ts`    | `CustomYouTubeExtractor` | Direct streaming via youtubei.js. Primary playback engine.                    |
+| Spotify     | `SpotifyExtractor.ts`    | `SpotifyExtractor`       | Resolves Spotify metadata, finds matching YouTube stream. No Premium needed.  |
+| SoundCloud  | `SoundCloudExtractor.ts` | `SoundCloudExtractor`    | Custom extractor for SoundCloud search and streaming.                         |
+| Apple Music | `AppleMusicExtractor.ts` | `AppleMusicExtractor`    | Resolves Apple Music metadata, bridges to YouTube for streaming.              |
+| Local files | `LocalExtractor.ts`      | `LocalExtractor`         | Local file paths and Discord attachments. ID3 tag parsing via music-metadata. |
+| Auto        | discord-player routing   | --                       | Automatically detects platform from URL or searches YouTube.                  |
+
+Additionally, `AttachmentExtractor` from `@discord-player/extractor` is registered for handling Discord message attachments.
 
 ### Platform Detection in Search
 
@@ -465,7 +553,9 @@ The `LocalMusicService` (`packages/bot/src/services/LocalMusicService.ts`) handl
 
 ### Supported Formats
 
-`.mp3`, `.flac`, `.wav`, `.ogg`, `.m4a`, `.aac`, `.wma`, `.opus`
+**Audio:** `.mp3`, `.flac`, `.wav`, `.ogg`, `.m4a`, `.aac`, `.wma`, `.opus`
+
+**Video:** `.mp4`, `.mkv`, `.avi`, `.mov`, `.flv`, `.ogv`, `.3gp`, `.webm`
 
 ### Features
 
@@ -513,35 +603,47 @@ packages/bot/src/state/
 ```
 packages/bot/
 ├── prisma/
-│   └── schema.prisma          # Database schema
+│   ├── schema.prisma          # Database schema
+│   └── data/                  # SQLite database (gitignored)
 ├── src/
 │   ├── index.ts               # Entry point: Express + WebSocket + bot startup
 │   ├── bot.ts                 # Discord client setup, player init, command handling
-│   ├── commands/              # 27 slash command files
+│   ├── commands/              # 26 slash command files
 │   │   ├── play.ts            # Play music (multi-platform)
 │   │   ├── search.ts          # Search with platform selection
 │   │   ├── playlist.ts        # Playlist CRUD
 │   │   ├── history.ts         # Play history
 │   │   ├── queue.ts           # Queue display
 │   │   ├── volume.ts          # Volume control
-│   │   └── ...                # 21 more commands
+│   │   └── ...                # 20 more commands
 │   ├── database/
 │   │   ├── client.ts          # Prisma singleton
 │   │   ├── generated/         # Generated Prisma client
 │   │   └── repositories/      # Data access layer
 │   ├── extractors/
-│   │   └── index.ts           # Platform extractor registration
+│   │   ├── index.ts           # Platform extractor registration
+│   │   ├── YouTubeExtractor.ts
+│   │   ├── SpotifyExtractor.ts
+│   │   ├── SoundCloudExtractor.ts
+│   │   ├── AppleMusicExtractor.ts
+│   │   └── LocalExtractor.ts
 │   ├── helpers/
 │   │   ├── commands/          # CommandContext, CommandRegistry, Discord integration
 │   │   ├── discord/           # Player setup, event handling
 │   │   ├── logger/            # Pino logging with rotation
+│   │   ├── status/            # Player state manager
 │   │   ├── websocket.ts       # WebSocket manager
 │   │   ├── expressRouter.ts   # Route factory
 │   │   ├── fileManager.ts     # File management utilities
+│   │   ├── fileUpload.ts      # Multer upload handling
+│   │   ├── ytdlp.ts           # yt-dlp integration
 │   │   └── errorHandler.ts    # Global error handling
 │   ├── routes/
+│   │   ├── auth.ts            # /api/auth -- Discord OAuth2 + JWT
+│   │   ├── channels.ts        # /api/channels -- Discord channel messages
 │   │   ├── commands.ts        # /api/commands endpoints
 │   │   ├── music.ts           # /api/music endpoints
+│   │   ├── playlists.ts       # /api/playlists -- Playlist CRUD
 │   │   ├── logs.ts            # /api/logs endpoints
 │   │   └── upload.ts          # /api/upload endpoints
 │   ├── services/
@@ -550,5 +652,6 @@ packages/bot/
 │   └── types/                 # TypeScript type definitions
 ├── .env                       # Environment variables
 ├── package.json
+├── prisma.config.ts           # Prisma configuration
 └── tsconfig.json
 ```

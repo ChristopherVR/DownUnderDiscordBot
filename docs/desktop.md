@@ -1,6 +1,6 @@
 # Desktop App Documentation
 
-The desktop app (`packages/desktop/`) is a Tauri v2 application with a Rust backend shell and a React frontend. It provides a Spotify-inspired dashboard to control the Discord bot remotely.
+The desktop app (`packages/desktop/`) is a Tauri v2 application with a Rust backend shell and a React frontend. It provides a dashboard to control the Discord bot remotely.
 
 ## Table of Contents
 
@@ -55,7 +55,7 @@ If you don't have Rust installed, you can still develop the frontend:
 
 ```bash
 cd packages/desktop
-pnpm dev
+pnpm dev:web
 ```
 
 This starts just the Vite dev server. The UI will work but Tauri-specific features (file scanning, config persistence) won't be available.
@@ -133,14 +133,15 @@ Config is stored at `~/.config/discord-music-bot/config.json` (or platform equiv
 
 ### Tauri Configuration (`tauri.conf.json`)
 
-| Setting       | Value                                            |
-| ------------- | ------------------------------------------------ |
-| App name      | Discord Music Bot                                |
-| Version       | 2.0.0                                            |
-| Bundle ID     | `com.downunder.discord-music-bot`                |
-| Window size   | 1280x800 (min 900x600)                           |
-| CSP           | Allows `self`, `localhost` WS/HTTP, HTTPS images |
-| Build targets | Windows, macOS (universal), Linux                |
+| Setting       | Value                                                  |
+| ------------- | ------------------------------------------------------ |
+| App name      | Down Under Bot                                         |
+| Version       | 2.0.0                                                  |
+| Bundle ID     | `com.downunder.discord-music-bot`                      |
+| Window size   | 1280x800 (min 900x600)                                 |
+| Decorations   | `false` (custom titlebar via `data-tauri-drag-region`) |
+| CSP           | Allows `self`, `localhost` WS/HTTP, HTTPS images       |
+| Build targets | Windows, macOS (universal), Linux                      |
 
 ### Rust Dependencies
 
@@ -159,7 +160,16 @@ Config is stored at `~/.config/discord-music-bot/config.json` (or platform equiv
 
 ### Pages
 
-The app has 5 main pages, accessible via the sidebar navigation.
+The app has 9 pages, accessible via the sidebar navigation and routing.
+
+#### Dashboard (`src/pages/DashboardPage.tsx`)
+
+System overview and instance management dashboard.
+
+- Bot status (online/offline, username, avatar, uptime, ping)
+- Per-guild player status (active track, queue size, voice channel)
+- Instance management (list instances, force-stop, ping, clear stale)
+- WebSocket connection statistics
 
 #### Now Playing (`src/pages/NowPlayingPage.tsx`)
 
@@ -186,7 +196,7 @@ Displays the current queue with management actions.
 
 Unified search across all supported platforms.
 
-- Search input with Spotify-style rounded pill design
+- Search input with rounded pill design
 - Platform filter tabs: All, YouTube, Spotify, SoundCloud
 - Results list with play and add-to-queue actions per result
 - Loading spinner during search
@@ -200,9 +210,34 @@ Three-tab view for your music collection.
 - **History** -- List of recently played tracks with play count. Replay or add to queue.
 - **Local Files** -- Files from configured music folders with title, artist, and duration.
 
+#### Playlist Detail (`src/pages/PlaylistDetailPage.tsx`)
+
+Individual playlist view with track management.
+
+- Playlist header with name, description, track count
+- Track list with reorder, remove, and play actions
+- Add tracks via search
+- Play entire playlist
+
+#### Command Logs (`src/pages/CommandLogsPage.tsx`)
+
+Command execution history viewer.
+
+- Filterable log of all commands executed via Discord and the dashboard API
+- Includes command name, arguments, status, source, and timestamp
+
+#### Logs (`src/pages/LogsPage.tsx`)
+
+System logs viewer with filtering.
+
+- Multi-type log viewing (audit, command, system)
+- Filter by level, category, and search query
+- Clear logs functionality
+- Log statistics
+
 #### Settings (`src/pages/SettingsPage.tsx`)
 
-Bot connection configuration.
+Bot connection and app configuration.
 
 - Host and port input fields
 - Guild ID field
@@ -213,13 +248,17 @@ Bot connection configuration.
 
 ### Components
 
+#### TitleBar (`src/components/TitleBar.tsx`)
+
+Custom window titlebar with `data-tauri-drag-region` for native window dragging. Includes minimize, maximize, and close buttons.
+
 #### Sidebar (`src/components/Sidebar.tsx`)
 
-Fixed left sidebar with Spotify-style dark background.
+Fixed left sidebar with dark background.
 
 - Collapsible (56px collapsed, 224px expanded)
 - Logo and app name at the top
-- Navigation links: Now Playing, Queue, Search, Library, Settings
+- Navigation links: Dashboard, Now Playing, Queue, Search, Library, Command Logs, Logs, Settings
 - Active route highlighted with muted background
 - Connection status at the bottom (Wifi/WifiOff icon)
 - Collapse/expand toggle button
@@ -250,13 +289,59 @@ Persistent bottom bar (80px) that's always visible regardless of the active page
 - Click anywhere on the bar to seek
 - Pauses local tick while dragging
 
+#### ChatPanel (`src/components/ChatPanel.tsx`)
+
+Collapsible right-side panel for Discord chat integration.
+
+- View messages from selected Discord text channels
+- Send messages as the bot
+- Discord markdown rendering (via `DiscordMarkdown` component)
+- Command execution from the chat panel
+
+#### AddToPlaylistModal (`src/components/AddToPlaylistModal.tsx`)
+
+Modal dialog for adding tracks to playlists.
+
+- Lists existing playlists with track counts
+- Create new playlist inline
+- Search and select target playlist
+
+#### VoiceChannelModal (`src/components/VoiceChannelModal.tsx`)
+
+Voice channel selection dialog for joining a voice channel before playback.
+
+#### VideoPreview (`src/components/VideoPreview.tsx`)
+
+Embedded video player for tracks with video content (e.g., YouTube videos).
+
+#### DropZone (`src/components/DropZone.tsx`)
+
+Drag-and-drop file upload handler for uploading audio files to the bot.
+
+#### ThemeSelector (`src/components/ThemeSelector.tsx`)
+
+Theme mode picker (light/dark/system) and accent color selector.
+
+#### Other Components
+
+| Component              | Description                                  |
+| ---------------------- | -------------------------------------------- |
+| `DiscordMarkdown.tsx`  | Renders Discord-flavored markdown in chat    |
+| `ToastContainer.tsx`   | Toast notification display system            |
+| `AppIcon.tsx`          | App icon component                           |
+| `LocalLibraryView.tsx` | Local music file browser for the Library tab |
+
 ---
 
 ## State Management
 
-### Zustand Store (`src/stores/useBotStore.ts`)
+### Stores
 
-Single store manages all application state. Key slices:
+The app uses four Zustand stores:
+
+#### `useBotStore.ts` (Primary Store)
+
+The main store manages all bot-related application state (~1500 lines).
 
 **Connection state:**
 
@@ -270,17 +355,20 @@ Single store manages all application state. Key slices:
 }
 ```
 
-**Player state:**
+**Per-Guild Player state:**
 
 ```typescript
 {
-  isPlaying: boolean
-  currentTrack: Track | null
-  position: number     // Current position in seconds
-  duration: number     // Total duration in seconds
-  volume: number       // 0-100
-  loop: 'off' | 'track' | 'queue'
-  queue: Track[]
+  guildPlayers: Record<string, GuildPlayerState>;
+  activePlayerGuildId: string | null;
+  // Each GuildPlayerState contains:
+  isPlaying: boolean;
+  currentTrack: Track | null;
+  position: number;
+  duration: number;
+  volume: number;
+  loop: 'off' | 'track' | 'queue';
+  queue: Track[];
 }
 ```
 
@@ -288,14 +376,29 @@ Single store manages all application state. Key slices:
 
 ```typescript
 {
-  title: string
-  artist?: string
-  duration?: number
-  url?: string
-  thumbnail?: string
-  platform?: string
-  filePath?: string
-  requestedBy?: string
+  title: string;
+  artist?: string;
+  duration?: number;
+  url?: string;
+  thumbnail?: string;
+  platform?: string;
+  filePath?: string;
+  requestedBy?: string;
+  mediaType?: 'audio' | 'video';
+  videoUrl?: string;
+}
+```
+
+**Dashboard state:**
+
+```typescript
+{
+  dashboard: DashboardData | null;
+  dashboardLoading: boolean;
+  fetchDashboard(): Promise<void>;
+  forceStopInstance(id: string): Promise<void>;
+  clearStaleInstances(): Promise<void>;
+  pingInstance(id?: string): Promise<void>;
 }
 ```
 
@@ -304,6 +407,18 @@ All player actions (`play`, `pause`, `resume`, `stop`, `skip`, `seek`, `setVolum
 
 **Search:**
 `search(query, platform?)` calls the API and stores results in `searchResults[]`. `clearSearch()` resets.
+
+#### `useThemeStore.ts`
+
+Theme mode (light/dark/system) and accent color management. Persists to localStorage.
+
+#### `useLayoutStore.ts`
+
+UI layout state: sidebar collapsed/expanded, chat panel open/closed, selected Discord channel.
+
+#### `useToastStore.ts`
+
+Toast notification queue with auto-dismiss.
 
 ---
 
@@ -330,7 +445,7 @@ All player actions (`play`, `pause`, `resume`, `stop`, `skip`, `seek`, `setVolum
 
 ### REST API Client (`src/lib/api.ts`)
 
-Typed API client with configurable base URL.
+Typed API client (~500 lines) with configurable base URL.
 
 ```typescript
 import { api, setApiBaseUrl } from '@/lib/api';
@@ -343,15 +458,45 @@ await api.search('lofi hip hop', 'spotify');
 const queue = await api.getQueue();
 ```
 
+**API categories covered:**
+
+- Music playback (play, pause, resume, stop, skip, seek, volume, repeat)
+- Queue management (get, add, remove, clear, shuffle)
+- Search (multi-platform)
+- Playlists (full CRUD, track management, reorder, play)
+- Dashboard (system status, instance management)
+- Commands (registry, execute, history, stats)
+- Channels (fetch messages, send messages)
+- Logs (query, stats, clear)
+- File uploads (single, multiple, list, delete)
+- Auth (OAuth status, guilds, user profile)
+
 All methods throw on non-2xx responses. The store catches errors silently since real state comes via WebSocket.
 
 ---
 
 ## Theming and Design
 
-### Color Palette
+### Glassmorphism Design System
 
-The app uses a Spotify-inspired dark theme defined in Tailwind and CSS variables.
+The app uses a glassmorphism-inspired design with CSS utility classes:
+
+- `.glass` -- Glass-effect containers with backdrop blur
+- `.card-glass` -- Glass-effect card containers
+- `.btn-primary` -- Primary action buttons
+- `.input-glass` -- Glass-effect input fields
+
+### Theme Support
+
+The `ThemeSelector` component supports three modes:
+
+- **Dark** -- Default dark theme
+- **Light** -- Light theme variant
+- **System** -- Follows OS preference
+
+Accent colors are configurable and applied via CSS variables.
+
+### Color Palette
 
 **Tailwind colors** (`tailwind.config.cjs`):
 
@@ -391,6 +536,10 @@ Styled WebKit scrollbar: 8px width, transparent track, `#555` thumb with `#777` 
 
 - `pulse-slow`: 3s pulse for loading states
 - `spin-slow`: 8s rotation for album art
+- `float`: Floating animation effect
+- `gradient-shift`: Background gradient animation
+- `glow-pulse`: Glow effect for active elements
+- `now-playing-bar`: Animated equalizer bars
 - Framer Motion page transitions (fade + slide)
 
 ---
@@ -401,7 +550,7 @@ Styled WebKit scrollbar: 8px width, transparent track, `#555` thumb with `#777` 
 
 ```bash
 cd packages/desktop
-pnpm build
+pnpm build:web
 ```
 
 Output in `packages/desktop/dist/`. This is what Tauri bundles into the native app.
@@ -410,7 +559,7 @@ Output in `packages/desktop/dist/`. This is what Tauri bundles into the native a
 
 ```bash
 cd packages/desktop
-pnpm tauri build
+pnpm build
 ```
 
 This compiles the Rust backend and bundles the React frontend into a native installer:
@@ -438,6 +587,9 @@ This creates a draft GitHub Release with all platform installers attached.
 
 ```
 packages/desktop/
+├── scripts/
+│   └── dev.mjs                  # Custom dev script for Tauri + Vite
+│
 ├── src-tauri/                    # Rust backend
 │   ├── Cargo.toml                # Rust dependencies
 │   ├── build.rs                  # Tauri build script
@@ -450,35 +602,54 @@ packages/desktop/
 │
 ├── src/                          # React frontend
 │   ├── main.tsx                  # ReactDOM render with BrowserRouter
-│   ├── App.tsx                   # Layout: Sidebar + Routes + PlayerBar
+│   ├── App.tsx                   # Layout: TitleBar + Sidebar + Routes + PlayerBar + ChatPanel
 │   ├── vite-env.d.ts             # Vite type declarations
 │   │
 │   ├── stores/
-│   │   └── useBotStore.ts        # Zustand store (connection, player, search, actions)
+│   │   ├── useBotStore.ts        # Primary store (connection, player, search, dashboard, actions)
+│   │   ├── useThemeStore.ts      # Theme mode + accent color management
+│   │   ├── useLayoutStore.ts     # UI layout state (sidebar, chat panel, channels)
+│   │   └── useToastStore.ts      # Toast notification queue
 │   │
 │   ├── pages/
+│   │   ├── DashboardPage.tsx     # System overview + instance management
 │   │   ├── NowPlayingPage.tsx    # Album art + track info + large controls
 │   │   ├── QueuePage.tsx         # Queue list with manage actions
 │   │   ├── SearchPage.tsx        # Multi-platform search + results
 │   │   ├── LibraryPage.tsx       # Playlists / History / Local files tabs
-│   │   └── SettingsPage.tsx      # Bot connection config
+│   │   ├── PlaylistDetailPage.tsx# Individual playlist view + track management
+│   │   ├── CommandLogsPage.tsx   # Command execution history viewer
+│   │   ├── LogsPage.tsx          # System logs viewer with filtering
+│   │   └── SettingsPage.tsx      # Bot connection config + app settings
 │   │
 │   ├── components/
+│   │   ├── TitleBar.tsx          # Custom window titlebar (Tauri drag region)
 │   │   ├── Sidebar.tsx           # Collapsible navigation sidebar
-│   │   └── PlayerBar.tsx         # Persistent bottom player controls
+│   │   ├── PlayerBar.tsx         # Persistent bottom player controls
+│   │   ├── ChatPanel.tsx         # Discord chat integration panel
+│   │   ├── AddToPlaylistModal.tsx# Add track to playlist dialog
+│   │   ├── VoiceChannelModal.tsx # Voice channel selection dialog
+│   │   ├── VideoPreview.tsx      # Embedded video player
+│   │   ├── DropZone.tsx          # Drag-and-drop file upload
+│   │   ├── ThemeSelector.tsx     # Theme mode + accent color picker
+│   │   ├── DiscordMarkdown.tsx   # Discord markdown renderer
+│   │   ├── ToastContainer.tsx    # Toast notification display
+│   │   ├── AppIcon.tsx           # App icon component
+│   │   └── LocalLibraryView.tsx  # Local music file browser
 │   │
 │   ├── lib/
 │   │   ├── api.ts                # REST API client (all bot endpoints)
 │   │   ├── ws.ts                 # WebSocket service (auto-reconnect, events)
-│   │   └── utils.ts              # cn(), formatTime(), truncate(), platformIcon()
+│   │   ├── utils.ts              # cn(), formatTime(), truncate(), platformIcon()
+│   │   └── appLogger.ts          # Client-side logging
 │   │
 │   └── styles/
 │       └── globals.css           # Tailwind directives + CSS variables + scrollbar
 │
 ├── index.html                    # HTML entry point (dark theme)
 ├── package.json                  # Dependencies and scripts
-├── vite.config.ts                # Vite config with Tauri optimizations + API proxy
+├── vite.config.ts                # Vite config with @tailwindcss/vite plugin + API proxy
 ├── tsconfig.json                 # TypeScript config with @/* path alias
-├── tailwind.config.cjs           # Spotify color palette + custom animations
+├── tailwind.config.cjs           # Spotify color palette + custom animations + CSS variables
 └── postcss.config.cjs            # PostCSS with Tailwind + Autoprefixer
 ```
