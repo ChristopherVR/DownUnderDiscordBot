@@ -16,7 +16,7 @@ function buildHeaders(guildId?: string, extra?: Record<string, string>): Record<
 }
 
 async function request<T>(path: string, options?: RequestInit & { guildId?: string }): Promise<T> {
-  const { guildId, ...fetchOptions } = options ?? {} as RequestInit & { guildId?: string };
+  const { guildId, ...fetchOptions } = options ?? ({} as RequestInit & { guildId?: string });
   const res = await fetch(`${baseUrl}${path}`, {
     ...fetchOptions,
     headers: buildHeaders(guildId, fetchOptions?.headers as Record<string, string> | undefined),
@@ -29,7 +29,7 @@ async function authedRequest<T>(path: string, token: string, options?: RequestIn
   const res = await fetch(`${baseUrl}${path}`, {
     ...options,
     headers: buildHeaders(undefined, {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       ...(options?.headers as Record<string, string> | undefined),
     }),
   });
@@ -45,8 +45,7 @@ export const api = {
       bot: { id: string; username: string; avatar: string | null } | null;
     }>('/api/auth/status'),
 
-  getAuthUrl: () =>
-    request<{ url: string }>('/api/auth/discord'),
+  getAuthUrl: () => request<{ url: string }>('/api/auth/discord'),
 
   quickConnect: () =>
     request<{
@@ -98,7 +97,12 @@ export const api = {
 
   // Player controls
   // Note: uses a raw fetch so we can read the 400 body when requiresVoiceChannel is true
-  play: async (query: string, platform?: string, voiceChannelId?: string, guildId?: string): Promise<{ success: boolean; requiresVoiceChannel?: boolean; error?: string }> => {
+  play: async (
+    query: string,
+    platform?: string,
+    voiceChannelId?: string,
+    guildId?: string,
+  ): Promise<{ success: boolean; requiresVoiceChannel?: boolean; error?: string }> => {
     const res = await fetch(`${baseUrl}/api/music/play`, {
       method: 'POST',
       headers: buildHeaders(guildId),
@@ -131,14 +135,13 @@ export const api = {
 
   // Search
   search: (query: string, platform = 'auto') =>
-    request<{ success: boolean; data: { tracks: unknown[] } }>(
-      `/api/music/search`,
-      { method: 'POST', body: JSON.stringify({ query, searchEngine: platform }) },
-    ),
+    request<{ success: boolean; data: { tracks: unknown[] } }>(`/api/music/search`, {
+      method: 'POST',
+      body: JSON.stringify({ query, searchEngine: platform }),
+    }),
 
   // State
-  getPlayerState: (guildId: string) =>
-    request(`/api/music/state?guildId=${guildId}`),
+  getPlayerState: (guildId: string) => request(`/api/music/state?guildId=${guildId}`),
   getHistory: (guildId?: string) => request('/api/music/history', { guildId }),
 
   // Health
@@ -232,43 +235,37 @@ export const api = {
     }),
 
   clearStaleInstances: () =>
-    request<{ success: boolean; removed: number }>(
-      '/api/instances/stale',
-      { method: 'DELETE' },
-    ),
+    request<{ success: boolean; removed: number }>('/api/instances/stale', { method: 'DELETE' }),
 
   // Local files
   getLocalFiles: () => request('/api/music/local-files'),
 
   // Streaming URLs for local playback mode
-  getStreamUrl: (trackUrl: string) =>
-    `${baseUrl}/api/music/stream?url=${encodeURIComponent(trackUrl)}`,
+  getStreamUrl: (trackUrl: string) => `${baseUrl}/api/music/stream?url=${encodeURIComponent(trackUrl)}`,
 
-  getLocalStreamUrl: (filePath: string) =>
-    `${baseUrl}/api/music/stream/local?path=${encodeURIComponent(filePath)}`,
+  getLocalStreamUrl: (filePath: string) => `${baseUrl}/api/music/stream/local?path=${encodeURIComponent(filePath)}`,
 
-  getUploadStreamUrl: (fileName: string) =>
-    `${baseUrl}/api/music/stream?filePath=${encodeURIComponent(fileName)}`,
+  getUploadStreamUrl: (fileName: string) => `${baseUrl}/api/music/stream?filePath=${encodeURIComponent(fileName)}`,
 
   /**
    * Get a video stream URL for a local file (Tauri music folder).
    * Same as getLocalStreamUrl but semantically for video content.
    */
-  getVideoStreamUrl: (filePath: string) =>
-    `${baseUrl}/api/music/stream/local?path=${encodeURIComponent(filePath)}`,
+  getVideoStreamUrl: (filePath: string) => `${baseUrl}/api/music/stream/local?path=${encodeURIComponent(filePath)}`,
 
   // Playlists
-  getPlaylists: () =>
-    request<{ success: boolean; data: PlaylistSummary[] }>('/api/playlists'),
+  getPlaylists: () => request<{ success: boolean; data: PlaylistSummary[] }>('/api/playlists'),
 
-  getPlaylist: (id: string) =>
-    request<{ success: boolean; data: PlaylistDetail }>(`/api/playlists/${id}`),
+  getPlaylist: (id: string) => request<{ success: boolean; data: PlaylistDetail }>(`/api/playlists/${id}`),
 
   createPlaylist: (name: string, description?: string, isPublic = true) =>
-    request<{ success: boolean; data: { id: string; name: string; description: string | null; isPublic: boolean } }>('/api/playlists', {
-      method: 'POST',
-      body: JSON.stringify({ name, description, isPublic }),
-    }),
+    request<{ success: boolean; data: { id: string; name: string; description: string | null; isPublic: boolean } }>(
+      '/api/playlists',
+      {
+        method: 'POST',
+        body: JSON.stringify({ name, description, isPublic }),
+      },
+    ),
 
   updatePlaylist: (id: string, data: { name?: string; description?: string; isPublic?: boolean }) =>
     request<{ success: boolean; data: unknown }>(`/api/playlists/${id}`, {
@@ -276,18 +273,20 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  deletePlaylist: (id: string) =>
-    request<{ success: boolean }>(`/api/playlists/${id}`, { method: 'DELETE' }),
+  deletePlaylist: (id: string) => request<{ success: boolean }>(`/api/playlists/${id}`, { method: 'DELETE' }),
 
-  addTrackToPlaylist: (playlistId: string, track: {
-    title: string;
-    artist?: string;
-    duration?: number;
-    url: string;
-    thumbnail?: string;
-    platform?: string;
-    filePath?: string;
-  }) =>
+  addTrackToPlaylist: (
+    playlistId: string,
+    track: {
+      title: string;
+      artist?: string;
+      duration?: number;
+      url: string;
+      thumbnail?: string;
+      platform?: string;
+      filePath?: string;
+    },
+  ) =>
     request<{ success: boolean; data: unknown }>(`/api/playlists/${playlistId}/tracks`, {
       method: 'POST',
       body: JSON.stringify(track),
@@ -304,12 +303,10 @@ export const api = {
       body: JSON.stringify({ position }),
     }),
 
-  playPlaylist: (id: string) =>
-    request(`/api/playlists/${id}/play`, { method: 'POST' }),
+  playPlaylist: (id: string) => request(`/api/playlists/${id}/play`, { method: 'POST' }),
 
   // Commands (chat panel)
-  getCommandRegistry: () =>
-    request<{ success: boolean; commands: CommandRegistryItem[] }>('/api/commands/registry'),
+  getCommandRegistry: () => request<{ success: boolean; commands: CommandRegistryItem[] }>('/api/commands/registry'),
 
   executeCommand: (command: string, args: Record<string, unknown> = {}, guildId?: string, channelId?: string) =>
     request<{ success: boolean; execution: CommandExecutionResult }>('/api/commands/execute', {
@@ -327,12 +324,9 @@ export const api = {
     }>(`/api/commands/guilds/${guildId}/channels`),
 
   getCommandHistory: (limit = 50) =>
-    request<{ success: boolean; history: CommandExecutionResult[] }>(
-      `/api/commands/history?limit=${limit}`,
-    ),
+    request<{ success: boolean; history: CommandExecutionResult[] }>(`/api/commands/history?limit=${limit}`),
 
-  clearCommandHistory: () =>
-    request<{ success: boolean }>('/api/commands/history', { method: 'DELETE' }),
+  clearCommandHistory: () => request<{ success: boolean }>('/api/commands/history', { method: 'DELETE' }),
 
   getCommandStats: () =>
     request<{

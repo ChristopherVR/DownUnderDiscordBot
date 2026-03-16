@@ -1,1 +1,1 @@
-{"@prisma/client":"*","@prisma/engines":"*","esbuild":"*","mediaplex":"*","prisma":"*"}
+{ "@prisma/client": "*", "@prisma/engines": "*", "esbuild": "*", "mediaplex": "*", "prisma": "*" }

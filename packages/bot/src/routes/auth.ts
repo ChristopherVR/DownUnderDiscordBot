@@ -25,7 +25,8 @@ function getClientIdFromToken(): string {
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || getClientIdFromToken();
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || '';
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || `http://localhost:${process.env.PORT || 3000}/api/auth/callback`;
+const DISCORD_REDIRECT_URI =
+  process.env.DISCORD_REDIRECT_URI || `http://localhost:${process.env.PORT || 3000}/api/auth/callback`;
 
 interface DiscordUser {
   id: string;
@@ -269,9 +270,7 @@ router.get('/guilds', async (req: Request, res: Response) => {
       .map((g) => ({
         id: g.id,
         name: g.name,
-        icon: g.icon
-          ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png`
-          : null,
+        icon: g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : null,
         owner: g.owner,
         botPresent: botGuildIds.has(g.id),
       }));

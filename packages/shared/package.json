@@ -18,21 +18,21 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
+    "lint": "oxlint --deny-warnings src/**/*.ts",
+    "lint:fix": "oxlint --deny-warnings --fix src/**/*.ts",
     "type-check": "tsc --noEmit",
     "test": "vitest --run --passWithNoTests",
     "test:watch": "vitest --passWithNoTests",
     "test:coverage": "vitest --coverage --passWithNoTests"
   },
   "dependencies": {
-    "i18next": "^25.8.13",
+    "i18next": "^25.8.18",
     "i18next-fs-backend": "^2.6.1",
     "i18next-http-backend": "^3.0.2"
   },
   "devDependencies": {
-    "@types/node": "^25.3.2",
+    "@types/node": "^25.5.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.0"
   }
 }

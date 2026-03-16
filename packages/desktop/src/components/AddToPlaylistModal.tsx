@@ -175,7 +175,10 @@ export default function AddToPlaylistModal({ track, open, onClose }: Props) {
                   {creating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                 </button>
                 <button
-                  onClick={() => { setShowCreate(false); setNewName(''); }}
+                  onClick={() => {
+                    setShowCreate(false);
+                    setNewName('');
+                  }}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-t-faint transition-colors hover:text-t-secondary"
                 >
                   <X size={14} />
@@ -186,8 +189,10 @@ export default function AddToPlaylistModal({ track, open, onClose }: Props) {
                 onClick={() => setShowCreate(true)}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-t-faint transition-all hover:bg-white/[0.04] hover:text-t-secondary"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-dashed"
-                  style={{ borderColor: 'var(--glass-border)' }}>
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-dashed"
+                  style={{ borderColor: 'var(--glass-border)' }}
+                >
                   <Plus size={14} />
                 </div>
                 <span className="text-[13px] font-medium">New Playlist</span>

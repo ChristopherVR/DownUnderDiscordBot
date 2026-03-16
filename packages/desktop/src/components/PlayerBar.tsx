@@ -20,6 +20,7 @@ import {
   Monitor,
   Radio,
   Link2,
+  Loader2,
 } from 'lucide-react';
 
 /** Animated equalizer bars for the track-info thumbnail placeholder. */
@@ -59,6 +60,7 @@ export default function PlayerBar() {
   const setShowVideoPreview = useBotStore((s) => s.setShowVideoPreview);
   const localHistory = useBotStore((s) => s.localHistory);
   const localQueue = useBotStore((s) => s.localQueue);
+  const streamStatus = useBotStore((s) => s.streamStatus);
 
   // Multi-guild player cycling
   const guildPlayers = useBotStore((s) => s.guildPlayers);
@@ -72,12 +74,8 @@ export default function PlayerBar() {
   const activeGuildIds = getActiveGuildIds();
   const activeGuildCount = activeGuildIds.length;
   const activeGuildPlayer = activePlayerGuildId ? guildPlayers[activePlayerGuildId] : null;
-  const activeGuildInfo = activePlayerGuildId
-    ? guilds.find((g) => g.id === activePlayerGuildId)
-    : null;
-  const activeGuildIndex = activePlayerGuildId
-    ? activeGuildIds.indexOf(activePlayerGuildId)
-    : -1;
+  const activeGuildInfo = activePlayerGuildId ? guilds.find((g) => g.id === activePlayerGuildId) : null;
+  const activeGuildIndex = activePlayerGuildId ? activeGuildIds.indexOf(activePlayerGuildId) : -1;
 
   const isVideoTrack = player.currentTrack?.mediaType === 'video';
 
@@ -99,7 +97,8 @@ export default function PlayerBar() {
 
   const progressPct = player.duration > 0 ? (localPos / player.duration) * 100 : 0;
   const hasTrack = !!player.currentTrack;
-  const hasQueuedTracks = (playbackMode === 'local' || playbackMode === 'sync') ? localQueue.length > 0 : player.queue.length > 0;
+  const hasQueuedTracks =
+    playbackMode === 'local' || playbackMode === 'sync' ? localQueue.length > 0 : player.queue.length > 0;
   // Allow controls whenever there's something to control. The action handlers
   // already branch on playbackMode and gracefully handle a disconnected bot
   // (API calls are wrapped in try/catch), so gating on `connected` here only
@@ -107,7 +106,7 @@ export default function PlayerBar() {
   const canControl = hasTrack || hasQueuedTracks;
 
   // Determine if prev / next are available for visual indicator
-  const hasPrevious = (playbackMode === 'local' || playbackMode === 'sync') ? localHistory.length > 0 : hasTrack;
+  const hasPrevious = playbackMode === 'local' || playbackMode === 'sync' ? localHistory.length > 0 : hasTrack;
   const hasNext = hasQueuedTracks;
 
   const loopModes: Array<'off' | 'track' | 'queue'> = ['off', 'track', 'queue'];
@@ -145,7 +144,10 @@ export default function PlayerBar() {
             className="h-12 w-12 flex-shrink-0 rounded-lg object-cover shadow-lg"
           />
         ) : (
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg" style={{ background: 'var(--glass-bg)' }}>
+          <div
+            className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg"
+            style={{ background: 'var(--glass-bg)' }}
+          >
             {hasTrack && player.isPlaying ? (
               <PlayingBars />
             ) : hasTrack ? (
@@ -159,11 +161,21 @@ export default function PlayerBar() {
           <p className="truncate text-[13px] font-semibold text-t-primary">
             {player.currentTrack?.title ?? 'No track playing'}
           </p>
-          <p className="truncate text-[11px] text-t-faint">
-            {player.currentTrack?.artist ?? '\u00A0'}
-          </p>
+          <p className="truncate text-[11px] text-t-faint">{player.currentTrack?.artist ?? '\u00A0'}</p>
+          {/* Stream status indicator (resolving / fallback) */}
+          {streamStatus && (streamStatus.status === 'resolving' || streamStatus.status === 'fallback') && (
+            <p className="flex items-center gap-1 truncate text-[10px] font-medium text-amber-400">
+              <Loader2 size={10} className="animate-spin" />
+              {streamStatus.status === 'resolving'
+                ? `Connecting via ${streamStatus.client}…`
+                : `${streamStatus.client} failed, trying next…`}
+            </p>
+          )}
+          {streamStatus?.status === 'error' && (
+            <p className="truncate text-[10px] font-medium text-red-400">Stream failed</p>
+          )}
           {/* Guild indicator in bot / sync mode */}
-          {(playbackMode === 'bot' || playbackMode === 'sync') && activeGuildPlayer && (
+          {!streamStatus && (playbackMode === 'bot' || playbackMode === 'sync') && activeGuildPlayer && (
             <p className="truncate text-[10px] font-medium" style={{ color: 'var(--accent)' }}>
               {activeGuildInfo?.name ?? activeGuildPlayer.guildName ?? 'Server'}
               {activeGuildCount > 1 && (
@@ -201,9 +213,7 @@ export default function PlayerBar() {
             onClick={playPrevious}
             disabled={!canControl}
             className={`transition-all hover:scale-110 disabled:opacity-30 disabled:hover:scale-100 ${
-              hasPrevious
-                ? 'text-t-secondary hover:text-t-primary'
-                : 'text-t-faint hover:text-t-secondary'
+              hasPrevious ? 'text-t-secondary hover:text-t-primary' : 'text-t-faint hover:text-t-secondary'
             }`}
           >
             <SkipBack size={17} />
@@ -237,9 +247,7 @@ export default function PlayerBar() {
             onClick={skip}
             disabled={!canControl}
             className={`transition-all hover:scale-110 disabled:opacity-30 disabled:hover:scale-100 ${
-              hasNext
-                ? 'text-t-secondary hover:text-t-primary'
-                : 'text-t-faint hover:text-t-secondary'
+              hasNext ? 'text-t-secondary hover:text-t-primary' : 'text-t-faint hover:text-t-secondary'
             }`}
           >
             <SkipForward size={17} />
@@ -248,9 +256,7 @@ export default function PlayerBar() {
             onClick={nextLoop}
             disabled={!canControl}
             className={`transition-all hover:scale-110 disabled:opacity-30 disabled:hover:scale-100 ${
-              player.loop !== 'off'
-                ? ''
-                : 'text-t-faint hover:text-t-secondary'
+              player.loop !== 'off' ? '' : 'text-t-faint hover:text-t-secondary'
             }`}
             style={player.loop !== 'off' ? { color: 'var(--accent)' } : undefined}
           >
@@ -299,21 +305,22 @@ export default function PlayerBar() {
               style={{ left: `calc(${progressPct}% - 6px)` }}
             />
           </div>
-          <span className="w-9 text-[10px] font-medium tabular-nums text-t-faint">
-            {formatTime(player.duration)}
-          </span>
+          <span className="w-9 text-[10px] font-medium tabular-nums text-t-faint">{formatTime(player.duration)}</span>
         </div>
       </div>
 
-{/* Right controls: audio mode + transfer + video preview + volume */}
+      {/* Right controls: audio mode + transfer + video preview + volume */}
       <div className="flex w-72 items-center justify-end gap-2">
         {/* Audio mode switcher: Local / Bot / Sync */}
-        <div className="flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
-          {([
+        <div
+          className="flex items-center gap-0.5 rounded-lg p-0.5"
+          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+        >
+          {[
             { mode: 'local' as PlaybackMode, icon: Monitor, label: 'Local', color: 'var(--accent)' },
             { mode: 'bot' as PlaybackMode, icon: Radio, label: 'Bot', color: '#a78bfa' },
             { mode: 'sync' as PlaybackMode, icon: Link2, label: 'Sync', color: '#f59e0b' },
-          ]).map(({ mode, icon: Icon, label, color }) => (
+          ].map(({ mode, icon: Icon, label, color }) => (
             <button
               key={mode}
               onClick={() => setPlaybackMode(mode)}
@@ -321,14 +328,21 @@ export default function PlayerBar() {
               className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all disabled:cursor-not-allowed disabled:opacity-30 ${
                 playbackMode === mode ? 'shadow-sm' : 'hover:bg-white/[0.04]'
               }`}
-              style={playbackMode === mode
-                ? { background: `color-mix(in srgb, ${color} 15%, transparent)`, color }
-                : { color: 'var(--text-faint)' }
+              style={
+                playbackMode === mode
+                  ? { background: `color-mix(in srgb, ${color} 15%, transparent)`, color }
+                  : { color: 'var(--text-faint)' }
               }
               title={
-                mode === 'local' ? 'Play through your speakers' :
-                mode === 'bot' ? (botUser ? 'Play through Discord voice' : 'Connect bot first') :
-                (botUser ? 'Play on both local + bot simultaneously' : 'Connect bot first')
+                mode === 'local'
+                  ? 'Play through your speakers'
+                  : mode === 'bot'
+                    ? botUser
+                      ? 'Play through Discord voice'
+                      : 'Connect bot first'
+                    : botUser
+                      ? 'Play on both local + bot simultaneously'
+                      : 'Connect bot first'
               }
             >
               <Icon size={11} />
@@ -359,9 +373,7 @@ export default function PlayerBar() {
           <button
             onClick={() => setShowVideoPreview(!showVideoPreview)}
             className={`rounded-lg p-1.5 transition-all ${
-              showVideoPreview
-                ? 'bg-purple-500/15 text-purple-400'
-                : 'text-white/25 hover:text-white/50'
+              showVideoPreview ? 'bg-purple-500/15 text-purple-400' : 'text-white/25 hover:text-white/50'
             }`}
             title={showVideoPreview ? 'Hide video' : 'Show video'}
           >
@@ -376,7 +388,10 @@ export default function PlayerBar() {
         >
           {player.volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>
-        <div className="group relative h-1 w-20 cursor-pointer rounded-full" style={{ background: 'var(--glass-bg-md)' }}>
+        <div
+          className="group relative h-1 w-20 cursor-pointer rounded-full"
+          style={{ background: 'var(--glass-bg-md)' }}
+        >
           <div
             className="h-full rounded-full transition-all"
             style={{

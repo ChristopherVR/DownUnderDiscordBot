@@ -117,7 +117,10 @@ export class PlaylistRepository {
     });
   }
 
-  async update(playlistId: string, data: Partial<Pick<Playlist, 'name' | 'description' | 'isPublic'>>): Promise<Playlist> {
+  async update(
+    playlistId: string,
+    data: Partial<Pick<Playlist, 'name' | 'description' | 'isPublic'>>,
+  ): Promise<Playlist> {
     return this.db.playlist.update({
       where: { id: playlistId },
       data,

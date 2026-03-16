@@ -19,6 +19,7 @@ This document covers Docker containerization, Azure cloud deployment, and GitHub
 Multi-stage build optimized for production:
 
 **Stage 1: Builder**
+
 ```
 Base: node:22-alpine
 Purpose: Build shared package, generate Prisma client, compile TypeScript
@@ -26,6 +27,7 @@ Tools: pnpm, python3, make, g++ (for native modules)
 ```
 
 Steps:
+
 1. Enable pnpm via corepack
 2. Install native build tools
 3. Copy package manifests and install dependencies (`--frozen-lockfile`)
@@ -34,6 +36,7 @@ Steps:
 6. Build the bot TypeScript to `dist/`
 
 **Stage 2: Runner**
+
 ```
 Base: node:22-alpine
 Purpose: Minimal production runtime
@@ -41,6 +44,7 @@ Additions: FFmpeg (for audio processing)
 ```
 
 Steps:
+
 1. Copy built artifacts from builder (dist, prisma schema, generated client)
 2. Install production-only dependencies
 3. Regenerate Prisma client for the runtime environment
@@ -55,7 +59,7 @@ Single-service setup for local deployment:
 services:
   bot:
     build:
-      context: ../..                    # Repo root
+      context: ../.. # Repo root
       dockerfile: infrastructure/docker/bot.Dockerfile
     ports: ['3001:3001']
     restart: unless-stopped
@@ -63,22 +67,23 @@ services:
 
 **Environment variables** (passed from host `.env` or shell):
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DISCORD_TOKEN` | Yes | Discord bot token |
-| `DISCORD_CLIENT_ID` | Yes | Discord application client ID |
-| `SPOTIFY_CLIENT_ID` | No | Spotify API client ID |
-| `SPOTIFY_CLIENT_SECRET` | No | Spotify API client secret |
+| Variable                | Required | Description                   |
+| ----------------------- | -------- | ----------------------------- |
+| `DISCORD_TOKEN`         | Yes      | Discord bot token             |
+| `DISCORD_CLIENT_ID`     | Yes      | Discord application client ID |
+| `SPOTIFY_CLIENT_ID`     | No       | Spotify API client ID         |
+| `SPOTIFY_CLIENT_SECRET` | No       | Spotify API client secret     |
 
 **Persistent volumes:**
 
-| Volume | Container Path | Purpose |
-|--------|---------------|---------|
-| `bot-data` | `/app/packages/bot/prisma/data` | SQLite database file |
-| `bot-logs` | `/app/packages/bot/logs` | Application logs |
-| `music-uploads` | `/app/packages/bot/uploads` | Uploaded audio files |
+| Volume          | Container Path                  | Purpose              |
+| --------------- | ------------------------------- | -------------------- |
+| `bot-data`      | `/app/packages/bot/prisma/data` | SQLite database file |
+| `bot-logs`      | `/app/packages/bot/logs`        | Application logs     |
+| `music-uploads` | `/app/packages/bot/uploads`     | Uploaded audio files |
 
 **Health check:**
+
 - Endpoint: `http://localhost:3001/api/health`
 - Interval: 30s, timeout: 10s, retries: 3
 - Start period: 15s (grace period for bot to initialize)
@@ -117,32 +122,32 @@ Infrastructure as Code using Azure Bicep. Deploys a complete bot hosting environ
 
 ### Resources Created
 
-| Resource | Type | SKU/Tier | Purpose |
-|----------|------|----------|---------|
-| Log Analytics Workspace | `Microsoft.OperationalInsights/workspaces` | PerGB2018 | Centralized logging, 30-day retention |
-| Container Registry (ACR) | `Microsoft.ContainerRegistry/registries` | Basic | Store Docker images |
-| Container App Environment | `Microsoft.App/managedEnvironments` | -- | Hosting environment for containers |
-| Key Vault | `Microsoft.KeyVault/vaults` | Standard | Secure secret storage |
-| Container App (Bot) | `Microsoft.App/containerApps` | 0.5 CPU, 1GB RAM | The bot itself |
+| Resource                  | Type                                       | SKU/Tier         | Purpose                               |
+| ------------------------- | ------------------------------------------ | ---------------- | ------------------------------------- |
+| Log Analytics Workspace   | `Microsoft.OperationalInsights/workspaces` | PerGB2018        | Centralized logging, 30-day retention |
+| Container Registry (ACR)  | `Microsoft.ContainerRegistry/registries`   | Basic            | Store Docker images                   |
+| Container App Environment | `Microsoft.App/managedEnvironments`        | --               | Hosting environment for containers    |
+| Key Vault                 | `Microsoft.KeyVault/vaults`                | Standard         | Secure secret storage                 |
+| Container App (Bot)       | `Microsoft.App/containerApps`              | 0.5 CPU, 1GB RAM | The bot itself                        |
 
 ### Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `environment` | string | `prod` | Environment name (dev, staging, prod) |
-| `location` | string | Resource group location | Azure region |
-| `discordToken` | secure string | -- | Discord bot token |
-| `discordClientId` | string | -- | Discord application client ID |
-| `spotifyClientId` | string | `''` | Optional Spotify client ID |
-| `spotifyClientSecret` | secure string | `''` | Optional Spotify client secret |
+| Parameter             | Type          | Default                 | Description                           |
+| --------------------- | ------------- | ----------------------- | ------------------------------------- |
+| `environment`         | string        | `prod`                  | Environment name (dev, staging, prod) |
+| `location`            | string        | Resource group location | Azure region                          |
+| `discordToken`        | secure string | --                      | Discord bot token                     |
+| `discordClientId`     | string        | --                      | Discord application client ID         |
+| `spotifyClientId`     | string        | `''`                    | Optional Spotify client ID            |
+| `spotifyClientSecret` | secure string | `''`                    | Optional Spotify client secret        |
 
 ### Outputs
 
-| Output | Description |
-|--------|-------------|
-| `acrLoginServer` | ACR login URL (e.g., `downunderprodacr.azurecr.io`) |
-| `botAppUrl` | Public bot URL (e.g., `https://downunder-prod-bot.azurecontainerapps.io`) |
-| `keyVaultName` | Key Vault name for secret management |
+| Output           | Description                                                               |
+| ---------------- | ------------------------------------------------------------------------- |
+| `acrLoginServer` | ACR login URL (e.g., `downunderprodacr.azurecr.io`)                       |
+| `botAppUrl`      | Public bot URL (e.g., `https://downunder-prod-bot.azurecontainerapps.io`) |
+| `keyVaultName`   | Key Vault name for secret management                                      |
 
 ### Container App Configuration
 
@@ -175,9 +180,9 @@ az deployment group create \
 
 Secrets are stored in Key Vault with RBAC authorization and soft delete (7-day retention):
 
-| Secret Name | Description |
-|-------------|-------------|
-| `discord-token` | Discord bot token |
+| Secret Name         | Description                   |
+| ------------------- | ----------------------------- |
+| `discord-token`     | Discord bot token             |
 | `discord-client-id` | Discord application client ID |
 
 To access Key Vault secrets, assign the appropriate RBAC role to your identity:
@@ -236,13 +241,13 @@ az role assignment create \
 
 **Required secrets:**
 
-| Secret | Description |
-|--------|-------------|
-| `ACR_LOGIN_SERVER` | ACR hostname (e.g., `downunderprodacr.azurecr.io`) |
-| `ACR_USERNAME` | ACR admin username |
-| `ACR_PASSWORD` | ACR admin password |
-| `AZURE_CREDENTIALS` | Service principal JSON for Azure login |
-| `AZURE_RESOURCE_GROUP` | Resource group name |
+| Secret                 | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `ACR_LOGIN_SERVER`     | ACR hostname (e.g., `downunderprodacr.azurecr.io`) |
+| `ACR_USERNAME`         | ACR admin username                                 |
+| `ACR_PASSWORD`         | ACR admin password                                 |
+| `AZURE_CREDENTIALS`    | Service principal JSON for Azure login             |
+| `AZURE_RESOURCE_GROUP` | Resource group name                                |
 
 ### Desktop Release Workflow (`.github/workflows/release-desktop.yml`)
 
@@ -254,13 +259,14 @@ az role assignment create \
 
 Runs on three platforms in parallel:
 
-| Platform | Runner | Extra Args |
-|----------|--------|-----------|
-| Windows | `windows-latest` | -- |
-| Linux | `ubuntu-22.04` | -- |
-| macOS | `macos-latest` | `--target universal-apple-darwin` |
+| Platform | Runner           | Extra Args                        |
+| -------- | ---------------- | --------------------------------- |
+| Windows  | `windows-latest` | --                                |
+| Linux    | `ubuntu-22.04`   | --                                |
+| macOS    | `macos-latest`   | `--target universal-apple-darwin` |
 
 Steps per platform:
+
 1. Checkout code
 2. Set up pnpm 10 and Node.js 22
 3. Install Rust stable (macOS adds aarch64 + x86_64 targets)
@@ -272,6 +278,7 @@ Steps per platform:
    - Release name: `Down Under Bot Desktop v2.0.0`
 
 **Output artifacts:**
+
 - Windows: `.msi`, `.exe`
 - macOS: `.dmg` (universal binary for Intel + Apple Silicon)
 - Linux: `.deb`, `.AppImage`
@@ -337,6 +344,7 @@ curl http://localhost:3001/api/health
 ### Azure (Cloud)
 
 1. **Deploy infrastructure:**
+
    ```bash
    az deployment group create \
      --resource-group rg-downunder-bot \
@@ -364,14 +372,14 @@ curl http://localhost:3001/api/health
 
 Set these in your GitHub repository under Settings > Secrets and variables > Actions:
 
-| Secret | Used By | Description |
-|--------|---------|-------------|
-| `ACR_LOGIN_SERVER` | deploy-bot | Azure Container Registry hostname |
-| `ACR_USERNAME` | deploy-bot | ACR admin username |
-| `ACR_PASSWORD` | deploy-bot | ACR admin password |
-| `AZURE_CREDENTIALS` | deploy-bot | Service principal JSON (`az ad sp create-for-rbac --sdk-auth`) |
-| `AZURE_RESOURCE_GROUP` | deploy-bot | Azure resource group name |
-| `GITHUB_TOKEN` | release-desktop | Auto-provided by GitHub Actions |
+| Secret                 | Used By         | Description                                                    |
+| ---------------------- | --------------- | -------------------------------------------------------------- |
+| `ACR_LOGIN_SERVER`     | deploy-bot      | Azure Container Registry hostname                              |
+| `ACR_USERNAME`         | deploy-bot      | ACR admin username                                             |
+| `ACR_PASSWORD`         | deploy-bot      | ACR admin password                                             |
+| `AZURE_CREDENTIALS`    | deploy-bot      | Service principal JSON (`az ad sp create-for-rbac --sdk-auth`) |
+| `AZURE_RESOURCE_GROUP` | deploy-bot      | Azure resource group name                                      |
+| `GITHUB_TOKEN`         | release-desktop | Auto-provided by GitHub Actions                                |
 
 ### Creating Azure Service Principal
 

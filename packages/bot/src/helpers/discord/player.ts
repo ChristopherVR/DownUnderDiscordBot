@@ -6,6 +6,8 @@ import { PlayerStateManager } from '../status/playerStateManager';
 import { WebSocketManager } from '../websocket';
 import { createLogger } from '../logger';
 import { registerExtractors } from '../../extractors/index';
+import { CustomYouTubeExtractor } from '../../extractors/YouTubeExtractor';
+import type { StreamStatusEvent } from '../../extractors/YouTubeExtractor';
 
 let player: Player | null = null;
 let playerEventManager: PlayerEventManager | null = null;
@@ -69,6 +71,20 @@ export const waitForVoiceReady = async (queue: GuildQueue, timeout = 30_000): Pr
   await entersState(connection, VoiceConnectionStatus.Ready, timeout);
 };
 
+/**
+ * Check whether a queue's voice connection is in a usable state.
+ *
+ * A connection that is "destroyed" or "disconnected" will never become Ready on
+ * its own. Callers should destroy the queue node and reconnect when this
+ * returns false.
+ */
+export const isConnectionHealthy = (queue: GuildQueue): boolean => {
+  const connection = queue.connection;
+  if (!connection) return false;
+  const status = connection.state.status;
+  return status !== VoiceConnectionStatus.Destroyed && status !== VoiceConnectionStatus.Disconnected;
+};
+
 export const initializePlayer = async (client: Client, wsManager?: WebSocketManager): Promise<Player> => {
   if (player) {
     return player;
@@ -119,6 +135,18 @@ export const initializePlayer = async (client: Client, wsManager?: WebSocketMana
 export const setWebSocketManager = (wsManager: WebSocketManager): void => {
   if (playerEventManager) {
     playerEventManager.setWebSocketManager(wsManager);
+  }
+
+  // Wire YouTube extractor stream status events to WebSocket
+  if (player) {
+    const ytExtractor = player.extractors.get(CustomYouTubeExtractor.identifier) as CustomYouTubeExtractor | undefined;
+    if (ytExtractor) {
+      ytExtractor.events.removeAllListeners('streamStatus');
+      ytExtractor.events.on('streamStatus', (status: StreamStatusEvent) => {
+        wsManager.broadcastStreamStatus(status);
+      });
+      log.info('YouTube extractor stream status events wired to WebSocket');
+    }
   }
 };
 

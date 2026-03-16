@@ -18,7 +18,8 @@ const YT_DLP_BIN = process.env.YT_DLP_PATH || 'yt-dlp';
 const COMMON_ARGS = [
   '--no-warnings',
   '--no-playlist',
-  '--js-runtimes', 'nodejs',   // Required — YouTube needs a JS runtime for URL decryption
+  '--js-runtimes',
+  'nodejs', // Required — YouTube needs a JS runtime for URL decryption
 ];
 
 /**
@@ -27,12 +28,7 @@ const COMMON_ARGS = [
  */
 export async function getAudioStreamUrl(videoUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const args = [
-      '-f', 'bestaudio/best',
-      '--get-url',
-      ...COMMON_ARGS,
-      videoUrl,
-    ];
+    const args = ['-f', 'bestaudio/best', '--get-url', ...COMMON_ARGS, videoUrl];
 
     log.debug({ videoUrl, args }, 'Resolving audio URL via yt-dlp');
 
@@ -59,54 +55,73 @@ export async function getAudioStreamUrl(videoUrl: string): Promise<string> {
 /**
  * Stream audio data from a YouTube video directly through a PassThrough stream.
  * Uses yt-dlp's `-o -` to pipe raw audio to stdout.
- * Suitable for feeding directly into FFmpeg or an audio player.
+ *
+ * Returns a Promise that resolves with the stream once the first chunk of data
+ * arrives, or rejects if yt-dlp exits/errors before producing any output.
+ * This ensures callers can fall back to other stream methods on failure.
  */
-export function streamAudio(videoUrl: string): PassThrough {
-  const passthrough = new PassThrough({ highWaterMark: 1 << 20 }); // 1 MB buffer
+export function streamAudio(videoUrl: string): Promise<PassThrough> {
+  return new Promise((resolve, reject) => {
+    const passthrough = new PassThrough({ highWaterMark: 1 << 20 }); // 1 MB buffer
 
-  const args = [
-    '-f', 'bestaudio/best',
-    '-o', '-',
-    ...COMMON_ARGS,
-    videoUrl,
-  ];
+    const args = ['-f', 'bestaudio/best', '-o', '-', ...COMMON_ARGS, videoUrl];
 
-  log.debug({ videoUrl }, 'Spawning yt-dlp audio stream');
+    log.debug({ videoUrl }, 'Spawning yt-dlp audio stream');
 
-  const proc = spawn(YT_DLP_BIN, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const proc = spawn(YT_DLP_BIN, args, { stdio: ['ignore', 'pipe', 'pipe'] });
 
-  let stderrBuf = '';
-  proc.stderr?.on('data', (chunk: Buffer) => {
-    stderrBuf += chunk.toString();
-  });
+    let stderrBuf = '';
+    let settled = false;
 
-  proc.stdout.pipe(passthrough);
+    proc.stderr?.on('data', (chunk: Buffer) => {
+      stderrBuf += chunk.toString();
+    });
 
-  proc.on('error', (err) => {
-    log.error({ err, videoUrl }, 'yt-dlp process error');
-    if (!passthrough.destroyed) {
-      passthrough.destroy(err);
-    }
-  });
-
-  proc.on('close', (code) => {
-    if (code !== 0) {
-      const msg = `yt-dlp exited with code ${code}: ${stderrBuf.slice(0, 500)}`;
-      log.error({ code, stderr: stderrBuf.slice(0, 500), videoUrl }, 'yt-dlp stream exited with error');
-      if (!passthrough.destroyed) {
-        passthrough.destroy(new Error(msg));
+    // Wait for first data chunk before resolving — proves yt-dlp is working
+    proc.stdout.once('data', (chunk: Buffer) => {
+      if (!settled) {
+        settled = true;
+        // Push the first chunk we already consumed, then pipe the rest
+        passthrough.write(chunk);
+        proc.stdout.pipe(passthrough);
+        resolve(passthrough);
       }
-    }
-  });
+    });
 
-  // Clean up yt-dlp process if the passthrough is destroyed (client disconnects)
-  passthrough.on('close', () => {
-    if (!proc.killed) {
-      proc.kill('SIGTERM');
-    }
-  });
+    proc.on('error', (err) => {
+      log.error({ err, videoUrl }, 'yt-dlp process error');
+      if (!settled) {
+        settled = true;
+        reject(err);
+      } else if (!passthrough.destroyed) {
+        passthrough.destroy(err);
+      }
+    });
 
-  return passthrough;
+    proc.on('close', (code) => {
+      if (code !== 0) {
+        const msg = `yt-dlp exited with code ${code}: ${stderrBuf.slice(0, 500)}`;
+        log.error({ code, stderr: stderrBuf.slice(0, 500), videoUrl }, 'yt-dlp stream exited with error');
+        if (!settled) {
+          settled = true;
+          reject(new Error(msg));
+        } else if (!passthrough.destroyed) {
+          passthrough.destroy(new Error(msg));
+        }
+      } else if (!settled) {
+        // Process exited cleanly but produced no data
+        settled = true;
+        reject(new Error('yt-dlp produced no output'));
+      }
+    });
+
+    // Clean up yt-dlp process if the passthrough is destroyed (client disconnects)
+    passthrough.on('close', () => {
+      if (!proc.killed) {
+        proc.kill('SIGTERM');
+      }
+    });
+  });
 }
 
 /**

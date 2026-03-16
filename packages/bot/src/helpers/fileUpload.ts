@@ -64,8 +64,22 @@ export function isVideoExtension(ext: string): boolean {
  */
 export function isMediaExtension(ext: string): boolean {
   const mediaExts = new Set([
-    '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.webm',
-    '.mp4', '.mkv', '.avi', '.mov', '.flv', '.ogv', '.3gp',
+    '.mp3',
+    '.flac',
+    '.wav',
+    '.ogg',
+    '.m4a',
+    '.aac',
+    '.wma',
+    '.opus',
+    '.webm',
+    '.mp4',
+    '.mkv',
+    '.avi',
+    '.mov',
+    '.flv',
+    '.ogv',
+    '.3gp',
   ]);
   return mediaExts.has(ext.toLowerCase());
 }

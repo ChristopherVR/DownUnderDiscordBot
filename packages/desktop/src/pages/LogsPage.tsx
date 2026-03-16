@@ -86,10 +86,7 @@ function LogRow({ item }: { item: LogItem }) {
 
   return (
     <div className="group border-b border-white/[0.04] transition-colors hover:bg-white/[0.015]">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2.5 px-4 py-2 text-left"
-      >
+      <button onClick={() => setExpanded(!expanded)} className="flex w-full items-center gap-2.5 px-4 py-2 text-left">
         {/* Level badge */}
         <div
           className={cn(
@@ -320,7 +317,9 @@ export default function LogsPage() {
         const logItem = botEntryToLogItem(payload as Record<string, unknown>);
         addLogItem(logItem);
       });
-      unsubBot = () => { rawUnsub(); };
+      unsubBot = () => {
+        rawUnsub();
+      };
     }
 
     return () => {

@@ -91,20 +91,21 @@ function ExecutionRow({ execution }: { execution: CommandExecutionResult }) {
   const StatusIcon = statusStyle.icon;
 
   return (
-    <div
-      className="group border-b border-white/[0.04] transition-colors hover:bg-white/[0.02]"
-    >
+    <div className="group border-b border-white/[0.04] transition-colors hover:bg-white/[0.02]">
       {/* Summary row */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
-      >
+      <button onClick={() => setExpanded(!expanded)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
         <div className="flex w-5 items-center justify-center text-t-faint">
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </div>
 
         {/* Status badge */}
-        <div className={cn('flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium', statusStyle.bg, statusStyle.text)}>
+        <div
+          className={cn(
+            'flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium',
+            statusStyle.bg,
+            statusStyle.text,
+          )}
+        >
           <StatusIcon size={12} className={execution.status === 'pending' ? 'animate-spin' : ''} />
           {execution.status}
         </div>
@@ -195,10 +196,7 @@ export default function CommandLogsPage() {
     if (!connected) return;
     setLoading(true);
     try {
-      const [histRes, statsRes] = await Promise.all([
-        api.getCommandHistory(500),
-        api.getCommandStats(),
-      ]);
+      const [histRes, statsRes] = await Promise.all([api.getCommandHistory(500), api.getCommandStats()]);
       setHistory(histRes.history);
       setStats(statsRes.stats);
     } catch {
@@ -306,7 +304,12 @@ export default function CommandLogsPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard icon={Terminal} label="Total Commands" value={stats.totalCommands} color="text-blue-400" />
           <StatCard icon={BarChart3} label="Executions" value={stats.totalExecutions} color="text-purple-400" />
-          <StatCard icon={CheckCircle2} label="Successful" value={stats.successfulExecutions} color="text-emerald-400" />
+          <StatCard
+            icon={CheckCircle2}
+            label="Successful"
+            value={stats.successfulExecutions}
+            color="text-emerald-400"
+          />
           <StatCard icon={XCircle} label="Failed" value={stats.failedExecutions} color="text-red-400" />
         </div>
       )}
@@ -363,9 +366,7 @@ export default function CommandLogsPage() {
               onClick={() => setStatusFilter(s)}
               className={cn(
                 'rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors',
-                statusFilter === s
-                  ? 'bg-white/[0.1] text-t-primary'
-                  : 'text-t-faint hover:text-t-secondary',
+                statusFilter === s ? 'bg-white/[0.1] text-t-primary' : 'text-t-faint hover:text-t-secondary',
               )}
             >
               {s}

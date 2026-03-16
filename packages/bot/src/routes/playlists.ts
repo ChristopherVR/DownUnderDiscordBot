@@ -21,9 +21,7 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const guildId = (req.headers['x-guild-id'] as string) || (req.query.guildId as string) || undefined;
     const userId = (req.headers['x-user-id'] as string) || undefined;
-    const playlists = guildId
-      ? await playlistRepo.findByGuild(guildId, userId)
-      : await playlistRepo.findAll(userId);
+    const playlists = guildId ? await playlistRepo.findByGuild(guildId, userId) : await playlistRepo.findAll(userId);
 
     // Fetch track counts in parallel
     const withCounts = await Promise.all(
@@ -68,7 +66,10 @@ router.get('/:id', async (req: Request, res: Response) => {
       });
     }
 
-    enhancedLogger.system(LogLevel.INFO, 'Retrieved playlist', { playlistId: playlist.id, trackCount: playlist.tracks.length });
+    enhancedLogger.system(LogLevel.INFO, 'Retrieved playlist', {
+      playlistId: playlist.id,
+      trackCount: playlist.tracks.length,
+    });
 
     res.json({
       success: true,

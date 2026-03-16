@@ -159,7 +159,6 @@ export default function SearchPage() {
   const results = useBotStore((s) => s.searchResults);
   const loading = useBotStore((s) => s.searchLoading);
   const search = useBotStore((s) => s.search);
-  const play = useBotStore((s) => s.play);
   const playLocally = useBotStore((s) => s.playLocally);
   const playOnBot = useBotStore((s) => s.playOnBot);
   const queueOnBot = useBotStore((s) => s.queueOnBot);
@@ -269,12 +268,18 @@ export default function SearchPage() {
               onPlay={() => {
                 if (playbackMode === 'local') playLocally(track);
                 else if (playbackMode === 'bot') playOnBot(track);
-                else { playLocally(track); playOnBot(track); }
+                else {
+                  playLocally(track);
+                  playOnBot(track);
+                }
               }}
               onQueue={() => {
                 if (playbackMode === 'local') queueLocally(track);
                 else if (playbackMode === 'bot') queueOnBot(track);
-                else { queueLocally(track); queueOnBot(track); }
+                else {
+                  queueLocally(track);
+                  queueOnBot(track);
+                }
               }}
               onAddToPlaylist={() => setPlaylistModalTrack(track)}
               onPreview={() => startPreview(track)}

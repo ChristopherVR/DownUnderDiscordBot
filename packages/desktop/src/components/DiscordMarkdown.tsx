@@ -27,9 +27,7 @@ function Spoiler({ children }: { children: React.ReactNode }) {
       onKeyDown={(e) => e.key === 'Enter' && setRevealed((v) => !v)}
       className={cn(
         'cursor-pointer rounded-[3px] px-0.5 transition-all duration-200',
-        revealed
-          ? 'bg-[var(--glass-bg-md)] text-t-secondary'
-          : 'bg-[var(--text-faint)] text-transparent select-none',
+        revealed ? 'bg-[var(--glass-bg-md)] text-t-secondary' : 'bg-[var(--text-faint)] text-transparent select-none',
       )}
     >
       {children}
@@ -94,11 +92,7 @@ interface DiscordMarkdownProps {
   sizeClass?: string;
 }
 
-export default function DiscordMarkdown({
-  content,
-  className,
-  sizeClass = 'text-[13px]',
-}: DiscordMarkdownProps) {
+export default function DiscordMarkdown({ content, className, sizeClass = 'text-[13px]' }: DiscordMarkdownProps) {
   const segments = useMemo(() => splitSpoilers(content), [content]);
 
   return (
@@ -118,24 +112,30 @@ export default function DiscordMarkdown({
 
 // ── Markdown segment (renders a chunk through react-markdown) ───────
 
-function MarkdownSegment({
-  content,
-  sizeClass,
-  inline,
-}: {
-  content: string;
-  sizeClass: string;
-  inline?: boolean;
-}) {
+function MarkdownSegment({ content, sizeClass, inline }: { content: string; sizeClass: string; inline?: boolean }) {
   const processed = useMemo(() => preprocessDiscordMarkdown(content), [content]);
 
   return (
     <Markdown
       remarkPlugins={[remarkGfm]}
       allowedElements={[
-        'p', 'strong', 'em', 'del', 'code', 'pre', 'a',
-        'br', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3',
-        'u', 'hr',
+        'p',
+        'strong',
+        'em',
+        'del',
+        'code',
+        'pre',
+        'a',
+        'br',
+        'ul',
+        'ol',
+        'li',
+        'blockquote',
+        'h1',
+        'h2',
+        'h3',
+        'u',
+        'hr',
       ]}
       unwrapDisallowed
       skipHtml={false}
@@ -152,17 +152,23 @@ function MarkdownSegment({
 
         // Bold
         strong: ({ children, ...props }: ComponentProps<'strong'>) => (
-          <strong className="font-semibold text-t-primary" {...props}>{children}</strong>
+          <strong className="font-semibold text-t-primary" {...props}>
+            {children}
+          </strong>
         ),
 
         // Italic
         em: ({ children, ...props }: ComponentProps<'em'>) => (
-          <em className="italic" {...props}>{children}</em>
+          <em className="italic" {...props}>
+            {children}
+          </em>
         ),
 
         // Strikethrough
         del: ({ children, ...props }: ComponentProps<'del'>) => (
-          <del className="line-through text-t-faint" {...props}>{children}</del>
+          <del className="line-through text-t-faint" {...props}>
+            {children}
+          </del>
         ),
 
         // Inline code
@@ -225,30 +231,40 @@ function MarkdownSegment({
 
         // Lists
         ul: ({ children, ...props }: ComponentProps<'ul'>) => (
-          <ul className="my-0.5 list-inside list-disc text-t-secondary" {...props}>{children}</ul>
+          <ul className="my-0.5 list-inside list-disc text-t-secondary" {...props}>
+            {children}
+          </ul>
         ),
         ol: ({ children, ...props }: ComponentProps<'ol'>) => (
-          <ol className="my-0.5 list-inside list-decimal text-t-secondary" {...props}>{children}</ol>
+          <ol className="my-0.5 list-inside list-decimal text-t-secondary" {...props}>
+            {children}
+          </ol>
         ),
         li: ({ children, ...props }: ComponentProps<'li'>) => (
-          <li className={cn('leading-[1.4]', sizeClass)} {...props}>{children}</li>
+          <li className={cn('leading-[1.4]', sizeClass)} {...props}>
+            {children}
+          </li>
         ),
 
         // Headings – Discord renders these smaller than typical markdown
         h1: ({ children, ...props }: ComponentProps<'h1'>) => (
-          <h1 className="mt-1 text-[15px] font-bold text-t-primary" {...props}>{children}</h1>
+          <h1 className="mt-1 text-[15px] font-bold text-t-primary" {...props}>
+            {children}
+          </h1>
         ),
         h2: ({ children, ...props }: ComponentProps<'h2'>) => (
-          <h2 className="mt-1 text-[14px] font-bold text-t-primary" {...props}>{children}</h2>
+          <h2 className="mt-1 text-[14px] font-bold text-t-primary" {...props}>
+            {children}
+          </h2>
         ),
         h3: ({ children, ...props }: ComponentProps<'h3'>) => (
-          <h3 className="mt-0.5 text-[13px] font-bold text-t-primary" {...props}>{children}</h3>
+          <h3 className="mt-0.5 text-[13px] font-bold text-t-primary" {...props}>
+            {children}
+          </h3>
         ),
 
         // Horizontal rule
-        hr: (props: ComponentProps<'hr'>) => (
-          <hr className="my-1 border-[var(--glass-border)]" {...props} />
-        ),
+        hr: (props: ComponentProps<'hr'>) => <hr className="my-1 border-[var(--glass-border)]" {...props} />,
       }}
     >
       {processed}

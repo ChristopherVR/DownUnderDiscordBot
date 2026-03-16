@@ -81,12 +81,18 @@ function formatUptime(ms: number): string {
 // ---------------------------------------------------------------------------
 
 const HEARTBEAT_BADGE: Record<string, { label: string; bg: string; text: string; dot?: string; pulse?: boolean }> = {
-  healthy: { label: 'Healthy', bg: 'bg-spotify-green/10', text: 'text-spotify-green', dot: 'bg-spotify-green', pulse: true },
-  missed:  { label: 'Missed',  bg: 'bg-yellow-500/10',    text: 'text-yellow-400',    dot: 'bg-yellow-400' },
-  late:    { label: 'Late',    bg: 'bg-orange-500/10',     text: 'text-orange-400',    dot: 'bg-orange-400' },
-  timeout: { label: 'Timeout', bg: 'bg-red-500/10',        text: 'text-red-400',       dot: 'bg-red-400' },
-  stale:   { label: 'Stale',   bg: 'bg-zinc-500/10',       text: 'text-zinc-400',      dot: 'bg-zinc-400' },
-  stopped: { label: 'Stopped', bg: 'bg-red-500/10',        text: 'text-red-400',       dot: 'bg-red-400' },
+  healthy: {
+    label: 'Healthy',
+    bg: 'bg-spotify-green/10',
+    text: 'text-spotify-green',
+    dot: 'bg-spotify-green',
+    pulse: true,
+  },
+  missed: { label: 'Missed', bg: 'bg-yellow-500/10', text: 'text-yellow-400', dot: 'bg-yellow-400' },
+  late: { label: 'Late', bg: 'bg-orange-500/10', text: 'text-orange-400', dot: 'bg-orange-400' },
+  timeout: { label: 'Timeout', bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-400' },
+  stale: { label: 'Stale', bg: 'bg-zinc-500/10', text: 'text-zinc-400', dot: 'bg-zinc-400' },
+  stopped: { label: 'Stopped', bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-400' },
 };
 
 // ---------------------------------------------------------------------------
@@ -108,9 +114,7 @@ function InstanceCard({
   const [pinging, setPinging] = useState(false);
   const [pingResult, setPingResult] = useState<{ rttMs: number } | 'timeout' | null>(null);
   const shortId = instance.instanceId.slice(0, 8);
-  const heartbeatAgo = instance.lastHeartbeat
-    ? Math.round((Date.now() - instance.lastHeartbeat) / 1000)
-    : null;
+  const heartbeatAgo = instance.lastHeartbeat ? Math.round((Date.now() - instance.lastHeartbeat) / 1000) : null;
 
   const badge = HEARTBEAT_BADGE[instance.heartbeatStatus] ?? HEARTBEAT_BADGE.timeout;
   const canForceStop = !isThisInstance && instance.online && instance.heartbeatStatus !== 'stopped';
@@ -145,9 +149,7 @@ function InstanceCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="truncate text-[13px] font-semibold text-t-primary">
-              {instance.hostname ?? shortId}
-            </p>
+            <p className="truncate text-[13px] font-semibold text-t-primary">{instance.hostname ?? shortId}</p>
             {isThisInstance && (
               <span className="shrink-0 rounded bg-spotify-green/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-spotify-green">
                 This
@@ -159,16 +161,14 @@ function InstanceCard({
               <Hash size={10} />
               {shortId}
             </span>
-            {instance.pid != null && (
-              <span>PID {instance.pid}</span>
-            )}
-            {instance.shardId != null && (
-              <span>Shard {instance.shardId}</span>
-            )}
+            {instance.pid != null && <span>PID {instance.pid}</span>}
+            {instance.shardId != null && <span>Shard {instance.shardId}</span>}
           </div>
         </div>
         {/* Heartbeat status badge */}
-        <span className={`flex items-center gap-1.5 rounded-full ${badge.bg} px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${badge.text}`}>
+        <span
+          className={`flex items-center gap-1.5 rounded-full ${badge.bg} px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${badge.text}`}
+        >
           {badge.dot && (
             <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}${badge.pulse ? ' animate-pulse' : ''}`} />
           )}
@@ -180,14 +180,9 @@ function InstanceCard({
       {instance.guilds.length > 0 && (
         <div className="flex flex-col gap-1.5">
           {instance.guilds.map(({ guildId, guildName, isActiveForGuild }) => (
-            <div
-              key={guildId}
-              className="flex items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-2"
-            >
+            <div key={guildId} className="flex items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-2">
               <Globe size={12} className="shrink-0 text-t-faint" />
-              <span className="min-w-0 flex-1 truncate text-[12px] text-t-tertiary">
-                {guildName}
-              </span>
+              <span className="min-w-0 flex-1 truncate text-[12px] text-t-tertiary">{guildName}</span>
               {isActiveForGuild ? (
                 <span className="shrink-0 rounded bg-spotify-green/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-spotify-green">
                   Active
@@ -241,21 +236,21 @@ function InstanceCard({
               className="flex items-center gap-1 rounded bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold text-t-faint transition-colors hover:bg-cyan-500/10 hover:text-cyan-400 disabled:opacity-40"
               title="Ping this instance"
             >
-              {pinging ? (
-                <Loader2 size={11} className="animate-spin" />
-              ) : (
-                <Zap size={11} />
-              )}
+              {pinging ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
               {pinging ? 'Pinging...' : 'Ping'}
             </button>
           )}
 
           {/* Force stop button */}
-          {canForceStop && onForceStop && (
-            confirming ? (
+          {canForceStop &&
+            onForceStop &&
+            (confirming ? (
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => { onForceStop(instance.instanceId); setConfirming(false); }}
+                  onClick={() => {
+                    onForceStop(instance.instanceId);
+                    setConfirming(false);
+                  }}
                   className="rounded bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold text-red-400 transition-colors hover:bg-red-500/30"
                 >
                   Confirm
@@ -276,8 +271,7 @@ function InstanceCard({
                 <OctagonX size={11} />
                 Force Stop
               </button>
-            )
-          )}
+            ))}
 
           {instance.forceStopped && (
             <span className="flex items-center gap-1 text-[10px] font-semibold text-red-400">
@@ -295,7 +289,15 @@ function InstanceCard({
 // Guild Player Card
 // ---------------------------------------------------------------------------
 
-function GuildCard({ guild, isSelected, onSelect }: { guild: DashboardGuild; isSelected: boolean; onSelect?: () => void }) {
+function GuildCard({
+  guild,
+  isSelected,
+  onSelect,
+}: {
+  guild: DashboardGuild;
+  isSelected: boolean;
+  onSelect?: () => void;
+}) {
   const { player } = guild;
 
   return (
@@ -312,11 +314,7 @@ function GuildCard({ guild, isSelected, onSelect }: { guild: DashboardGuild; isS
       {/* Guild header */}
       <div className="flex items-center gap-3">
         {guild.guildIcon ? (
-          <img
-            src={guild.guildIcon}
-            alt={guild.guildName}
-            className="h-9 w-9 rounded-xl object-cover"
-          />
+          <img src={guild.guildIcon} alt={guild.guildName} className="h-9 w-9 rounded-xl object-cover" />
         ) : (
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.06]">
             <Globe size={16} className="text-t-faint" />
@@ -360,12 +358,8 @@ function GuildCard({ guild, isSelected, onSelect }: { guild: DashboardGuild; isS
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[12px] font-semibold text-t-secondary">
-              {player.currentTrack.title}
-            </p>
-            <p className="truncate text-[11px] text-t-faint">
-              {player.currentTrack.artist ?? 'Unknown Artist'}
-            </p>
+            <p className="truncate text-[12px] font-semibold text-t-secondary">{player.currentTrack.title}</p>
+            <p className="truncate text-[11px] text-t-faint">{player.currentTrack.artist ?? 'Unknown Artist'}</p>
           </div>
           {player.isPlaying ? (
             <Play size={14} className="shrink-0 text-spotify-green" />
@@ -433,11 +427,11 @@ function SetupStep({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-t-faint">
-              Step {number}
-            </span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-t-faint">Step {number}</span>
           </div>
-          <p className={`text-[13px] font-semibold ${done ? 'text-t-tertiary' : active ? 'text-t-primary' : 'text-t-faint'}`}>
+          <p
+            className={`text-[13px] font-semibold ${done ? 'text-t-tertiary' : active ? 'text-t-primary' : 'text-t-faint'}`}
+          >
             {title}
           </p>
           <p className="text-[11px] text-t-faint">{description}</p>
@@ -482,13 +476,16 @@ export default function DashboardPage() {
   }, [connected, fetchDashboard]);
 
   /** Ping a specific instance and return the first RTT result (or null on timeout). */
-  const handlePing = useCallback(async (instanceId: string): Promise<{ rttMs: number } | null> => {
-    const result = await pingInstance(instanceId);
-    if (result.success && result.responses.length > 0) {
-      return { rttMs: result.responses[0].rttMs };
-    }
-    return null;
-  }, [pingInstance]);
+  const handlePing = useCallback(
+    async (instanceId: string): Promise<{ rttMs: number } | null> => {
+      const result = await pingInstance(instanceId);
+      if (result.success && result.responses.length > 0) {
+        return { rttMs: result.responses[0].rttMs };
+      }
+      return null;
+    },
+    [pingInstance],
+  );
 
   // Fetch guilds when user becomes authenticated
   useEffect(() => {
@@ -514,9 +511,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div>
           <h1 className="text-xl font-bold tracking-tight text-white">Dashboard</h1>
-          <p className="mt-0.5 text-[13px] text-t-faint">
-            Connect to your bot to see real-time status and controls
-          </p>
+          <p className="mt-0.5 text-[13px] text-t-faint">Connect to your bot to see real-time status and controls</p>
         </div>
 
         {/* ---- Setup Steps Card ---- */}
@@ -588,21 +583,13 @@ export default function DashboardPage() {
                       disabled={botConnecting}
                       className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-violet-500 px-5 py-2.5 text-[13px] font-semibold text-white shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 disabled:opacity-50"
                     >
-                      {botConnecting ? (
-                        <Loader2 size={15} className="animate-spin" />
-                      ) : (
-                        <LogIn size={15} />
-                      )}
+                      {botConnecting ? <Loader2 size={15} className="animate-spin" /> : <LogIn size={15} />}
                       {botConnecting ? 'Connecting...' : 'Connect to Bot'}
                     </button>
 
-                    {botError && (
-                      <p className="text-[12px] text-red-400/80">{botError}</p>
-                    )}
+                    {botError && <p className="text-[12px] text-red-400/80">{botError}</p>}
 
-                    <p className="text-[11px] text-t-faint">
-                      Make sure the bot server is running at the address above
-                    </p>
+                    <p className="text-[11px] text-t-faint">Make sure the bot server is running at the address above</p>
                   </div>
                 )}
               </SetupStep>
@@ -684,9 +671,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-t-primary">Dashboard</h1>
-          <p className="mt-0.5 text-[13px] text-t-faint">
-            Real-time overview of your bot and connected servers
-          </p>
+          <p className="mt-0.5 text-[13px] text-t-faint">Real-time overview of your bot and connected servers</p>
         </div>
         <button
           onClick={refresh}
@@ -765,9 +750,7 @@ export default function DashboardPage() {
                 <WifiOff size={14} className="text-yellow-400/70" />
               )}
               <div>
-                <p className="text-[12px] font-semibold text-t-secondary">
-                  {connected ? 'Connected' : 'Disconnected'}
-                </p>
+                <p className="text-[12px] font-semibold text-t-secondary">{connected ? 'Connected' : 'Disconnected'}</p>
                 <p className="text-[10px] text-t-faint">
                   {connection.host}:{connection.port}
                 </p>
@@ -807,7 +790,9 @@ export default function DashboardPage() {
               )}
             </div>
             <p className="mt-0.5 text-[12px] text-t-faint">
-              {bot ? `Uptime: ${formatUptime(bot.uptime)} · Ping: ${bot.ping}ms · ${bot.guildCount} server${bot.guildCount !== 1 ? 's' : ''}` : 'Loading...'}
+              {bot
+                ? `Uptime: ${formatUptime(bot.uptime)} · Ping: ${bot.ping}ms · ${bot.guildCount} server${bot.guildCount !== 1 ? 's' : ''}`
+                : 'Loading...'}
             </p>
           </div>
         </div>
@@ -851,9 +836,7 @@ export default function DashboardPage() {
       {instances && instances.list.length > 0 && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold uppercase tracking-wider text-t-faint">
-              Bot Instances
-            </h2>
+            <h2 className="text-[13px] font-semibold uppercase tracking-wider text-t-faint">Bot Instances</h2>
             {instances.list.some((i) => i.heartbeatStatus === 'timeout' || i.heartbeatStatus === 'stale') && (
               <button
                 onClick={clearStaleInstances}
@@ -903,12 +886,8 @@ export default function DashboardPage() {
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-bold text-t-primary">
-                  {player.currentTrack.title}
-                </p>
-                <p className="truncate text-[13px] text-t-faint">
-                  {player.currentTrack.artist ?? 'Unknown Artist'}
-                </p>
+                <p className="truncate text-[15px] font-bold text-t-primary">{player.currentTrack.title}</p>
+                <p className="truncate text-[13px] text-t-faint">{player.currentTrack.artist ?? 'Unknown Artist'}</p>
                 <div className="mt-2 flex items-center gap-3">
                   <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.08]">
                     <div
@@ -940,9 +919,7 @@ export default function DashboardPage() {
       {/* ---- Guild Players ---- */}
       {guilds.length > 0 && (
         <div>
-          <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wider text-t-faint">
-            Server Players
-          </h2>
+          <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wider text-t-faint">Server Players</h2>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {guilds.map((guild) => (
               <GuildCard

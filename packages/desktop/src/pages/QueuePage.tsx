@@ -22,15 +22,7 @@ function PlayingIndicator() {
   );
 }
 
-function TrackRow({
-  track,
-  index,
-  onRemove,
-}: {
-  track: Track;
-  index: number;
-  onRemove: () => void;
-}) {
+function TrackRow({ track, index, onRemove }: { track: Track; index: number; onRemove: () => void }) {
   const dragControls = useDragControls();
 
   return (
@@ -55,13 +47,14 @@ function TrackRow({
       >
         <GripVertical size={14} />
       </button>
-      <span className="w-7 text-center text-xs tabular-nums text-t-ghost">
-        {index + 1}
-      </span>
+      <span className="w-7 text-center text-xs tabular-nums text-t-ghost">{index + 1}</span>
       {track.thumbnail ? (
         <img src={track.thumbnail} alt="" className="h-10 w-10 rounded-lg object-cover" />
       ) : (
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ background: 'var(--glass-bg-md)' }}>
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-lg"
+          style={{ background: 'var(--glass-bg-md)' }}
+        >
           <Music size={16} className="text-t-ghost" />
         </div>
       )}
@@ -118,18 +111,10 @@ export default function QueuePage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={shuffleQueue}
-            disabled={queue.length < 2}
-            className="btn-glass disabled:opacity-30"
-          >
+          <button onClick={shuffleQueue} disabled={queue.length < 2} className="btn-glass disabled:opacity-30">
             <Shuffle size={14} /> Shuffle
           </button>
-          <button
-            onClick={clearQueue}
-            disabled={queue.length === 0}
-            className="btn-glass disabled:opacity-30"
-          >
+          <button onClick={clearQueue} disabled={queue.length === 0} className="btn-glass disabled:opacity-30">
             <ListX size={14} /> Clear
           </button>
         </div>
@@ -138,14 +123,15 @@ export default function QueuePage() {
       {/* Currently playing */}
       {currentTrack && (
         <div className="mb-6">
-          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-t-faint">
-            Now Playing
-          </h2>
+          <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-t-faint">Now Playing</h2>
           <div className="card-glass flex items-center gap-3 rounded-xl !p-3">
             {currentTrack.thumbnail ? (
               <img src={currentTrack.thumbnail} alt="" className="h-12 w-12 rounded-lg object-cover shadow-lg" />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg" style={{ background: 'color-mix(in srgb, var(--accent) 10%, transparent)' }}>
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-lg"
+                style={{ background: 'color-mix(in srgb, var(--accent) 10%, transparent)' }}
+              >
                 <Music size={20} style={{ color: 'var(--accent)' }} />
               </div>
             )}
@@ -153,7 +139,10 @@ export default function QueuePage() {
               <p className="truncate text-[13px] font-semibold text-gradient-accent">{currentTrack.title}</p>
               <p className="truncate text-[11px] text-t-faint">{currentTrack.artist ?? 'Unknown'}</p>
             </div>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'color-mix(in srgb, var(--accent) 20%, transparent)' }}>
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-full"
+              style={{ background: 'color-mix(in srgb, var(--accent) 20%, transparent)' }}
+            >
               {isPlaying ? (
                 <PlayingIndicator />
               ) : (
@@ -173,15 +162,8 @@ export default function QueuePage() {
         </div>
       ) : (
         <div className="card-glass rounded-xl p-2">
-          <h2 className="mb-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-t-faint">
-            Up Next
-          </h2>
-          <Reorder.Group
-            axis="y"
-            values={queue}
-            onReorder={handleReorder}
-            className="flex flex-col"
-          >
+          <h2 className="mb-1 px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-t-faint">Up Next</h2>
+          <Reorder.Group axis="y" values={queue} onReorder={handleReorder} className="flex flex-col">
             {queue.map((track, i) => (
               <TrackRow
                 key={`${track.url ?? track.title}-${i}`}

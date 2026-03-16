@@ -6,8 +6,7 @@ const log = createLogger('soundcloud-extractor');
 
 // SoundCloud URL patterns
 const SC_TRACK_REGEX = /^(?:https?:\/\/)?(?:www\.|m\.)?soundcloud\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]+)(?:\?.*)?$/;
-const SC_PLAYLIST_REGEX =
-  /^(?:https?:\/\/)?(?:www\.|m\.)?soundcloud\.com\/([a-zA-Z0-9_-]+)\/sets\/([a-zA-Z0-9_-]+)/;
+const SC_PLAYLIST_REGEX = /^(?:https?:\/\/)?(?:www\.|m\.)?soundcloud\.com\/([a-zA-Z0-9_-]+)\/sets\/([a-zA-Z0-9_-]+)/;
 const SC_USER_REGEX = /^(?:https?:\/\/)?(?:www\.|m\.)?soundcloud\.com\/([a-zA-Z0-9_-]+)\/?$/;
 
 interface SoundCloudExtractorOptions {
@@ -37,11 +36,7 @@ export class SoundCloudExtractor extends BaseExtractor<SoundCloudExtractorOption
   }
 
   async validate(query: string): Promise<boolean> {
-    return (
-      SC_TRACK_REGEX.test(query) ||
-      SC_PLAYLIST_REGEX.test(query) ||
-      SC_USER_REGEX.test(query)
-    );
+    return SC_TRACK_REGEX.test(query) || SC_PLAYLIST_REGEX.test(query) || SC_USER_REGEX.test(query);
   }
 
   private formatDuration(ms: number): string {
@@ -51,10 +46,7 @@ export class SoundCloudExtractor extends BaseExtractor<SoundCloudExtractorOption
     return `${m}:${String(s).padStart(2, '0')}`;
   }
 
-  private scTrackToTrack(
-    scTrack: Record<string, unknown>,
-    context: ExtractorSearchContext,
-  ): Track {
+  private scTrackToTrack(scTrack: Record<string, unknown>, context: ExtractorSearchContext): Track {
     const user = scTrack.user as Record<string, unknown> | undefined;
 
     const track = new Track(this.context.player, {
@@ -92,10 +84,7 @@ export class SoundCloudExtractor extends BaseExtractor<SoundCloudExtractorOption
     return this.handleSearch(query, context);
   }
 
-  private async handleTrackUrl(
-    url: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handleTrackUrl(url: string, context: ExtractorSearchContext) {
     try {
       const scTrack = await this.sc!.tracks.get(url);
       const raw = scTrack as unknown as Record<string, unknown>;
@@ -107,10 +96,7 @@ export class SoundCloudExtractor extends BaseExtractor<SoundCloudExtractorOption
     }
   }
 
-  private async handlePlaylist(
-    url: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handlePlaylist(url: string, context: ExtractorSearchContext) {
     try {
       const scPlaylist = await this.sc!.playlists.get(url);
       const raw = scPlaylist as unknown as Record<string, unknown>;
@@ -139,14 +125,10 @@ export class SoundCloudExtractor extends BaseExtractor<SoundCloudExtractorOption
     }
   }
 
-  async handleSearch(
-    query: string,
-    context: ExtractorSearchContext,
-  ) {
+  async handleSearch(query: string, context: ExtractorSearchContext) {
     try {
       const results = await this.sc!.tracks.search({ q: query, limit: 10 });
-      const collection = (results as unknown as { collection?: Array<Record<string, unknown>> })
-        ?.collection ?? [];
+      const collection = (results as unknown as { collection?: Array<Record<string, unknown>> })?.collection ?? [];
 
       const tracks = collection.map((t) => this.scTrackToTrack(t, context));
       return this.createResponse(null, tracks);

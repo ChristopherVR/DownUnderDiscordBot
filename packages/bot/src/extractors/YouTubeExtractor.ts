@@ -1,18 +1,24 @@
 import { BaseExtractor, Track, Playlist, ExtractorSearchContext, GuildQueueHistory } from 'discord-player';
 import { Innertube, UniversalCache, ClientType } from 'youtubei.js';
 import { PassThrough } from 'stream';
+import { EventEmitter } from 'events';
 import { createLogger } from '../helpers/logger.js';
-import { streamAudio } from '../helpers/ytdlp.js';
 
 const log = createLogger('youtube-extractor');
+
+export interface StreamStatusEvent {
+  videoId: string;
+  status: 'resolving' | 'fallback' | 'streaming' | 'error';
+  client: 'ANDROID' | 'WEB' | 'yt-dlp';
+  message?: string;
+}
 
 // Regex patterns for YouTube URL detection
 const YT_VIDEO_REGEX =
   /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 const YT_PLAYLIST_REGEX =
   /^(?:https?:\/\/)?(?:www\.|m\.)?youtube\.com\/(?:playlist\?list=|watch\?.*&list=)([a-zA-Z0-9_-]+)/;
-const YT_CHANNEL_REGEX =
-  /^(?:https?:\/\/)?(?:www\.|m\.)?youtube\.com\/(?:@|channel\/|c\/)([a-zA-Z0-9_-]+)/;
+const YT_CHANNEL_REGEX = /^(?:https?:\/\/)?(?:www\.|m\.)?youtube\.com\/(?:@|channel\/|c\/)([a-zA-Z0-9_-]+)/;
 
 interface YouTubeExtractorOptions {
   cachePath?: string;
@@ -20,12 +26,17 @@ interface YouTubeExtractorOptions {
 }
 
 /**
- * Custom YouTube extractor using youtubei.js v16 with ANDROID client for
- * reliable streaming (bypasses WEB signature decipher issues).
+ * Custom YouTube extractor using youtubei.js v16 with yt-dlp as the primary
+ * streaming backend (most reliable against YouTube's protections).
  *
  * Architecture:
  *  - WEB client → search, metadata, playlist fetching (best data quality)
- *  - ANDROID client → audio streaming (no signature decipher needed)
+ *  - yt-dlp → primary audio streaming (handles all URL decryption)
+ *  - ANDROID client → first streaming fallback
+ *  - WEB client → last-resort streaming fallback
+ *
+ * When an ANDROID or WEB client fails to stream, it is disabled for the
+ * remainder of the session to avoid repeated timeouts on every track.
  */
 export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOptions> {
   static identifier = 'com.downunder.youtube' as const;
@@ -38,6 +49,33 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
   private androidYt: Innertube | null = null;
   private androidInitPromise: Promise<Innertube> | null = null;
 
+  /**
+   * Clients that have failed during this session and should be skipped.
+   * Once a client fails, it is disabled for the remainder of the session
+   * to avoid repeated timeouts on every track.
+   */
+  private disabledClients = new Map<'ANDROID' | 'WEB', number>();
+
+  /** Cooldown period before retrying a failed client (5 minutes). */
+  private static CLIENT_COOLDOWN_MS = 5 * 60 * 1000;
+
+  private isClientDisabled(client: 'ANDROID' | 'WEB'): boolean {
+    const disabledAt = this.disabledClients.get(client);
+    if (disabledAt == null) return false;
+    if (Date.now() - disabledAt >= CustomYouTubeExtractor.CLIENT_COOLDOWN_MS) {
+      this.disabledClients.delete(client);
+      return false;
+    }
+    return true;
+  }
+
+  private disableClient(client: 'ANDROID' | 'WEB'): void {
+    this.disabledClients.set(client, Date.now());
+  }
+
+  /** Event emitter for stream status updates (consumed by WebSocket layer). */
+  public readonly events = new EventEmitter();
+
   async activate(): Promise<void> {
     log.info('Activating CustomYouTubeExtractor');
     // Pre-warm both Innertube instances in parallel
@@ -49,15 +87,13 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
     this.webInitPromise = null;
     this.androidYt = null;
     this.androidInitPromise = null;
+    this.disabledClients.clear();
+    this.events.removeAllListeners();
     log.info('Deactivated CustomYouTubeExtractor');
   }
 
   async validate(query: string): Promise<boolean> {
-    return (
-      YT_VIDEO_REGEX.test(query) ||
-      YT_PLAYLIST_REGEX.test(query) ||
-      YT_CHANNEL_REGEX.test(query)
-    );
+    return YT_VIDEO_REGEX.test(query) || YT_PLAYLIST_REGEX.test(query) || YT_CHANNEL_REGEX.test(query);
   }
 
   /* ------------------------------------------------------------------ */
@@ -173,8 +209,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
       for (const video of playlist.videos) {
         const vid = video as unknown as Record<string, unknown>;
         const title = (vid.title as { text?: string })?.text ?? String(vid.title ?? 'Unknown');
-        const author =
-          (vid.author as { name?: string })?.name ?? String(vid.author ?? 'Unknown Artist');
+        const author = (vid.author as { name?: string })?.name ?? String(vid.author ?? 'Unknown Artist');
         const vidId = String(vid.id ?? vid.video_id ?? '');
         const dur = vid.duration as { seconds?: number };
         const thumbList = vid.thumbnails as Array<{ url: string }> | undefined;
@@ -196,8 +231,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
       const info = playlist.info as Record<string, unknown>;
       const playlistData = new Playlist(this.context.player, {
         title: (info?.title as string) ?? 'YouTube Playlist',
-        thumbnail:
-          ((info?.thumbnails as Array<{ url: string }>)?.[0]?.url) ?? '',
+        thumbnail: (info?.thumbnails as Array<{ url: string }>)?.[0]?.url ?? '',
         description: '',
         type: 'playlist',
         source: 'youtube',
@@ -227,8 +261,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
         if (vid.type !== 'Video') continue;
 
         const title = (vid.title as { text?: string })?.text ?? String(vid.title ?? 'Unknown');
-        const author =
-          (vid.author as { name?: string })?.name ?? String(vid.author ?? 'Unknown Artist');
+        const author = (vid.author as { name?: string })?.name ?? String(vid.author ?? 'Unknown Artist');
         const vidId = String(vid.video_id ?? vid.id ?? '');
         const dur = vid.length_text as { text?: string } | undefined;
         const thumbList = vid.thumbnails as Array<{ url: string }> | undefined;
@@ -261,44 +294,65 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
 
   /* ------------------------------------------------------------------ */
   /*  stream() — returns a Readable for audio playback                   */
-  /*  Tries youtubei.js download() first, then falls back to yt-dlp     */
-  /*  which reliably resolves YouTube stream URLs.                       */
+  /*  Uses youtubei.js ANDROID client, then WEB fallback.                */
   /* ------------------------------------------------------------------ */
 
   async stream(track: Track) {
     const videoId = this.extractVideoId(track.url);
     if (!videoId) throw new Error(`Cannot extract video ID from: ${track.url}`);
 
-    // Primary: ANDROID client download — handles range requests, auth headers,
-    // and throttle avoidance internally via youtubei.js.
-    try {
-      const yt = await this.getAndroidYt();
-      const stream = await this.pipeDownload(yt, videoId, 'ANDROID');
-      log.debug({ videoId, title: track.title }, 'Stream piped via ANDROID client download');
-      return stream;
-    } catch (err) {
-      log.warn({ err, videoId }, 'ANDROID client download failed, trying WEB fallback');
+    const emitStatus = (status: StreamStatusEvent) => this.events.emit('streamStatus', status);
+
+    // Primary: ANDROID client download.
+    if (!this.isClientDisabled('ANDROID')) {
+      try {
+        emitStatus({ videoId, status: 'resolving', client: 'ANDROID' });
+        const yt = await this.getAndroidYt();
+        const stream = await this.pipeDownload(yt, videoId, 'ANDROID');
+        log.debug({ videoId, title: track.title }, 'Stream piped via ANDROID client download');
+        emitStatus({ videoId, status: 'streaming', client: 'ANDROID' });
+        return stream;
+      } catch (err) {
+        this.disableClient('ANDROID');
+        log.warn({ err, videoId }, 'ANDROID client download failed — on cooldown, trying WEB fallback');
+        emitStatus({
+          videoId,
+          status: 'fallback',
+          client: 'ANDROID',
+          message: 'ANDROID client on cooldown',
+        });
+      }
+    } else {
+      log.debug({ videoId }, 'Skipping ANDROID client (on cooldown)');
     }
 
     // Fallback: WEB client download.
-    try {
-      const yt = await this.getWebYt();
-      const stream = await this.pipeDownload(yt, videoId, 'WEB');
-      log.debug({ videoId, title: track.title }, 'Stream piped via WEB client download');
-      return stream;
-    } catch (err) {
-      log.warn({ err, videoId }, 'WEB client download failed, trying yt-dlp fallback');
+    if (!this.isClientDisabled('WEB')) {
+      try {
+        emitStatus({ videoId, status: 'resolving', client: 'WEB' });
+        const yt = await this.getWebYt();
+        const stream = await this.pipeDownload(yt, videoId, 'WEB');
+        log.debug({ videoId, title: track.title }, 'Stream piped via WEB client download');
+        emitStatus({ videoId, status: 'streaming', client: 'WEB' });
+        return stream;
+      } catch (err) {
+        this.disableClient('WEB');
+        log.error({ err, videoId }, 'All stream methods failed');
+        emitStatus({
+          videoId,
+          status: 'error',
+          client: 'WEB',
+          message: 'All stream methods failed',
+        });
+        throw err;
+      }
     }
 
-    // Final fallback: yt-dlp — most reliable, handles all YouTube protection.
-    try {
-      const stream = streamAudio(track.url);
-      log.debug({ videoId, title: track.title }, 'Stream piped via yt-dlp');
-      return stream;
-    } catch (err) {
-      log.error({ err, videoId }, 'All stream methods failed (including yt-dlp)');
-      throw err;
-    }
+    // All clients exhausted (on cooldown)
+    const msg = 'All stream methods disabled or on cooldown';
+    log.error({ videoId }, msg);
+    emitStatus({ videoId, status: 'error', client: 'WEB', message: msg });
+    throw new Error(msg);
   }
 
   /**
@@ -324,8 +378,18 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
       rejectFirstChunk = rej;
     });
 
-    const settleOk = () => { if (!firstChunkSettled) { firstChunkSettled = true; resolveFirstChunk(); } };
-    const settleErr = (e: Error) => { if (!firstChunkSettled) { firstChunkSettled = true; rejectFirstChunk(e); } };
+    const settleOk = () => {
+      if (!firstChunkSettled) {
+        firstChunkSettled = true;
+        resolveFirstChunk();
+      }
+    };
+    const settleErr = (e: Error) => {
+      if (!firstChunkSettled) {
+        firstChunkSettled = true;
+        rejectFirstChunk(e);
+      }
+    };
 
     (async () => {
       try {
@@ -382,8 +446,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
         if (vidId === this.extractVideoId(track.url)) continue;
 
         const title = (vid.title as { text?: string })?.text ?? String(vid.title ?? 'Unknown');
-        const author =
-          (vid.author as { name?: string })?.name ?? String(vid.author ?? 'Unknown');
+        const author = (vid.author as { name?: string })?.name ?? String(vid.author ?? 'Unknown');
         const dur = vid.length_text as { text?: string } | undefined;
         const thumbList = vid.thumbnails as Array<{ url: string }> | undefined;
 

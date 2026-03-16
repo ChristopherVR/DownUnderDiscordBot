@@ -85,9 +85,7 @@ export default function VoiceChannelModal({ open, onClose, onSelect }: Props) {
           {/* Guild list */}
           <div className="max-h-64 overflow-y-auto p-2">
             {guilds.length === 0 ? (
-              <div className="py-10 text-center text-sm text-t-faint">
-                No servers available
-              </div>
+              <div className="py-10 text-center text-sm text-t-faint">No servers available</div>
             ) : (
               guilds.map((g) => (
                 <button
@@ -149,9 +147,7 @@ export default function VoiceChannelModal({ open, onClose, onSelect }: Props) {
               <Loader2 size={24} className="animate-spin text-t-faint" />
             </div>
           ) : channels.length === 0 ? (
-            <div className="py-10 text-center text-sm text-t-faint">
-              No voice channels found
-            </div>
+            <div className="py-10 text-center text-sm text-t-faint">No voice channels found</div>
           ) : (
             channels.map((ch) => (
               <button

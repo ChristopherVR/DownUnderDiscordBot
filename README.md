@@ -5,11 +5,11 @@ A multi-platform Discord music bot with a Tauri desktop dashboard, SQLite persis
 ## Features
 
 - **Multi-platform music** -- YouTube, Spotify (via YouTube bridge), SoundCloud, and local files
-- **27 slash commands** -- Full playback control, playlists, search, history, queue management
+- **26 slash commands** -- Full playback control, playlists, search, history, queue management
 - **Tauri desktop app** -- Spotify-inspired dark theme dashboard to control the bot from your desktop
 - **Real-time sync** -- WebSocket connection keeps the dashboard in sync with bot state
 - **SQLite database** -- Playlists, play history, queue snapshots, user preferences, track cache
-- **REST API** -- 40+ endpoints for player control, queue, playlists, search, file uploads
+- **REST API** -- 50+ endpoints for player control, queue, playlists, search, file uploads, auth, dashboard
 - **Azure deployment** -- Bicep IaC, Docker containerization, GitHub Actions CI/CD
 - **Local music** -- Scan folders, parse ID3 tags, search by title/artist
 
@@ -94,41 +94,43 @@ pnpm dev:desktop
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Bot Documentation](docs/bot.md) | Commands, API endpoints, WebSocket protocol, database schema, extractors |
-| [Desktop App Documentation](docs/desktop.md) | Tauri setup, React frontend, stores, pages, configuration |
-| [Infrastructure & CI/CD](docs/infrastructure.md) | Docker, Azure Bicep, GitHub Actions workflows, deployment |
+| Document                                         | Description                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------------ |
+| [Bot Documentation](docs/bot.md)                 | Commands, API endpoints, WebSocket protocol, database schema, extractors |
+| [Desktop App Documentation](docs/desktop.md)     | Tauri setup, React frontend, stores, pages, configuration                |
+| [Infrastructure & CI/CD](docs/infrastructure.md) | Docker, Azure Bicep, GitHub Actions workflows, deployment                |
 
 ## Scripts Reference
 
-| Script | Description |
-|--------|-------------|
-| `pnpm dev` | Start bot in development mode with hot reload |
-| `pnpm dev:desktop` | Start desktop app in development mode |
-| `pnpm build` | Build shared package and bot |
-| `pnpm build:all` | Build shared, bot, and desktop |
-| `pnpm start` | Run the bot in production mode |
-| `pnpm test` | Run all tests |
-| `pnpm lint` | Lint all packages |
-| `pnpm format` | Format all files with Prettier |
-| `pnpm db:push` | Push Prisma schema to SQLite |
-| `pnpm db:studio` | Open Prisma Studio (database GUI) |
-| `pnpm db:migrate` | Run database migrations |
-| `pnpm health-check` | Check if the bot API is running |
+| Script              | Description                                   |
+| ------------------- | --------------------------------------------- |
+| `pnpm dev`          | Start bot in development mode with hot reload |
+| `pnpm dev:desktop`  | Start desktop app in development mode         |
+| `pnpm build`        | Build shared package and bot                  |
+| `pnpm build:all`    | Build shared, bot, and desktop                |
+| `pnpm start`        | Run the bot in production mode                |
+| `pnpm test`         | Run all tests                                 |
+| `pnpm lint`         | Lint all packages with oxlint                 |
+| `pnpm format`       | Format all files with oxfmt                   |
+| `pnpm format:check` | Check formatting without modifying files      |
+| `pnpm db:push`      | Push Prisma schema to SQLite                  |
+| `pnpm db:studio`    | Open Prisma Studio (database GUI)             |
+| `pnpm db:migrate`   | Run database migrations                       |
+| `pnpm health-check` | Check if the bot API is running               |
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Bot runtime | Node.js 22, TypeScript, discord.js, discord-player |
-| Music sources | youtubei.js, spotify-web-api-node, soundcloud.ts, music-metadata |
-| API server | Express.js, WebSocket (ws) |
-| Database | SQLite via Prisma ORM |
-| Desktop shell | Tauri v2 (Rust) |
-| Desktop UI | React 19, Tailwind CSS, Zustand, Framer Motion, Radix UI |
-| Infrastructure | Docker, Azure Container Apps, Azure Bicep |
-| CI/CD | GitHub Actions |
+| Layer          | Technology                                                       |
+| -------------- | ---------------------------------------------------------------- |
+| Bot runtime    | Node.js 22, TypeScript, discord.js, discord-player               |
+| Music sources  | youtubei.js, spotify-web-api-node, soundcloud.ts, music-metadata |
+| API server     | Express.js, WebSocket (ws)                                       |
+| Database       | SQLite via Prisma ORM                                            |
+| Desktop shell  | Tauri v2 (Rust)                                                  |
+| Desktop UI     | React 19, Tailwind CSS, Zustand, Framer Motion, Radix UI         |
+| Infrastructure | Docker, Azure Container Apps, Azure Bicep                        |
+| Linting        | oxlint + oxfmt                                                   |
+| CI/CD          | GitHub Actions                                                   |
 
 ## License
 

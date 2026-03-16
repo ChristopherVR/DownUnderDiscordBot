@@ -8,10 +8,13 @@ import {
   EmbedBuilder,
   MessageFlags,
 } from 'discord.js';
-import { QueryType } from 'discord-player';
 import type { CommandContext, CommandHandler } from '../types/commands';
 import { useDefaultPlayer } from '../helpers/discord/player';
 import { createLogger } from '../helpers/logger';
+import { CustomYouTubeExtractor } from '../extractors/YouTubeExtractor';
+import { SpotifyExtractor } from '../extractors/SpotifyExtractor';
+import { SoundCloudExtractor } from '../extractors/SoundCloudExtractor';
+import { LocalExtractor } from '../extractors/LocalExtractor';
 
 const log = createLogger('command-search');
 
@@ -24,19 +27,44 @@ const formatDuration = (d?: string | number | null): string => {
   return `${mins}:${String(secs).padStart(2, '0')}`;
 };
 
-const PLATFORM_QUERY_MAP: Record<string, QueryType> = {
-  youtube: QueryType.YOUTUBE_SEARCH,
-  spotify: QueryType.SPOTIFY_SEARCH,
-  soundcloud: QueryType.SOUNDCLOUD_SEARCH,
-  auto: QueryType.AUTO,
+// Map platform name → extractor identifier
+const PLATFORM_EXTRACTOR_MAP: Record<string, string> = {
+  youtube: CustomYouTubeExtractor.identifier,
+  spotify: SpotifyExtractor.identifier,
+  soundcloud: SoundCloudExtractor.identifier,
+  local: LocalExtractor.identifier,
+  auto: CustomYouTubeExtractor.identifier,
 };
 
 const PLATFORM_EMOJI: Record<string, string> = {
   youtube: '🔴',
   spotify: '🟢',
   soundcloud: '🟠',
+  local: '📁',
   auto: '🔍',
 };
+
+const PLATFORM_LABEL: Record<string, string> = {
+  youtube: 'YouTube',
+  spotify: 'Spotify',
+  soundcloud: 'SoundCloud',
+  local: 'Local File',
+};
+
+/** Detect a platform name from a track URL or path */
+const detectPlatform = (url?: string): string | undefined => {
+  if (!url) return undefined;
+  if (/youtu\.?be/i.test(url)) return 'youtube';
+  if (/spotify\.com/i.test(url)) return 'spotify';
+  if (/soundcloud\.com/i.test(url)) return 'soundcloud';
+  if (/music\.apple\.com/i.test(url)) return 'applemusic';
+  // Local file paths (absolute or file:// protocol)
+  if (/^([a-zA-Z]:\\|\/|file:\/\/)/.test(url)) return 'local';
+  return undefined;
+};
+
+/** Check whether a URL is a web link (safe to use in markdown links) */
+const isWebUrl = (url?: string): boolean => !!url && /^https?:\/\//i.test(url);
 
 export const SearchCommand = (): CommandHandler => ({
   name: 'search',
@@ -59,6 +87,7 @@ export const SearchCommand = (): CommandHandler => ({
         { name: 'YouTube', value: 'youtube' },
         { name: 'Spotify', value: 'spotify' },
         { name: 'SoundCloud', value: 'soundcloud' },
+        { name: 'Local Files', value: 'local' },
       ],
     },
   ],
@@ -81,30 +110,51 @@ export const SearchCommand = (): CommandHandler => ({
     await interaction.deferReply();
 
     const player = useDefaultPlayer();
-    const queryType = PLATFORM_QUERY_MAP[platform] ?? QueryType.AUTO;
     const emoji = PLATFORM_EMOJI[platform] ?? '🔍';
 
     try {
-      const result = await player.search(query, { searchEngine: queryType });
+      // Custom extractors' validate() only matches URLs, so player.search()
+      // never routes plain-text queries to them.  Call the extractor's handle()
+      // directly (same approach the desktop app uses) so text search works.
+      const extractorId = PLATFORM_EXTRACTOR_MAP[platform] ?? CustomYouTubeExtractor.identifier;
+      const ext = player.extractors.get(extractorId);
 
-      if (!result.tracks.length) {
-        await interaction.editReply({ content: `No results found for "${query}" on ${platform}.` });
+      if (!ext) {
+        await interaction.editReply({ content: `Extractor for ${platform} is not available.` });
         return;
       }
 
-      const tracks = result.tracks.slice(0, 5);
+      let tracks: import('discord-player').Track[];
+
+      if (platform === 'local') {
+        // LocalExtractor exposes searchLocal() for text-based file search
+        const localExt = ext as LocalExtractor;
+        tracks = await localExt.searchLocal(query, 5);
+      } else {
+        const result = await ext.handle(query, { requestedBy: interaction.user } as never);
+        tracks = result?.tracks?.slice(0, 5) ?? [];
+      }
+
+      if (!tracks.length) {
+        await interaction.editReply({ content: `No results found for "${query}" on ${platform}.` });
+        return;
+      }
       const embed = new EmbedBuilder()
         .setTitle(`${emoji} Search Results - ${platform.charAt(0).toUpperCase() + platform.slice(1)}`)
         .setColor(0x1db954)
         .setDescription(
           tracks
-            .map(
-              (t, i) =>
-                `**${i + 1}.** [${t.title}](${t.url})\n   ${t.author ?? 'Unknown'} - ${formatDuration(t.duration)}`,
-            )
+            .map((t, i) => {
+              const source = detectPlatform(t.url) ?? platform;
+              const sourceEmoji = PLATFORM_EMOJI[source] ?? '🔗';
+              const sourceLabel = PLATFORM_LABEL[source] ?? source;
+              const sourceTag = `${sourceEmoji} ${sourceLabel}`;
+              const titlePart = isWebUrl(t.url) ? `[${t.title}](${t.url})` : t.title;
+              return `**${i + 1}.** ${titlePart}\n   ${t.author ?? 'Unknown'} · ${formatDuration(t.duration)} · ${sourceTag}`;
+            })
             .join('\n\n'),
         )
-        .setFooter({ text: `Showing ${tracks.length} of ${result.tracks.length} results` });
+        .setFooter({ text: `Showing ${tracks.length} results` });
 
       const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
         ...tracks.map((_, i) =>

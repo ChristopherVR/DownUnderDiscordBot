@@ -84,7 +84,10 @@ export const PlaylistCommand = (): CommandHandler => ({
       case 'list': {
         const playlists = await playlistRepo.findByGuild(guildId, userId);
         if (!playlists.length) {
-          await context.reply({ content: 'No playlists found. Create one with `/playlist create`.', flags: MessageFlags.Ephemeral });
+          await context.reply({
+            content: 'No playlists found. Create one with `/playlist create`.',
+            flags: MessageFlags.Ephemeral,
+          });
           return;
         }
 
@@ -92,9 +95,7 @@ export const PlaylistCommand = (): CommandHandler => ({
           .setTitle('Your Playlists')
           .setColor(0x1db954)
           .setDescription(
-            playlists
-              .map((p, i) => `${i + 1}. **${p.name}**${p.description ? ` - ${p.description}` : ''}`)
-              .join('\n'),
+            playlists.map((p, i) => `${i + 1}. **${p.name}**${p.description ? ` - ${p.description}` : ''}`).join('\n'),
           );
 
         await context.reply({ embeds: [embed] });
@@ -123,7 +124,12 @@ export const PlaylistCommand = (): CommandHandler => ({
           .setColor(0x1db954)
           .setDescription(
             full.tracks.length
-              ? full.tracks.map((t, i) => `${i + 1}. **${t.title}** - ${t.artist ?? 'Unknown'} (${Math.floor(t.duration / 60)}:${String(t.duration % 60).padStart(2, '0')})`).join('\n')
+              ? full.tracks
+                  .map(
+                    (t, i) =>
+                      `${i + 1}. **${t.title}** - ${t.artist ?? 'Unknown'} (${Math.floor(t.duration / 60)}:${String(t.duration % 60).padStart(2, '0')})`,
+                  )
+                  .join('\n')
               : 'No tracks yet. Use `/playlist add` while a song is playing.',
           )
           .setFooter({ text: `${full.tracks.length} track(s)` });
@@ -157,7 +163,8 @@ export const PlaylistCommand = (): CommandHandler => ({
         if (trackUrl.includes('youtube.com') || trackUrl.includes('youtu.be')) platform = 'youtube';
         else if (trackUrl.includes('spotify.com')) platform = 'spotify';
         else if (trackUrl.includes('soundcloud.com')) platform = 'soundcloud';
-        else if (currentTrack.raw?.source === 'local' || trackUrl.startsWith('/') || trackUrl.match(/^[A-Za-z]:\\/)) platform = 'local';
+        else if (currentTrack.raw?.source === 'local' || trackUrl.startsWith('/') || trackUrl.match(/^[A-Za-z]:\\/))
+          platform = 'local';
 
         await playlistRepo.addTrack(targetPlaylist.id, {
           title: currentTrack.title,
@@ -229,7 +236,10 @@ export const PlaylistCommand = (): CommandHandler => ({
           return;
         }
         if (!position || position < 1) {
-          await context.reply({ content: 'Please provide a valid track position (starting from 1).', flags: MessageFlags.Ephemeral });
+          await context.reply({
+            content: 'Please provide a valid track position (starting from 1).',
+            flags: MessageFlags.Ephemeral,
+          });
           return;
         }
         const playlists = await playlistRepo.findByGuild(guildId, userId);
@@ -246,7 +256,10 @@ export const PlaylistCommand = (): CommandHandler => ({
         const trackIndex = position - 1;
         const trackToRemove = full.tracks[trackIndex];
         if (!trackToRemove) {
-          await context.reply({ content: `Track position ${position} is out of range (1-${full.tracks.length}).`, flags: MessageFlags.Ephemeral });
+          await context.reply({
+            content: `Track position ${position} is out of range (1-${full.tracks.length}).`,
+            flags: MessageFlags.Ephemeral,
+          });
           return;
         }
         await playlistRepo.removeTrack(targetPlaylist.id, trackToRemove.id);
@@ -281,7 +294,9 @@ export const PlaylistCommand = (): CommandHandler => ({
           return;
         }
 
-        await context.reply({ content: `Loading playlist **${playTarget.name}** (${fullPlaylist.tracks.length} tracks)...` });
+        await context.reply({
+          content: `Loading playlist **${playTarget.name}** (${fullPlaylist.tracks.length} tracks)...`,
+        });
 
         const player = useDefaultPlayer();
         for (const track of fullPlaylist.tracks) {
@@ -304,7 +319,10 @@ export const PlaylistCommand = (): CommandHandler => ({
         const playlists = await playlistRepo.findByGuild(guildId, userId);
         const delTarget = playlists.find((p) => p.name.toLowerCase() === name.toLowerCase() && p.userId === userId);
         if (!delTarget) {
-          await context.reply({ content: `Playlist "${name}" not found or you don't own it.`, flags: MessageFlags.Ephemeral });
+          await context.reply({
+            content: `Playlist "${name}" not found or you don't own it.`,
+            flags: MessageFlags.Ephemeral,
+          });
           return;
         }
         await playlistRepo.delete(delTarget.id);

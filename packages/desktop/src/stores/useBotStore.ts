@@ -21,6 +21,13 @@ export interface Track {
   videoUrl?: string;
 }
 
+export interface StreamStatus {
+  videoId: string;
+  status: 'resolving' | 'fallback' | 'streaming' | 'error';
+  client: 'ANDROID' | 'WEB' | 'yt-dlp';
+  message?: string;
+}
+
 export interface PlayerState {
   isPlaying: boolean;
   currentTrack: Track | null;
@@ -110,6 +117,7 @@ interface BotStore {
   updatePlayerState: (state: Partial<PlayerState>) => void;
 
   // Per-guild bot player states (keyed by guildId)
+  // Per-guild bot player states
   guildPlayers: Record<string, GuildPlayerState>;
   /** Which guild's player is displayed in the PlayerBar (bot mode). null = local */
   activePlayerGuildId: string | null;
@@ -119,6 +127,9 @@ interface BotStore {
   setActivePlayerGuild: (guildId: string | null) => void;
   /** Get list of guild IDs that currently have active playback */
   getActiveGuildIds: () => string[];
+
+  // Stream status (YouTube fallback / buffering indicator)
+  streamStatus: StreamStatus | null;
 
   // Transfer local playback to a bot guild
   transferToBot: (guildId?: string) => Promise<void>;
@@ -435,6 +446,9 @@ export const useBotStore = create<BotStore>((set, get) => ({
   guildPlayers: {},
   activePlayerGuildId: null,
 
+  // Stream status
+  streamStatus: null,
+
   searchResults: [],
   searchLoading: false,
 
@@ -665,7 +679,8 @@ export const useBotStore = create<BotStore>((set, get) => ({
           if (!prev) return {};
           const updated = { ...prev, queue: payload.queue };
           const newGuildPlayers = { ...s.guildPlayers, [guildId]: updated };
-          const syncPlayer = (s.playbackMode === 'bot' || s.playbackMode === 'sync') && s.activePlayerGuildId === guildId;
+          const syncPlayer =
+            (s.playbackMode === 'bot' || s.playbackMode === 'sync') && s.activePlayerGuildId === guildId;
           return {
             guildPlayers: newGuildPlayers,
             ...(syncPlayer ? { player: { ...s.player, queue: payload.queue } } : {}),
@@ -722,6 +737,16 @@ export const useBotStore = create<BotStore>((set, get) => ({
     wsService.on('bot_status', (data: unknown) => {
       const { online } = data as { online: boolean };
       set((s) => ({ connection: { ...s.connection, botOnline: online } }));
+    });
+
+    wsService.on('stream_status', (data: unknown) => {
+      const status = data as StreamStatus;
+      // Clear the status once streaming has started or errored
+      if (status.status === 'streaming') {
+        set({ streamStatus: null });
+      } else {
+        set({ streamStatus: status });
+      }
     });
   },
 
@@ -870,6 +895,9 @@ export const useBotStore = create<BotStore>((set, get) => ({
       const result = await api.play(query, track.platform, undefined, focusedGuildId ?? undefined);
       if (result?.requiresVoiceChannel) {
         set({ pendingPlay: { query, platform: track.platform } });
+      } else if (result?.success) {
+        const { toast } = await import('./useToastStore');
+        toast.success(`Now playing: ${track.title}`);
       }
     } catch {
       const { toast } = await import('./useToastStore');
@@ -884,7 +912,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
   queueOnBot: async (track: Track) => {
     const { focusedGuildId } = get();
     try {
-      await api.addToQueue(track.url ?? track.title, focusedGuildId ?? undefined);
+      await api.addToQueue(track.url ?? track.title, track.platform, focusedGuildId ?? undefined);
       const { toast } = await import('./useToastStore');
       toast.success('Added to queue');
     } catch {
@@ -1134,14 +1162,19 @@ export const useBotStore = create<BotStore>((set, get) => ({
   },
 
   pause: async () => {
-    const { playbackMode, localAudio, activePlayerGuildId } = get();
+    const { playbackMode, localAudio, activePlayerGuildId, focusedGuildId } = get();
+    const guildId = activePlayerGuildId ?? focusedGuildId ?? undefined;
     if (playbackMode === 'sync') {
       // Sync: pause both
       if (localAudio) {
         localAudio.pause();
         set((s) => ({ player: { ...s.player, isPlaying: false } }));
       }
-      try { await api.pause(activePlayerGuildId ?? undefined); } catch { /* empty */ }
+      try {
+        await api.pause(guildId);
+      } catch {
+        /* empty */
+      }
       return;
     }
     // Prefer controlling local audio when it exists (even in bot mode if bot is offline)
@@ -1150,21 +1183,26 @@ export const useBotStore = create<BotStore>((set, get) => ({
       set((s) => ({ player: { ...s.player, isPlaying: false } }));
     } else if (playbackMode === 'bot') {
       try {
-        await api.pause(activePlayerGuildId ?? undefined);
+        await api.pause(guildId);
       } catch {
         /* empty */
       }
     }
   },
   resume: async () => {
-    const { playbackMode, localAudio, activePlayerGuildId, player: p } = get();
+    const { playbackMode, localAudio, activePlayerGuildId, focusedGuildId, player: p } = get();
+    const guildId = activePlayerGuildId ?? focusedGuildId ?? undefined;
     if (playbackMode === 'sync') {
       // Sync: resume both
       if (localAudio) {
         await localAudio.play();
         set((s) => ({ player: { ...s.player, isPlaying: true } }));
       }
-      try { await api.resume(activePlayerGuildId ?? undefined); } catch { /* empty */ }
+      try {
+        await api.resume(guildId);
+      } catch {
+        /* empty */
+      }
       return;
     }
     // Prefer controlling local audio when it exists (even in bot mode if bot is offline)
@@ -1184,14 +1222,15 @@ export const useBotStore = create<BotStore>((set, get) => ({
       }
     } else {
       try {
-        await api.resume(activePlayerGuildId ?? undefined);
+        await api.resume(guildId);
       } catch {
         /* empty */
       }
     }
   },
   stop: async () => {
-    const { playbackMode, localAudio, activePlayerGuildId } = get();
+    const { playbackMode, localAudio, activePlayerGuildId, focusedGuildId } = get();
+    const guildId = activePlayerGuildId ?? focusedGuildId ?? undefined;
     if (playbackMode === 'sync') {
       // Sync: stop both
       if (localAudio) {
@@ -1205,7 +1244,11 @@ export const useBotStore = create<BotStore>((set, get) => ({
           localHistory: [],
         }));
       }
-      try { await api.stop(activePlayerGuildId ?? undefined); } catch { /* empty */ }
+      try {
+        await api.stop(guildId);
+      } catch {
+        /* empty */
+      }
       return;
     }
     // Stop local audio if it exists (even in bot mode)
@@ -1221,7 +1264,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
       }));
     } else if (playbackMode === 'bot') {
       try {
-        await api.stop(activePlayerGuildId ?? undefined);
+        await api.stop(guildId);
       } catch {
         /* empty */
       }
@@ -1249,7 +1292,11 @@ export const useBotStore = create<BotStore>((set, get) => ({
           localAudio: null,
         }));
       }
-      try { await api.skip(get().activePlayerGuildId ?? undefined); } catch { /* empty */ }
+      try {
+        await api.skip(get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
+      } catch {
+        /* empty */
+      }
       return;
     }
     // If local audio is active (even in bot mode while offline), control it locally
@@ -1275,14 +1322,14 @@ export const useBotStore = create<BotStore>((set, get) => ({
       }
     } else {
       try {
-        await api.skip(get().activePlayerGuildId ?? undefined);
+        await api.skip(get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
       } catch {
         /* empty */
       }
     }
   },
   playPrevious: async () => {
-    const { playbackMode, localAudio, localHistory, player: p, activePlayerGuildId } = get();
+    const { playbackMode, localAudio, localHistory, player: p } = get();
     // If local audio is active or there's local history, handle locally
     if (localAudio || localHistory.length > 0 || playbackMode === 'local') {
       if (localHistory.length === 0) return;
@@ -1301,20 +1348,21 @@ export const useBotStore = create<BotStore>((set, get) => ({
       await get().playTrackLocally(prev);
     } else {
       try {
-        await api.back(activePlayerGuildId ?? undefined);
+        await api.back(get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
       } catch {
         /* empty */
       }
     }
   },
   seek: async (position) => {
-    const { localAudio, activePlayerGuildId } = get();
+    const { localAudio, activePlayerGuildId, focusedGuildId } = get();
+    const guildId = activePlayerGuildId ?? focusedGuildId ?? undefined;
     if (localAudio) {
       localAudio.currentTime = position;
       set((s) => ({ player: { ...s.player, position } }));
     } else {
       try {
-        await api.seek(position, activePlayerGuildId ?? undefined);
+        await api.seek(position, guildId);
       } catch {
         /* empty */
       }
@@ -1322,12 +1370,13 @@ export const useBotStore = create<BotStore>((set, get) => ({
   },
   setVolume: async (volume) => {
     set((s) => ({ player: { ...s.player, volume } }));
-    const { localAudio, activePlayerGuildId } = get();
+    const { localAudio, activePlayerGuildId, focusedGuildId } = get();
+    const guildId = activePlayerGuildId ?? focusedGuildId ?? undefined;
     if (localAudio) {
       localAudio.volume = volume / 100;
     } else {
       try {
-        await api.volume(volume, activePlayerGuildId ?? undefined);
+        await api.volume(volume, guildId);
       } catch {
         /* empty */
       }
@@ -1335,12 +1384,13 @@ export const useBotStore = create<BotStore>((set, get) => ({
   },
   setLoop: async (mode) => {
     set((s) => ({ player: { ...s.player, loop: mode as PlayerState['loop'] } }));
-    const { localAudio, activePlayerGuildId } = get();
+    const { localAudio, activePlayerGuildId, focusedGuildId } = get();
+    const guildId = activePlayerGuildId ?? focusedGuildId ?? undefined;
     if (localAudio) {
       localAudio.loop = mode === 'track';
     } else {
       try {
-        await api.loop(mode, activePlayerGuildId ?? undefined);
+        await api.loop(mode, guildId);
       } catch {
         /* empty */
       }
@@ -1370,12 +1420,14 @@ export const useBotStore = create<BotStore>((set, get) => ({
       // In sync mode, also queue on bot
       if (playbackMode === 'sync') {
         try {
-          await api.addToQueue(query, platform, get().activePlayerGuildId ?? undefined);
-        } catch { /* empty */ }
+          await api.addToQueue(query, platform, get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
+        } catch {
+          /* empty */
+        }
       }
     } else {
       try {
-        await api.addToQueue(query, platform, get().activePlayerGuildId ?? undefined);
+        await api.addToQueue(query, platform, get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
       } catch {
         /* empty */
       }
@@ -1401,7 +1453,11 @@ export const useBotStore = create<BotStore>((set, get) => ({
         };
       });
       if (playbackMode === 'sync') {
-        try { await api.removeFromQueue(index, get().activePlayerGuildId ?? undefined); } catch { /* empty */ }
+        try {
+          await api.removeFromQueue(index, get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
+        } catch {
+          /* empty */
+        }
       }
     } else {
       // Optimistic update: remove the track from local state immediately
@@ -1410,7 +1466,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
         player: { ...s.player, queue: s.player.queue.filter((_, i) => i !== index) },
       }));
       try {
-        await api.removeFromQueue(index, get().activePlayerGuildId ?? undefined);
+        await api.removeFromQueue(index, get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
       } catch {
         // Revert on failure
         set((s) => ({ player: { ...s.player, queue: prevQueue } }));
@@ -1423,18 +1479,18 @@ export const useBotStore = create<BotStore>((set, get) => ({
 
     // Optimistically reorder local state
     set((s) => {
-      const source = (playbackMode === 'local' || playbackMode === 'sync') ? s.localQueue : s.player.queue;
+      const source = playbackMode === 'local' || playbackMode === 'sync' ? s.localQueue : s.player.queue;
       const newQueue = [...source];
       const [moved] = newQueue.splice(from, 1);
       newQueue.splice(to, 0, moved);
-      return (playbackMode === 'local' || playbackMode === 'sync')
+      return playbackMode === 'local' || playbackMode === 'sync'
         ? { localQueue: newQueue, player: { ...s.player, queue: newQueue } }
         : { player: { ...s.player, queue: newQueue } };
     });
 
     if (playbackMode !== 'local') {
       try {
-        await api.moveQueueTrack(from, to, get().activePlayerGuildId ?? undefined);
+        await api.moveQueueTrack(from, to, get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
       } catch {
         /* revert would require re-fetching; the next WS state push will fix it */
       }
@@ -1448,14 +1504,18 @@ export const useBotStore = create<BotStore>((set, get) => ({
         player: { ...s.player, queue: [] },
       }));
       if (playbackMode === 'sync') {
-        try { await api.clearQueue(get().activePlayerGuildId ?? undefined); } catch { /* empty */ }
+        try {
+          await api.clearQueue(get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
+        } catch {
+          /* empty */
+        }
       }
     } else {
       // Optimistic update: clear queue in local state immediately
       const prevQueue = get().player.queue;
       set((s) => ({ player: { ...s.player, queue: [] } }));
       try {
-        await api.clearQueue(get().activePlayerGuildId ?? undefined);
+        await api.clearQueue(get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
       } catch {
         // Revert on failure
         set((s) => ({ player: { ...s.player, queue: prevQueue } }));
@@ -1473,11 +1533,15 @@ export const useBotStore = create<BotStore>((set, get) => ({
         };
       });
       if (playbackMode === 'sync') {
-        try { await api.shuffleQueue(get().activePlayerGuildId ?? undefined); } catch { /* empty */ }
+        try {
+          await api.shuffleQueue(get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
+        } catch {
+          /* empty */
+        }
       }
     } else {
       try {
-        await api.shuffleQueue(get().activePlayerGuildId ?? undefined);
+        await api.shuffleQueue(get().activePlayerGuildId ?? get().focusedGuildId ?? undefined);
       } catch {
         /* empty */
       }

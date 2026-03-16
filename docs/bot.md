@@ -43,25 +43,25 @@ The bot starts an Express server on the configured port (default 3001) and conne
 
 Configure these in `packages/bot/.env`:
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `CLIENT_TOKEN` | Yes | -- | Discord bot token from the Developer Portal |
-| `GUILD_ID` | Yes | -- | Discord server (guild) ID for command registration |
-| `PORT` | No | `3001` | HTTP/WebSocket server port |
-| `HOST` | No | `localhost` | Server bind address |
-| `DATABASE_URL` | No | `file:./data/bot.db` | SQLite database file path (Prisma format) |
-| `FFMPEG_PATH` | No | `ffmpeg` | Path to FFmpeg binary |
-| `MUSIC_FOLDER_PATH` | No | -- | Default local music folder to scan |
-| `MUSIC_CHANNEL_ID` | No | -- | Discord channel ID for music notifications |
-| `STATE_CHANNEL_ID` | No | -- | Discord channel for multi-instance state coordination |
-| `STATE_BACKEND` | No | `channel` | State persistence backend (`channel`) |
-| `OPEN_AI_TOKEN` | No | -- | OpenAI API key (for `/ask` command) |
-| `SPOTIFY_CLIENT_ID` | No | -- | Spotify API client ID (enables Spotify search) |
-| `SPOTIFY_CLIENT_SECRET` | No | -- | Spotify API client secret |
-| `DISCORD_CLIENT_ID` | No | -- | Discord application client ID |
-| `ENVIRONMENT` | No | `development` | Environment name |
-| `PROTOCOL` | No | `http` | Protocol for external URLs |
-| `EXTERNAL_DNS_NAME_OR_IP` | No | -- | Public hostname or IP |
+| Variable                  | Required | Default              | Description                                           |
+| ------------------------- | -------- | -------------------- | ----------------------------------------------------- |
+| `CLIENT_TOKEN`            | Yes      | --                   | Discord bot token from the Developer Portal           |
+| `GUILD_ID`                | Yes      | --                   | Discord server (guild) ID for command registration    |
+| `PORT`                    | No       | `3001`               | HTTP/WebSocket server port                            |
+| `HOST`                    | No       | `localhost`          | Server bind address                                   |
+| `DATABASE_URL`            | No       | `file:./data/bot.db` | SQLite database file path (Prisma format)             |
+| `FFMPEG_PATH`             | No       | `ffmpeg`             | Path to FFmpeg binary                                 |
+| `MUSIC_FOLDER_PATH`       | No       | --                   | Default local music folder to scan                    |
+| `MUSIC_CHANNEL_ID`        | No       | --                   | Discord channel ID for music notifications            |
+| `STATE_CHANNEL_ID`        | No       | --                   | Discord channel for multi-instance state coordination |
+| `STATE_BACKEND`           | No       | `channel`            | State persistence backend (`channel`)                 |
+| `OPEN_AI_TOKEN`           | No       | --                   | OpenAI API key (for `/ask` command)                   |
+| `SPOTIFY_CLIENT_ID`       | No       | --                   | Spotify API client ID (enables Spotify search)        |
+| `SPOTIFY_CLIENT_SECRET`   | No       | --                   | Spotify API client secret                             |
+| `DISCORD_CLIENT_ID`       | No       | --                   | Discord application client ID                         |
+| `ENVIRONMENT`             | No       | `development`        | Environment name                                      |
+| `PROTOCOL`                | No       | `http`               | Protocol for external URLs                            |
+| `EXTERNAL_DNS_NAME_OR_IP` | No       | --                   | Public hostname or IP                                 |
 
 ---
 
@@ -91,49 +91,49 @@ All 27 commands are in `packages/bot/src/commands/`. They use a unified `Command
 
 ### Playback Commands
 
-| Command | Description | Options |
-|---------|-------------|---------|
-| `/play` | Play a track or add to queue | `query` (search term or URL) |
-| `/pause` | Pause playback | -- |
-| `/resume` | Resume playback | -- |
-| `/stop` | Stop playback and clear queue | -- |
-| `/skip` | Skip to the next track | -- |
-| `/back` | Go to the previous track | -- |
-| `/seek` | Seek to a position in the current track | `seconds` (number) |
-| `/volume` | Set playback volume | `volume` (0-100) |
-| `/loop` | Set loop mode | `mode` (off, track, queue) |
-| `/nowplaying` | Show the currently playing track | -- |
+| Command       | Description                             | Options                      |
+| ------------- | --------------------------------------- | ---------------------------- |
+| `/play`       | Play a track or add to queue            | `query` (search term or URL) |
+| `/pause`      | Pause playback                          | --                           |
+| `/resume`     | Resume playback                         | --                           |
+| `/stop`       | Stop playback and clear queue           | --                           |
+| `/skip`       | Skip to the next track                  | --                           |
+| `/back`       | Go to the previous track                | --                           |
+| `/seek`       | Seek to a position in the current track | `seconds` (number)           |
+| `/volume`     | Set playback volume                     | `volume` (0-100)             |
+| `/loop`       | Set loop mode                           | `mode` (off, track, queue)   |
+| `/nowplaying` | Show the currently playing track        | --                           |
 
 ### Queue Commands
 
-| Command | Description | Options |
-|---------|-------------|---------|
-| `/queue` | Show the current queue | -- |
-| `/shuffle` | Shuffle the queue | -- |
-| `/clear` | Clear the queue | -- |
-| `/remove` | Remove a track by position | `position` (number) |
-| `/jump` | Jump to a specific track in the queue | `position` (number) |
-| `/playnext` | Add a track to play next | `query` (search term or URL) |
-| `/save` | Save the current track to a playlist | -- |
+| Command     | Description                           | Options                      |
+| ----------- | ------------------------------------- | ---------------------------- |
+| `/queue`    | Show the current queue                | --                           |
+| `/shuffle`  | Shuffle the queue                     | --                           |
+| `/clear`    | Clear the queue                       | --                           |
+| `/remove`   | Remove a track by position            | `position` (number)          |
+| `/jump`     | Jump to a specific track in the queue | `position` (number)          |
+| `/playnext` | Add a track to play next              | `query` (search term or URL) |
+| `/save`     | Save the current track to a playlist  | --                           |
 
 ### Discovery Commands
 
-| Command | Description | Options |
-|---------|-------------|---------|
-| `/search` | Search across platforms | `query`, `platform` (auto/youtube/spotify/soundcloud) |
-| `/playlist` | Manage playlists | `action` (create/list/view/add/play/delete), `name`, `id` |
-| `/history` | View play history | `view` (recent/most-played) |
+| Command     | Description             | Options                                                   |
+| ----------- | ----------------------- | --------------------------------------------------------- |
+| `/search`   | Search across platforms | `query`, `platform` (auto/youtube/spotify/soundcloud)     |
+| `/playlist` | Manage playlists        | `action` (create/list/view/add/play/delete), `name`, `id` |
+| `/history`  | View play history       | `view` (recent/most-played)                               |
 
 ### Utility Commands
 
-| Command | Description | Options |
-|---------|-------------|---------|
-| `/hello` | Greeting command | -- |
-| `/ask` | Ask a question (OpenAI) | `question` (text) |
-| `/meme` | Get a random meme | -- |
-| `/status` | Show bot status and stats | -- |
-| `/set-active` | Set the active bot instance | `instance` (ID) |
-| `/shutdown` | Shut down the bot | -- |
+| Command       | Description                 | Options           |
+| ------------- | --------------------------- | ----------------- |
+| `/hello`      | Greeting command            | --                |
+| `/ask`        | Ask a question (OpenAI)     | `question` (text) |
+| `/meme`       | Get a random meme           | --                |
+| `/status`     | Show bot status and stats   | --                |
+| `/set-active` | Set the active bot instance | `instance` (ID)   |
+| `/shutdown`   | Shut down the bot           | --                |
 
 ### How Commands Work
 
@@ -147,10 +147,12 @@ packages/bot/src/helpers/commands/
 ```
 
 Each command file exports:
+
 - `data` -- A `SlashCommandBuilder` defining the command name, description, and options
 - `execute(context: CommandContext)` -- The handler function
 
 `CommandContext` provides a unified API:
+
 - `context.getString('name')` -- Get a string option value
 - `context.guildId` -- The guild ID where the command was invoked
 - `context.userId` -- The user who invoked the command
@@ -167,68 +169,68 @@ The bot exposes a REST API on the same port as the WebSocket server. All endpoin
 
 ### Health
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/health` | Health check, returns `{ ok: true }` |
+| Method | Path          | Description                          |
+| ------ | ------------- | ------------------------------------ |
+| `GET`  | `/api/health` | Health check, returns `{ ok: true }` |
 
 ### Music Player (`/api/music`)
 
-| Method | Path | Body | Description |
-|--------|------|------|-------------|
-| `GET` | `/state` | -- | Current player state (track, position, volume, queue) |
-| `GET` | `/history` | -- | Playback history |
-| `POST` | `/play` | `{ query, platform?, source? }` | Play a track. `source`: `online` or `local` |
-| `POST` | `/pause` | -- | Pause playback |
-| `POST` | `/resume` | -- | Resume playback |
-| `POST` | `/stop` | -- | Stop playback |
-| `POST` | `/skip` | -- | Skip current track |
-| `POST` | `/seek` | `{ position }` | Seek to position in seconds |
-| `POST` | `/volume` | `{ volume }` | Set volume (0-100) |
-| `POST` | `/repeat` | `{ mode }` | Set repeat mode: `off`, `track`, `queue`, `autoplay` |
-| `GET` | `/queue` | -- | Get current queue |
-| `POST` | `/queue/add` | `{ query }` | Add track to queue |
-| `DELETE` | `/queue/:index` | -- | Remove track at index |
-| `POST` | `/queue/clear` | -- | Clear the queue |
-| `POST` | `/queue/shuffle` | -- | Shuffle the queue |
-| `GET` | `/search` | `?q=&platform=` | Search for tracks (GET) |
-| `POST` | `/search` | `{ query, searchEngine }` | Search for tracks (POST) |
-| `GET` | `/local-files` | -- | List uploaded audio files |
+| Method   | Path             | Body                            | Description                                           |
+| -------- | ---------------- | ------------------------------- | ----------------------------------------------------- |
+| `GET`    | `/state`         | --                              | Current player state (track, position, volume, queue) |
+| `GET`    | `/history`       | --                              | Playback history                                      |
+| `POST`   | `/play`          | `{ query, platform?, source? }` | Play a track. `source`: `online` or `local`           |
+| `POST`   | `/pause`         | --                              | Pause playback                                        |
+| `POST`   | `/resume`        | --                              | Resume playback                                       |
+| `POST`   | `/stop`          | --                              | Stop playback                                         |
+| `POST`   | `/skip`          | --                              | Skip current track                                    |
+| `POST`   | `/seek`          | `{ position }`                  | Seek to position in seconds                           |
+| `POST`   | `/volume`        | `{ volume }`                    | Set volume (0-100)                                    |
+| `POST`   | `/repeat`        | `{ mode }`                      | Set repeat mode: `off`, `track`, `queue`, `autoplay`  |
+| `GET`    | `/queue`         | --                              | Get current queue                                     |
+| `POST`   | `/queue/add`     | `{ query }`                     | Add track to queue                                    |
+| `DELETE` | `/queue/:index`  | --                              | Remove track at index                                 |
+| `POST`   | `/queue/clear`   | --                              | Clear the queue                                       |
+| `POST`   | `/queue/shuffle` | --                              | Shuffle the queue                                     |
+| `GET`    | `/search`        | `?q=&platform=`                 | Search for tracks (GET)                               |
+| `POST`   | `/search`        | `{ query, searchEngine }`       | Search for tracks (POST)                              |
+| `GET`    | `/local-files`   | --                              | List uploaded audio files                             |
 
 ### Commands (`/api/commands`)
 
-| Method | Path | Body | Description |
-|--------|------|------|-------------|
-| `GET` | `/registry` | -- | List all available commands |
-| `POST` | `/execute` | `{ command, args }` | Execute a command |
-| `GET` | `/history` | `?limit=&command=&status=&since=` | Command execution history |
-| `GET` | `/history/:id` | -- | Get specific execution |
-| `DELETE` | `/history` | -- | Clear command history |
-| `GET` | `/stats` | -- | Command usage statistics |
-| `POST` | `/validate` | `{ command, args }` | Validate command arguments |
-| `GET` | `/guilds` | -- | List available guilds |
-| `GET` | `/guilds/:id/channels` | -- | List channels in a guild |
+| Method   | Path                   | Body                              | Description                 |
+| -------- | ---------------------- | --------------------------------- | --------------------------- |
+| `GET`    | `/registry`            | --                                | List all available commands |
+| `POST`   | `/execute`             | `{ command, args }`               | Execute a command           |
+| `GET`    | `/history`             | `?limit=&command=&status=&since=` | Command execution history   |
+| `GET`    | `/history/:id`         | --                                | Get specific execution      |
+| `DELETE` | `/history`             | --                                | Clear command history       |
+| `GET`    | `/stats`               | --                                | Command usage statistics    |
+| `POST`   | `/validate`            | `{ command, args }`               | Validate command arguments  |
+| `GET`    | `/guilds`              | --                                | List available guilds       |
+| `GET`    | `/guilds/:id/channels` | --                                | List channels in a guild    |
 
 ### File Uploads (`/api/upload`)
 
-| Method | Path | Body | Description |
-|--------|------|------|-------------|
-| `POST` | `/single` | `multipart/form-data` | Upload a single audio file |
-| `POST` | `/multiple` | `multipart/form-data` | Upload multiple files (max 10) |
-| `GET` | `/files` | -- | List all uploaded files |
-| `GET` | `/files/:id` | -- | Get file details |
-| `DELETE` | `/files/:id` | -- | Delete a file |
-| `GET` | `/search` | `?q=` | Search files by name |
-| `GET` | `/stats` | -- | Storage statistics |
-| `POST` | `/cleanup` | -- | Cleanup orphaned files |
-| `GET` | `/serve/:id` | -- | Stream an audio file |
+| Method   | Path         | Body                  | Description                    |
+| -------- | ------------ | --------------------- | ------------------------------ |
+| `POST`   | `/single`    | `multipart/form-data` | Upload a single audio file     |
+| `POST`   | `/multiple`  | `multipart/form-data` | Upload multiple files (max 10) |
+| `GET`    | `/files`     | --                    | List all uploaded files        |
+| `GET`    | `/files/:id` | --                    | Get file details               |
+| `DELETE` | `/files/:id` | --                    | Delete a file                  |
+| `GET`    | `/search`    | `?q=`                 | Search files by name           |
+| `GET`    | `/stats`     | --                    | Storage statistics             |
+| `POST`   | `/cleanup`   | --                    | Cleanup orphaned files         |
+| `GET`    | `/serve/:id` | --                    | Stream an audio file           |
 
 ### Logs (`/api/logs`)
 
-| Method | Path | Query | Description |
-|--------|------|-------|-------------|
-| `GET` | `/` | `?type=&query=&level=&category=&limit=&offset=&sort=` | Get logs |
-| `GET` | `/stats` | -- | Log statistics |
-| `DELETE` | `/` | `?type=&level=` | Clear logs |
+| Method   | Path     | Query                                                 | Description    |
+| -------- | -------- | ----------------------------------------------------- | -------------- |
+| `GET`    | `/`      | `?type=&query=&level=&category=&limit=&offset=&sort=` | Get logs       |
+| `GET`    | `/stats` | --                                                    | Log statistics |
+| `DELETE` | `/`      | `?type=&level=`                                       | Clear logs     |
 
 ---
 
@@ -238,25 +240,25 @@ Connect to `ws://host:port/ws`. Messages are JSON.
 
 ### Server-to-Client Events
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `bot_status` | `{ online, guildId, instanceId }` | Bot online/offline status |
-| `player_state` | `{ isPlaying, currentTrack, position, duration, volume, loop, queue }` | Player state update |
-| `queue_update` | `{ queue: Track[] }` | Queue changed |
-| `track_started` | `Track` | New track started playing |
-| `track_finished` | `Track` | Track finished |
-| `log_entry` | `LogEntry` | New log entry |
-| `command_result` | `CommandExecution` | Command executed |
-| `connection_update` | `ConnectionInfo` | Discord connection change |
-| `file_upload` | `FileUploadProgress` | Upload progress |
+| Event               | Payload                                                                | Description               |
+| ------------------- | ---------------------------------------------------------------------- | ------------------------- |
+| `bot_status`        | `{ online, guildId, instanceId }`                                      | Bot online/offline status |
+| `player_state`      | `{ isPlaying, currentTrack, position, duration, volume, loop, queue }` | Player state update       |
+| `queue_update`      | `{ queue: Track[] }`                                                   | Queue changed             |
+| `track_started`     | `Track`                                                                | New track started playing |
+| `track_finished`    | `Track`                                                                | Track finished            |
+| `log_entry`         | `LogEntry`                                                             | New log entry             |
+| `command_result`    | `CommandExecution`                                                     | Command executed          |
+| `connection_update` | `ConnectionInfo`                                                       | Discord connection change |
+| `file_upload`       | `FileUploadProgress`                                                   | Upload progress           |
 
 ### Client-to-Server Messages
 
-| Message | Payload | Description |
-|---------|---------|-------------|
-| `subscribe` | `{ types: string[] }` | Subscribe to event types |
+| Message       | Payload               | Description                  |
+| ------------- | --------------------- | ---------------------------- |
+| `subscribe`   | `{ types: string[] }` | Subscribe to event types     |
 | `unsubscribe` | `{ types: string[] }` | Unsubscribe from event types |
-| `ping` | -- | Keepalive ping |
+| `ping`        | --                    | Keepalive ping               |
 
 ### Message Format
 
@@ -293,113 +295,120 @@ The bot uses SQLite via Prisma ORM. Schema is defined in `packages/bot/prisma/sc
 ### Models
 
 #### Guild
+
 Stores per-server configuration.
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `id` | String (PK) | -- | Discord guild ID |
-| `name` | String | -- | Server name |
-| `preferredLanguage` | String | `en` | Default language |
-| `defaultVolume` | Int | `65` | Default playback volume |
-| `leaveOnEmpty` | Boolean | `true` | Leave voice when channel empties |
-| `leaveOnEmptyCooldown` | Int | `300` | Seconds to wait before leaving |
+| Field                  | Type        | Default | Description                      |
+| ---------------------- | ----------- | ------- | -------------------------------- |
+| `id`                   | String (PK) | --      | Discord guild ID                 |
+| `name`                 | String      | --      | Server name                      |
+| `preferredLanguage`    | String      | `en`    | Default language                 |
+| `defaultVolume`        | Int         | `65`    | Default playback volume          |
+| `leaveOnEmpty`         | Boolean     | `true`  | Leave voice when channel empties |
+| `leaveOnEmptyCooldown` | Int         | `300`   | Seconds to wait before leaving   |
 
 #### Playlist
+
 User-created playlists, scoped to a guild.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | UUID (PK) | Auto-generated |
-| `guildId` | String (FK) | Guild this playlist belongs to |
-| `userId` | String | Discord user who created it |
-| `name` | String | Playlist name |
-| `description` | String? | Optional description |
-| `isPublic` | Boolean | Whether other users can see it |
+| Field         | Type        | Description                    |
+| ------------- | ----------- | ------------------------------ |
+| `id`          | UUID (PK)   | Auto-generated                 |
+| `guildId`     | String (FK) | Guild this playlist belongs to |
+| `userId`      | String      | Discord user who created it    |
+| `name`        | String      | Playlist name                  |
+| `description` | String?     | Optional description           |
+| `isPublic`    | Boolean     | Whether other users can see it |
 
 #### PlaylistTrack
+
 Ordered tracks within a playlist.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | UUID (PK) | Auto-generated |
-| `playlistId` | UUID (FK) | Parent playlist (cascade delete) |
-| `position` | Int | Order in playlist |
-| `title` | String | Track title |
-| `artist` | String? | Artist name |
-| `duration` | Int? | Duration in seconds |
-| `url` | String? | Stream URL |
-| `thumbnail` | String? | Cover art URL |
-| `platform` | String | Source: `youtube`, `spotify`, `soundcloud`, `local` |
-| `platformId` | String? | Platform-specific ID |
-| `filePath` | String? | Local file path (for `local` platform) |
+| Field        | Type      | Description                                         |
+| ------------ | --------- | --------------------------------------------------- |
+| `id`         | UUID (PK) | Auto-generated                                      |
+| `playlistId` | UUID (FK) | Parent playlist (cascade delete)                    |
+| `position`   | Int       | Order in playlist                                   |
+| `title`      | String    | Track title                                         |
+| `artist`     | String?   | Artist name                                         |
+| `duration`   | Int?      | Duration in seconds                                 |
+| `url`        | String?   | Stream URL                                          |
+| `thumbnail`  | String?   | Cover art URL                                       |
+| `platform`   | String    | Source: `youtube`, `spotify`, `soundcloud`, `local` |
+| `platformId` | String?   | Platform-specific ID                                |
+| `filePath`   | String?   | Local file path (for `local` platform)              |
 
 #### PlayHistory
+
 Log of every track played.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | UUID (PK) | Auto-generated |
-| `guildId` | String (FK) | Guild where it was played |
-| `userId` | String | User who requested it |
-| `title` | String | Track title |
-| `artist` | String? | Artist name |
-| `duration` | Int? | Duration in seconds |
-| `url` | String? | Stream URL |
-| `platform` | String | Source platform |
-| `playedAt` | DateTime | When playback started |
-| `completedAt` | DateTime? | When playback ended (null if skipped) |
+| Field         | Type        | Description                           |
+| ------------- | ----------- | ------------------------------------- |
+| `id`          | UUID (PK)   | Auto-generated                        |
+| `guildId`     | String (FK) | Guild where it was played             |
+| `userId`      | String      | User who requested it                 |
+| `title`       | String      | Track title                           |
+| `artist`      | String?     | Artist name                           |
+| `duration`    | Int?        | Duration in seconds                   |
+| `url`         | String?     | Stream URL                            |
+| `platform`    | String      | Source platform                       |
+| `playedAt`    | DateTime    | When playback started                 |
+| `completedAt` | DateTime?   | When playback ended (null if skipped) |
 
 #### QueueSnapshot
+
 Persists the queue state across bot restarts.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | UUID (PK) | Auto-generated |
-| `guildId` | String (FK) | Guild this snapshot belongs to |
-| `currentTrackUrl` | String? | URL of the currently playing track |
-| `currentPosition` | Int | Seek position in seconds |
-| `volume` | Int | Volume level (0-100) |
-| `loopMode` | String | `off`, `track`, or `queue` |
-| `tracks` | String | JSON-serialized array of Track objects |
+| Field             | Type        | Description                            |
+| ----------------- | ----------- | -------------------------------------- |
+| `id`              | UUID (PK)   | Auto-generated                         |
+| `guildId`         | String (FK) | Guild this snapshot belongs to         |
+| `currentTrackUrl` | String?     | URL of the currently playing track     |
+| `currentPosition` | Int         | Seek position in seconds               |
+| `volume`          | Int         | Volume level (0-100)                   |
+| `loopMode`        | String      | `off`, `track`, or `queue`             |
+| `tracks`          | String      | JSON-serialized array of Track objects |
 
 #### UserPreferences
+
 Per-user per-guild preferences.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | UUID (PK) | Auto-generated |
-| `guildId` | String (FK) | Guild |
-| `userId` | String | Discord user ID |
-| `language` | String | Preferred language (`en`) |
-| `volume` | Int | Preferred volume (0-100) |
+| Field      | Type        | Description               |
+| ---------- | ----------- | ------------------------- |
+| `id`       | UUID (PK)   | Auto-generated            |
+| `guildId`  | String (FK) | Guild                     |
+| `userId`   | String      | Discord user ID           |
+| `language` | String      | Preferred language (`en`) |
+| `volume`   | Int         | Preferred volume (0-100)  |
 
 #### TrackCache
+
 Caches track metadata to avoid repeated lookups.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | UUID (PK) | Auto-generated |
-| `platform` | String | Source platform |
-| `platformId` | String | Platform-specific track ID |
-| `title` | String | Cached title |
-| `artist` | String? | Cached artist |
-| `duration` | Int? | Cached duration |
-| `url` | String? | Cached stream URL |
-| `thumbnail` | String? | Cached cover art |
-| `metadata` | String? | Additional JSON metadata |
-| `lastUsed` | DateTime | Last access time (for cleanup) |
+| Field        | Type      | Description                    |
+| ------------ | --------- | ------------------------------ |
+| `id`         | UUID (PK) | Auto-generated                 |
+| `platform`   | String    | Source platform                |
+| `platformId` | String    | Platform-specific track ID     |
+| `title`      | String    | Cached title                   |
+| `artist`     | String?   | Cached artist                  |
+| `duration`   | Int?      | Cached duration                |
+| `url`        | String?   | Cached stream URL              |
+| `thumbnail`  | String?   | Cached cover art               |
+| `metadata`   | String?   | Additional JSON metadata       |
+| `lastUsed`   | DateTime  | Last access time (for cleanup) |
 
 ### Database Repositories
 
 Located in `packages/bot/src/database/repositories/`:
 
-| Repository | Description |
-|------------|-------------|
-| `GuildRepository` | Find/create guilds, update guild settings |
-| `PlaylistRepository` | Full CRUD for playlists and tracks, with position reordering |
-| `HistoryRepository` | Record plays, get recently played (distinct), get most played |
-| `QueueRepository` | Save/restore queue snapshots as JSON |
-| `TrackCacheRepository` | Upsert track metadata, cleanup old entries |
+| Repository             | Description                                                   |
+| ---------------------- | ------------------------------------------------------------- |
+| `GuildRepository`      | Find/create guilds, update guild settings                     |
+| `PlaylistRepository`   | Full CRUD for playlists and tracks, with position reordering  |
+| `HistoryRepository`    | Record plays, get recently played (distinct), get most played |
+| `QueueRepository`      | Save/restore queue snapshots as JSON                          |
+| `TrackCacheRepository` | Upsert track metadata, cleanup old entries                    |
 
 ### Database Commands
 
@@ -418,13 +427,13 @@ Extractors are registered in `packages/bot/src/extractors/index.ts` via `registe
 
 ### Supported Platforms
 
-| Platform | Extractor | How It Works |
-|----------|-----------|-------------|
-| YouTube | `YoutubeiExtractor` | Direct streaming via youtubei.js. Primary playback engine. |
-| Spotify | YouTube bridge | Resolves Spotify metadata, finds matching YouTube stream. No Premium needed. |
-| SoundCloud | Built-in discord-player | Uses `QueryType.SOUNDCLOUD_SEARCH` for search and streaming. |
-| Local files | `AttachmentExtractor` + `LocalMusicService` | Discord attachments or local file paths. ID3 tag parsing. |
-| Auto | discord-player routing | Automatically detects platform from URL or searches YouTube. |
+| Platform    | Extractor                                   | How It Works                                                                 |
+| ----------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
+| YouTube     | `YoutubeiExtractor`                         | Direct streaming via youtubei.js. Primary playback engine.                   |
+| Spotify     | YouTube bridge                              | Resolves Spotify metadata, finds matching YouTube stream. No Premium needed. |
+| SoundCloud  | Built-in discord-player                     | Uses `QueryType.SOUNDCLOUD_SEARCH` for search and streaming.                 |
+| Local files | `AttachmentExtractor` + `LocalMusicService` | Discord attachments or local file paths. ID3 tag parsing.                    |
+| Auto        | discord-player routing                      | Automatically detects platform from URL or searches YouTube.                 |
 
 ### Platform Detection in Search
 

@@ -1,17 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBotStore } from '@/stores/useBotStore';
 import ThemeSelector from '@/components/ThemeSelector';
-import {
-  Save,
-  RefreshCw,
-  Server,
-  Bot,
-  LogIn,
-  LogOut,
-  Loader2,
-  Crown,
-  Palette,
-} from 'lucide-react';
+import { Save, RefreshCw, Server, Bot, LogIn, LogOut, Loader2, Crown, Palette } from 'lucide-react';
 
 interface Guild {
   id: string;
@@ -89,7 +79,9 @@ export default function SettingsPage() {
               {connection.connected ? (
                 <>
                   <div className="h-2 w-2 animate-pulse rounded-full" style={{ background: 'var(--accent)' }} />
-                  <span className="text-[11px] font-medium" style={{ color: 'var(--accent)' }}>Connected</span>
+                  <span className="text-[11px] font-medium" style={{ color: 'var(--accent)' }}>
+                    Connected
+                  </span>
                 </>
               ) : (
                 <>
@@ -107,9 +99,17 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between rounded-xl p-3" style={{ background: 'var(--glass-bg)' }}>
               <div className="flex items-center gap-3">
                 {botUser.avatar ? (
-                  <img src={botUser.avatar} alt="" className="h-8 w-8 rounded-full" style={{ border: '1px solid var(--border)' }} />
+                  <img
+                    src={botUser.avatar}
+                    alt=""
+                    className="h-8 w-8 rounded-full"
+                    style={{ border: '1px solid var(--border)' }}
+                  />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: 'var(--glass-bg-md)' }}>
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-full"
+                    style={{ background: 'var(--glass-bg-md)' }}
+                  >
                     <Bot size={14} className="text-t-tertiary" />
                   </div>
                 )}
@@ -134,16 +134,19 @@ export default function SettingsPage() {
                 <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-t-faint">
                   Connected Servers
                 </label>
-                <div className="flex flex-col gap-1 rounded-xl p-1.5" style={{ border: '1px solid var(--glass-border)', background: 'var(--glass-bg)' }}>
+                <div
+                  className="flex flex-col gap-1 rounded-xl p-1.5"
+                  style={{ border: '1px solid var(--glass-border)', background: 'var(--glass-bg)' }}
+                >
                   {guilds.map((guild: Guild) => (
-                    <div
-                      key={guild.id}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2"
-                    >
+                    <div key={guild.id} className="flex items-center gap-3 rounded-lg px-3 py-2">
                       {guild.icon ? (
                         <img src={guild.icon} alt="" className="h-8 w-8 rounded-lg object-cover" />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: 'var(--glass-bg-md)' }}>
+                        <div
+                          className="flex h-8 w-8 items-center justify-center rounded-lg"
+                          style={{ background: 'var(--glass-bg-md)' }}
+                        >
                           <Server size={14} className="text-t-faint" />
                         </div>
                       )}
@@ -220,17 +223,11 @@ export default function SettingsPage() {
               disabled={botConnecting}
               className="btn-primary flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all disabled:opacity-50"
             >
-              {botConnecting ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <LogIn size={16} />
-              )}
+              {botConnecting ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
               {botConnecting ? 'Connecting...' : 'Connect to Bot'}
             </button>
 
-            {botError && (
-              <p className="text-center text-xs text-red-400">{botError}</p>
-            )}
+            {botError && <p className="text-center text-xs text-red-400">{botError}</p>}
 
             <p className="text-center text-[11px] text-t-ghost">
               The bot must be running to connect. Bot integration is optional.

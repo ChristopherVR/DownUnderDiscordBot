@@ -3,37 +3,35 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api, type PlaylistDetail, type PlaylistTrackItem } from '@/lib/api';
 import { useBotStore, type Track } from '@/stores/useBotStore';
 import { formatTime } from '@/lib/utils';
-import {
-  ArrowLeft,
-  Play,
-  Trash2,
-  Music,
-  Loader2,
-  Pencil,
-  Check,
-  X,
-  Plus,
-  Globe,
-  Lock,
-} from 'lucide-react';
+import { ArrowLeft, Play, Trash2, Music, Loader2, Pencil, Check, X, Plus, Globe, Lock } from 'lucide-react';
 
 function platformLabel(platform: string) {
   switch (platform) {
-    case 'youtube': return 'YouTube';
-    case 'spotify': return 'Spotify';
-    case 'soundcloud': return 'SoundCloud';
-    case 'local': return 'Local';
-    default: return platform;
+    case 'youtube':
+      return 'YouTube';
+    case 'spotify':
+      return 'Spotify';
+    case 'soundcloud':
+      return 'SoundCloud';
+    case 'local':
+      return 'Local';
+    default:
+      return platform;
   }
 }
 
 function platformColor(platform: string) {
   switch (platform) {
-    case 'youtube': return 'text-red-400';
-    case 'spotify': return 'text-spotify-green';
-    case 'soundcloud': return 'text-orange-400';
-    case 'local': return 'text-blue-400';
-    default: return 'text-t-faint';
+    case 'youtube':
+      return 'text-red-400';
+    case 'spotify':
+      return 'text-spotify-green';
+    case 'soundcloud':
+      return 'text-orange-400';
+    case 'local':
+      return 'text-blue-400';
+    default:
+      return 'text-t-faint';
   }
 }
 
@@ -225,14 +223,16 @@ export default function PlaylistDetailPage() {
                   <Pencil size={14} />
                 </button>
                 {playlist.isPublic ? (
-                  <span className="text-t-faint" aria-label="Public"><Globe size={14} /></span>
+                  <span className="text-t-faint" aria-label="Public">
+                    <Globe size={14} />
+                  </span>
                 ) : (
-                  <span className="text-t-faint" aria-label="Private"><Lock size={14} /></span>
+                  <span className="text-t-faint" aria-label="Private">
+                    <Lock size={14} />
+                  </span>
                 )}
               </div>
-              {playlist.description && (
-                <p className="mt-1 text-sm text-t-tertiary">{playlist.description}</p>
-              )}
+              {playlist.description && <p className="mt-1 text-sm text-t-tertiary">{playlist.description}</p>}
               <p className="mt-1 text-xs text-t-faint">
                 {playlist.trackCount} track{playlist.trackCount !== 1 ? 's' : ''}
                 {totalDuration > 0 && ` \u00B7 ${formatTime(totalDuration)}`}
@@ -251,10 +251,7 @@ export default function PlaylistDetailPage() {
         >
           <Play size={14} fill="black" /> Play All
         </button>
-        <button
-          onClick={() => setShowAddTrack(!showAddTrack)}
-          className="btn-glass flex items-center gap-2 text-xs"
-        >
+        <button onClick={() => setShowAddTrack(!showAddTrack)} className="btn-glass flex items-center gap-2 text-xs">
           <Plus size={14} /> Add Tracks
         </button>
         <button
@@ -276,11 +273,7 @@ export default function PlaylistDetailPage() {
               placeholder="Search for a song or paste a URL..."
               className="input-glass flex-1"
             />
-            <button
-              type="submit"
-              disabled={addSearching}
-              className="btn-glass flex items-center gap-1.5 text-xs"
-            >
+            <button type="submit" disabled={addSearching} className="btn-glass flex items-center gap-1.5 text-xs">
               {addSearching ? <Loader2 size={12} className="animate-spin" /> : 'Search'}
             </button>
           </form>
@@ -304,9 +297,7 @@ export default function PlaylistDetailPage() {
                     <p className="truncate text-[12px] font-medium text-t-secondary">{track.title}</p>
                     <p className="truncate text-[10px] text-t-faint">{track.artist ?? 'Unknown'}</p>
                   </div>
-                  <span className="text-[10px] text-t-faint">
-                    {track.duration ? formatTime(track.duration) : ''}
-                  </span>
+                  <span className="text-[10px] text-t-faint">{track.duration ? formatTime(track.duration) : ''}</span>
                   <button
                     onClick={() => handleAddTrackFromSearch(track)}
                     className="rounded-full p-1.5 text-t-faint transition-colors hover:bg-white/[0.08] hover:text-spotify-green"
@@ -347,9 +338,7 @@ export default function PlaylistDetailPage() {
               key={track.id}
               className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/[0.04]"
             >
-              <span className="w-7 text-center text-xs tabular-nums text-t-faint group-hover:hidden">
-                {i + 1}
-              </span>
+              <span className="w-7 text-center text-xs tabular-nums text-t-faint group-hover:hidden">{i + 1}</span>
               <button
                 onClick={() => handlePlayTrack(track)}
                 className="hidden h-7 w-7 items-center justify-center text-t-primary group-hover:flex"

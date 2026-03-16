@@ -40,9 +40,7 @@ export class QueueRepository {
     });
   }
 
-  async getLatestSnapshot(
-    guildId: string,
-  ): Promise<(QueueSnapshot & { parsedTracks: QueueTrackData[] }) | null> {
+  async getLatestSnapshot(guildId: string): Promise<(QueueSnapshot & { parsedTracks: QueueTrackData[] }) | null> {
     const snapshot = await this.db.queueSnapshot.findFirst({
       where: { guildId },
       orderBy: { createdAt: 'desc' },

@@ -262,7 +262,10 @@ export class ErrorHandler {
           return new NotFoundError(this.translate('bot.instanceNotFound') || 'Bot instance not found', context);
         }
         if (message.includes('offline')) {
-          return new ConflictError(this.translate('bot.management.instanceOffline') || 'Bot instance is offline', context);
+          return new ConflictError(
+            this.translate('bot.management.instanceOffline') || 'Bot instance is offline',
+            context,
+          );
         }
         break;
     }
@@ -352,5 +355,3 @@ export function throwLocalizedError(
       throw new ServerError(message, context);
   }
 }
-
-

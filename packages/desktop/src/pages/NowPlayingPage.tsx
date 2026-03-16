@@ -1,6 +1,6 @@
 import { useBotStore } from '@/stores/useBotStore';
 import { formatTime } from '@/lib/utils';
-import { Music, Play, Pause, SkipForward, Heart, Monitor, Radio } from 'lucide-react';
+import { Music, Play, Pause, SkipForward, Heart, Monitor, Radio, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function NowPlayingPage() {
@@ -10,6 +10,7 @@ export default function NowPlayingPage() {
   const skip = useBotStore((s) => s.skip);
   const connected = useBotStore((s) => s.connection.connected);
   const playbackMode = useBotStore((s) => s.playbackMode);
+  const streamStatus = useBotStore((s) => s.streamStatus);
 
   const isAvailable = connected || playbackMode === 'local';
 
@@ -47,9 +48,7 @@ export default function NowPlayingPage() {
       {/* Ambient background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-32 h-72 w-72 animate-float rounded-full bg-spotify-green/[0.08] blur-[100px]" />
-        <div
-          className="absolute -bottom-32 -right-32 h-80 w-80 animate-float-delayed rounded-full bg-purple-500/[0.06] blur-[120px]"
-        />
+        <div className="absolute -bottom-32 -right-32 h-80 w-80 animate-float-delayed rounded-full bg-purple-500/[0.06] blur-[120px]" />
         <div className="absolute left-1/2 top-1/3 h-48 w-48 animate-pulse-slow rounded-full bg-cyan-500/[0.04] blur-[80px]" />
       </div>
 
@@ -86,21 +85,31 @@ export default function NowPlayingPage() {
 
           {/* Track info */}
           <div className="text-center">
-            <h1 className="max-w-lg truncate text-2xl font-bold text-t-primary lg:text-3xl">
-              {track.title}
-            </h1>
-            <p className="mt-2 text-base text-t-tertiary">
-              {track.artist ?? 'Unknown Artist'}
-            </p>
+            <h1 className="max-w-lg truncate text-2xl font-bold text-t-primary lg:text-3xl">{track.title}</h1>
+            <p className="mt-2 text-base text-t-tertiary">{track.artist ?? 'Unknown Artist'}</p>
             {/* Playback mode badge */}
-            <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${
-              playbackMode === 'local'
-                ? 'bg-spotify-green/10 text-spotify-green'
-                : 'bg-indigo-500/10 text-indigo-400'
-            }`}>
+            <div
+              className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium ${
+                playbackMode === 'local' ? 'bg-spotify-green/10 text-spotify-green' : 'bg-indigo-500/10 text-indigo-400'
+              }`}
+            >
               {playbackMode === 'local' ? <Monitor size={12} /> : <Radio size={12} />}
               {playbackMode === 'local' ? 'Playing locally' : 'Playing via bot'}
             </div>
+            {/* Stream status indicator */}
+            {streamStatus && (streamStatus.status === 'resolving' || streamStatus.status === 'fallback') && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-[11px] font-medium text-amber-400">
+                <Loader2 size={12} className="animate-spin" />
+                {streamStatus.status === 'resolving'
+                  ? `Connecting via ${streamStatus.client}…`
+                  : `${streamStatus.client} failed, trying next…`}
+              </div>
+            )}
+            {streamStatus?.status === 'error' && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1 text-[11px] font-medium text-red-400">
+                Stream failed
+              </div>
+            )}
           </div>
 
           {/* Progress */}
@@ -127,16 +136,9 @@ export default function NowPlayingPage() {
               onClick={() => (player.isPlaying ? pause() : resume())}
               className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-spotify-green to-emerald-400 text-black shadow-glow-green-lg transition-all hover:scale-105 active:scale-95"
             >
-              {player.isPlaying ? (
-                <Pause size={26} fill="black" />
-              ) : (
-                <Play size={26} fill="black" className="ml-1" />
-              )}
+              {player.isPlaying ? <Pause size={26} fill="black" /> : <Play size={26} fill="black" className="ml-1" />}
             </button>
-            <button
-              onClick={skip}
-              className="text-t-faint transition-all hover:scale-110 hover:text-t-secondary"
-            >
+            <button onClick={skip} className="text-t-faint transition-all hover:scale-110 hover:text-t-secondary">
               <SkipForward size={22} />
             </button>
           </div>

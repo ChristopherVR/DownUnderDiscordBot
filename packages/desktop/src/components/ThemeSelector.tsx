@@ -35,17 +35,10 @@ export default function ThemeSelector() {
             >
               <Icon
                 size={20}
-                className={cn(
-                  mode === value ? 'text-[var(--accent)]' : 'text-t-tertiary',
-                )}
+                className={cn(mode === value ? 'text-[var(--accent)]' : 'text-t-tertiary')}
                 style={mode === value ? { color: 'var(--accent)' } : undefined}
               />
-              <span
-                className={cn(
-                  'text-xs font-semibold',
-                  mode === value ? 'text-t-primary' : 'text-t-secondary',
-                )}
-              >
+              <span className={cn('text-xs font-semibold', mode === value ? 'text-t-primary' : 'text-t-secondary')}>
                 {label}
               </span>
             </button>
@@ -103,12 +96,7 @@ export default function ThemeSelector() {
                     </svg>
                   )}
                 </div>
-                <span
-                  className={cn(
-                    'text-xs font-semibold',
-                    isActive ? 'text-t-primary' : 'text-t-secondary',
-                  )}
-                >
+                <span className={cn('text-xs font-semibold', isActive ? 'text-t-primary' : 'text-t-secondary')}>
                   {theme.label}
                 </span>
               </button>

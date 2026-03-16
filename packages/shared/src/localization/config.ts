@@ -32,10 +32,7 @@ const resolveServerLoadPath = async (customPath?: string): Promise<string> => {
     return customPath;
   }
 
-  const [{ fileURLToPath }, path] = await Promise.all([
-    import('node:url'),
-    import('node:path'),
-  ]);
+  const [{ fileURLToPath }, path] = await Promise.all([import('node:url'), import('node:path')]);
 
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
   return path.join(moduleDir, '..', '..', 'src', 'localization', 'locales', '{{lng}}', '{{ns}}.json');

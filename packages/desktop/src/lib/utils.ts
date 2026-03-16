@@ -19,10 +19,15 @@ export function truncate(str: string, maxLength: number): string {
 
 export function platformIcon(platform?: string): string {
   switch (platform?.toLowerCase()) {
-    case 'youtube': return '\uD83D\uDCFA';
-    case 'spotify': return '\uD83C\uDFB5';
-    case 'soundcloud': return '\u2601\uFE0F';
-    case 'local': return '\uD83D\uDCC1';
-    default: return '\uD83C\uDFB6';
+    case 'youtube':
+      return '\uD83D\uDCFA';
+    case 'spotify':
+      return '\uD83C\uDFB5';
+    case 'soundcloud':
+      return '\u2601\uFE0F';
+    case 'local':
+      return '\uD83D\uDCC1';
+    default:
+      return '\uD83C\uDFB6';
   }
 }

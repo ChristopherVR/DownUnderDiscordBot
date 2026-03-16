@@ -5,14 +5,10 @@ import { createLogger } from '../helpers/logger.js';
 const log = createLogger('spotify-extractor');
 
 // Spotify URL patterns
-const SPOTIFY_TRACK_REGEX =
-  /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?track\/([a-zA-Z0-9]+)/;
-const SPOTIFY_PLAYLIST_REGEX =
-  /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?playlist\/([a-zA-Z0-9]+)/;
-const SPOTIFY_ALBUM_REGEX =
-  /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?album\/([a-zA-Z0-9]+)/;
-const SPOTIFY_ARTIST_REGEX =
-  /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?artist\/([a-zA-Z0-9]+)/;
+const SPOTIFY_TRACK_REGEX = /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?track\/([a-zA-Z0-9]+)/;
+const SPOTIFY_PLAYLIST_REGEX = /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?playlist\/([a-zA-Z0-9]+)/;
+const SPOTIFY_ALBUM_REGEX = /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?album\/([a-zA-Z0-9]+)/;
+const SPOTIFY_ARTIST_REGEX = /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?artist\/([a-zA-Z0-9]+)/;
 
 interface SpotifyExtractorOptions {
   clientId?: string;
@@ -79,10 +75,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
     return `${m}:${String(s).padStart(2, '0')}`;
   }
 
-  private spotifyTrackToTrack(
-    spotifyTrack: Record<string, unknown>,
-    context: ExtractorSearchContext,
-  ): Track {
+  private spotifyTrackToTrack(spotifyTrack: Record<string, unknown>, context: ExtractorSearchContext): Track {
     const album = spotifyTrack.album as Record<string, unknown> | undefined;
     const images = album?.images as Array<{ url: string }> | undefined;
     const thumbnail = images?.[0]?.url ?? '';
@@ -139,10 +132,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
     return this.handleSearch(query, context);
   }
 
-  private async handleSearch(
-    query: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handleSearch(query: string, context: ExtractorSearchContext) {
     if (!this.spotifyApi) {
       log.warn('Spotify API not initialized — cannot perform search');
       return this.createResponse(null, []);
@@ -174,10 +164,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
     }
   }
 
-  private async handleTrack(
-    trackId: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handleTrack(trackId: string, context: ExtractorSearchContext) {
     try {
       const data = await this.spotifyApi!.getTrack(trackId);
       const track = this.spotifyTrackToTrack(data.body as unknown as Record<string, unknown>, context);
@@ -188,10 +175,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
     }
   }
 
-  private async handlePlaylist(
-    playlistId: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handlePlaylist(playlistId: string, context: ExtractorSearchContext) {
     try {
       const data = await this.spotifyApi!.getPlaylist(playlistId);
       const tracks: Track[] = [];
@@ -238,10 +222,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
     }
   }
 
-  private async handleAlbum(
-    albumId: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handleAlbum(albumId: string, context: ExtractorSearchContext) {
     try {
       const data = await this.spotifyApi!.getAlbum(albumId);
       const albumThumbnail = data.body.images?.[0]?.url ?? '';
@@ -281,10 +262,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
     }
   }
 
-  private async handleArtist(
-    artistId: string,
-    context: ExtractorSearchContext,
-  ) {
+  private async handleArtist(artistId: string, context: ExtractorSearchContext) {
     try {
       const data = await this.spotifyApi!.getArtistTopTracks(artistId, 'US');
       const tracks: Track[] = data.body.tracks.map((t: SpotifyApi.TrackObjectFull) =>

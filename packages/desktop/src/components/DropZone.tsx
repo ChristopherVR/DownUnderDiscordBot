@@ -2,12 +2,8 @@ import { useState, useEffect, useRef, useCallback, type DragEvent, type ReactNod
 import { Upload, FileAudio, FileVideo, FolderOpen } from 'lucide-react';
 
 /** Accepted audio + video extensions */
-const AUDIO_EXTENSIONS = new Set([
-  '.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.webm',
-]);
-const VIDEO_EXTENSIONS = new Set([
-  '.mp4', '.mkv', '.avi', '.mov', '.flv', '.ogv', '.3gp',
-]);
+const AUDIO_EXTENSIONS = new Set(['.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.webm']);
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.mkv', '.avi', '.mov', '.flv', '.ogv', '.3gp']);
 const ALL_MEDIA_EXTENSIONS = new Set([...AUDIO_EXTENSIONS, ...VIDEO_EXTENSIONS]);
 
 function getExtension(name: string): string {
@@ -117,33 +113,41 @@ export default function DropZone({ children, className, onDrop }: DropZoneProps)
   //  FALLBACK: Browser drag-and-drop (non-Tauri / dev mode)
   //  Only activates for external file drops (checks dataTransfer types).
   // ──────────────────────────────────────────────────────────────
-  const hasFiles = (e: DragEvent) =>
-    e.dataTransfer?.types?.includes('Files') ?? false;
+  const hasFiles = (e: DragEvent) => e.dataTransfer?.types?.includes('Files') ?? false;
 
-  const handleDragEnter = useCallback((e: DragEvent) => {
-    if (usingTauriDnd || !hasFiles(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter.current++;
-    if (dragCounter.current === 1) setIsDragOver(true);
-  }, [usingTauriDnd]);
+  const handleDragEnter = useCallback(
+    (e: DragEvent) => {
+      if (usingTauriDnd || !hasFiles(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current++;
+      if (dragCounter.current === 1) setIsDragOver(true);
+    },
+    [usingTauriDnd],
+  );
 
-  const handleDragLeave = useCallback((e: DragEvent) => {
-    if (usingTauriDnd) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter.current--;
-    if (dragCounter.current <= 0) {
-      dragCounter.current = 0;
-      setIsDragOver(false);
-    }
-  }, [usingTauriDnd]);
+  const handleDragLeave = useCallback(
+    (e: DragEvent) => {
+      if (usingTauriDnd) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current--;
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0;
+        setIsDragOver(false);
+      }
+    },
+    [usingTauriDnd],
+  );
 
-  const handleDragOver = useCallback((e: DragEvent) => {
-    if (usingTauriDnd || !hasFiles(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-  }, [usingTauriDnd]);
+  const handleDragOver = useCallback(
+    (e: DragEvent) => {
+      if (usingTauriDnd || !hasFiles(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    [usingTauriDnd],
+  );
 
   const handleDrop = useCallback(
     async (e: DragEvent) => {
@@ -222,9 +226,7 @@ export default function DropZone({ children, className, onDrop }: DropZoneProps)
               <div className="absolute inset-0 animate-pulse rounded-full bg-spotify-green/20 blur-2xl" />
               <Upload size={40} className="relative text-spotify-green" />
             </div>
-            <p className="text-base font-semibold text-t-primary">
-              Drop to add to library
-            </p>
+            <p className="text-base font-semibold text-t-primary">Drop to add to library</p>
             <div className="flex items-center gap-4 text-[12px] text-t-tertiary">
               <span className="flex items-center gap-1.5">
                 <FileAudio size={13} />

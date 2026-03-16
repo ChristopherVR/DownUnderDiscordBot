@@ -33,9 +33,7 @@ function formatTimestamp(ts: number): string {
   const d = new Date(ts);
   const now = new Date();
   const isToday =
-    d.getDate() === now.getDate() &&
-    d.getMonth() === now.getMonth() &&
-    d.getFullYear() === now.getFullYear();
+    d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   if (isToday) return `Today at ${time}`;
   const yesterday = new Date(now);
@@ -199,15 +197,16 @@ export default function ChatPanel() {
         // Auto-scroll if near bottom
         const container = messagesContainerRef.current;
         if (container) {
-          const isNearBottom =
-            container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+          const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
           if (isNearBottom) {
             requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
           }
         }
       }
     });
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, [selectedChannelId, appendChannelMessage]);
 
   // ── Load older messages on scroll to top ──
@@ -282,9 +281,7 @@ export default function ChatPanel() {
     () =>
       commandFilter
         ? commands.filter(
-            (c) =>
-              c.name.toLowerCase().includes(commandFilter) ||
-              c.description.toLowerCase().includes(commandFilter),
+            (c) => c.name.toLowerCase().includes(commandFilter) || c.description.toLowerCase().includes(commandFilter),
           )
         : commands,
     [commands, commandFilter],
@@ -381,9 +378,7 @@ export default function ChatPanel() {
         const res = await api.sendChannelMessage(selectedChannelId, trimmed);
         if (res.success && res.message) {
           appendChannelMessage(res.message);
-          requestAnimationFrame(() =>
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }),
-          );
+          requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }));
         }
       } catch (err) {
         addLocalEntry({
@@ -478,9 +473,7 @@ export default function ChatPanel() {
       >
         <div className="flex items-center gap-2">
           <Hash size={16} style={{ color: 'var(--accent)' }} />
-          <span className="text-sm font-semibold text-t-primary">
-            {selectedChannel?.name ?? 'Chat'}
-          </span>
+          <span className="text-sm font-semibold text-t-primary">{selectedChannel?.name ?? 'Chat'}</span>
         </div>
         <button
           onClick={() => setChatOpen(false)}
@@ -502,9 +495,7 @@ export default function ChatPanel() {
             style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)' }}
           >
             <Hash size={13} className="text-t-faint" />
-            <span className="flex-1 text-left text-t-secondary">
-              {selectedChannel?.name ?? 'Select a channel'}
-            </span>
+            <span className="flex-1 text-left text-t-secondary">{selectedChannel?.name ?? 'Select a channel'}</span>
             <ChevronDown
               size={13}
               className={cn('text-t-faint transition-transform', channelDropdownOpen && 'rotate-180')}
@@ -536,12 +527,10 @@ export default function ChatPanel() {
                       background: channel.id === selectedChannelId ? 'var(--nav-active-bg)' : undefined,
                     }}
                     onMouseEnter={(e) => {
-                      if (channel.id !== selectedChannelId)
-                        e.currentTarget.style.background = 'var(--nav-hover-bg)';
+                      if (channel.id !== selectedChannelId) e.currentTarget.style.background = 'var(--nav-hover-bg)';
                     }}
                     onMouseLeave={(e) => {
-                      if (channel.id !== selectedChannelId)
-                        e.currentTarget.style.background = 'transparent';
+                      if (channel.id !== selectedChannelId) e.currentTarget.style.background = 'transparent';
                     }}
                   >
                     <Hash size={12} />
@@ -588,18 +577,17 @@ export default function ChatPanel() {
             <Loader2 size={20} className="animate-spin text-t-faint" />
           </div>
         ) : channelMessages.length === 0 && !messagesLoading ? (
-          <EmptyState onQuickCommand={(cmd) => { setInput(cmd + ' '); inputRef.current?.focus(); }} />
+          <EmptyState
+            onQuickCommand={(cmd) => {
+              setInput(cmd + ' ');
+              inputRef.current?.focus();
+            }}
+          />
         ) : (
           <div className="flex flex-col px-3 py-2">
             {channelMessages.map((msg, i) => {
               const prev = i > 0 ? channelMessages[i - 1] : null;
-              return (
-                <DiscordMessageRow
-                  key={msg.id}
-                  message={msg}
-                  showHeader={shouldShowHeader(msg, prev)}
-                />
-              );
+              return <DiscordMessageRow key={msg.id} message={msg} showHeader={shouldShowHeader(msg, prev)} />;
             })}
 
             {/* Local entries (command feedback) rendered after real messages */}
@@ -618,9 +606,7 @@ export default function ChatPanel() {
           className="mx-3 mb-1 max-h-52 overflow-y-auto rounded-lg py-1"
           style={{ background: 'var(--surface)', border: '1px solid var(--glass-border-md)' }}
         >
-          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-t-faint">
-            Commands
-          </div>
+          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-t-faint">Commands</div>
           {filteredCommands.slice(0, 20).map((cmd, idx) => (
             <button
               key={cmd.name}
@@ -733,9 +719,7 @@ function NotConnectedState() {
       </div>
       <div>
         <p className="text-[13px] font-medium text-t-secondary">Not connected</p>
-        <p className="mt-1 text-[11px] text-t-faint">
-          Connect to the bot to start chatting
-        </p>
+        <p className="mt-1 text-[11px] text-t-faint">Connect to the bot to start chatting</p>
       </div>
     </div>
   );
@@ -752,9 +736,7 @@ function NoServerState() {
       </div>
       <div>
         <p className="text-[13px] font-medium text-t-secondary">No server selected</p>
-        <p className="mt-1 text-[11px] text-t-faint">
-          Select a server from the sidebar to view channels
-        </p>
+        <p className="mt-1 text-[11px] text-t-faint">Select a server from the sidebar to view channels</p>
       </div>
     </div>
   );
@@ -771,9 +753,7 @@ function NoChannelState() {
       </div>
       <div>
         <p className="text-[13px] font-medium text-t-secondary">No channel selected</p>
-        <p className="mt-1 text-[11px] text-t-faint">
-          Pick a text channel above to view messages
-        </p>
+        <p className="mt-1 text-[11px] text-t-faint">Pick a text channel above to view messages</p>
       </div>
     </div>
   );
@@ -791,8 +771,7 @@ function EmptyState({ onQuickCommand }: { onQuickCommand: (cmd: string) => void 
       <div>
         <p className="text-[13px] font-medium text-t-secondary">No messages yet</p>
         <p className="mt-1 text-[11px] text-t-faint">
-          Select a channel to view messages, or type{' '}
-          <span style={{ color: 'var(--accent)' }}>/</span> for commands
+          Select a channel to view messages, or type <span style={{ color: 'var(--accent)' }}>/</span> for commands
         </p>
       </div>
       <div className="mt-2 flex flex-wrap justify-center gap-1.5">
@@ -813,13 +792,7 @@ function EmptyState({ onQuickCommand }: { onQuickCommand: (cmd: string) => void 
 
 // ── Discord-style message row ───────────────────────────────────────
 
-function DiscordMessageRow({
-  message,
-  showHeader,
-}: {
-  message: DiscordMessage;
-  showHeader: boolean;
-}) {
+function DiscordMessageRow({ message, showHeader }: { message: DiscordMessage; showHeader: boolean }) {
   return (
     <div
       className={cn(
@@ -850,9 +823,7 @@ function DiscordMessageRow({
       <div className="min-w-0 flex-1">
         {showHeader && (
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold text-t-primary">
-              {message.author.displayName}
-            </span>
+            <span className="text-[13px] font-semibold text-t-primary">{message.author.displayName}</span>
             {message.author.bot && (
               <span
                 className="flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold uppercase"
@@ -867,9 +838,7 @@ function DiscordMessageRow({
         )}
 
         {/* Message text */}
-        {message.content && (
-          <DiscordMarkdown content={message.content} sizeClass="text-[13px]" />
-        )}
+        {message.content && <DiscordMarkdown content={message.content} sizeClass="text-[13px]" />}
 
         {/* Attachments */}
         {message.attachments.length > 0 && (
@@ -965,9 +934,7 @@ function EmbedView({ embed }: { embed: DiscordEmbed }) {
         {/* Embed author */}
         {embed.author && (
           <div className="mb-1 flex items-center gap-1.5">
-            {embed.author.iconURL && (
-              <img src={embed.author.iconURL} className="h-4 w-4 rounded-full" alt="" />
-            )}
+            {embed.author.iconURL && <img src={embed.author.iconURL} className="h-4 w-4 rounded-full" alt="" />}
             {embed.author.url ? (
               <a
                 href={embed.author.url}
@@ -1028,29 +995,18 @@ function EmbedView({ embed }: { embed: DiscordEmbed }) {
 
         {/* Embed thumbnail (shown inline right) */}
         {embed.thumbnail && (
-          <img
-            src={embed.thumbnail.url}
-            alt=""
-            className="float-right ml-3 mt-1 max-h-[80px] max-w-[80px] rounded"
-          />
+          <img src={embed.thumbnail.url} alt="" className="float-right ml-3 mt-1 max-h-[80px] max-w-[80px] rounded" />
         )}
 
         {/* Embed image */}
         {embed.image && (
-          <img
-            src={embed.image.url}
-            alt=""
-            className="mt-1 max-w-full rounded"
-            style={{ maxHeight: 200 }}
-          />
+          <img src={embed.image.url} alt="" className="mt-1 max-w-full rounded" style={{ maxHeight: 200 }} />
         )}
 
         {/* Embed footer */}
         {embed.footer && (
           <div className="mt-2 flex items-center gap-1.5 text-[10px] text-t-ghost">
-            {embed.footer.iconURL && (
-              <img src={embed.footer.iconURL} className="h-3.5 w-3.5 rounded-full" alt="" />
-            )}
+            {embed.footer.iconURL && <img src={embed.footer.iconURL} className="h-3.5 w-3.5 rounded-full" alt="" />}
             <span>{embed.footer.text}</span>
             {embed.timestamp && (
               <>
@@ -1089,9 +1045,7 @@ function LocalEntryRow({ entry }: { entry: LocalMessage }) {
             /{entry.commandName}
           </span>
         )}
-        <span className={cn('text-[12px]', isError ? 'text-red-400' : 'text-t-secondary')}>
-          {entry.content}
-        </span>
+        <span className={cn('text-[12px]', isError ? 'text-red-400' : 'text-t-secondary')}>{entry.content}</span>
       </div>
     </div>
   );
@@ -1122,9 +1076,7 @@ function CommandArgBar({
       </span>
       {command.options.map((opt: CommandOptionItem) => (
         <div key={opt.name} className="flex items-center gap-1">
-          <span
-            className={cn('text-[10px]', opt.required ? 'font-semibold text-t-secondary' : 'text-t-faint')}
-          >
+          <span className={cn('text-[10px]', opt.required ? 'font-semibold text-t-secondary' : 'text-t-faint')}>
             {opt.name}:
           </span>
           {opt.choices && opt.choices.length > 0 ? (
@@ -1155,10 +1107,7 @@ function CommandArgBar({
           )}
         </div>
       ))}
-      <button
-        onClick={onCancel}
-        className="ml-auto text-[10px] text-t-ghost transition-colors hover:text-t-faint"
-      >
+      <button onClick={onCancel} className="ml-auto text-[10px] text-t-ghost transition-colors hover:text-t-faint">
         <X size={12} />
       </button>
     </div>

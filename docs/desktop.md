@@ -43,6 +43,7 @@ pnpm dev:desktop
 ```
 
 This starts:
+
 1. Vite dev server on `http://localhost:5173` (React frontend)
 2. Tauri dev window pointing to the Vite server
 
@@ -91,18 +92,18 @@ The Tauri Rust backend provides native capabilities that aren't available in a b
 
 ### IPC Commands (`src-tauri/src/commands.rs`)
 
-| Command | Arguments | Returns | Description |
-|---------|-----------|---------|-------------|
+| Command          | Arguments                 | Returns         | Description                                  |
+| ---------------- | ------------------------- | --------------- | -------------------------------------------- |
 | `connect_to_bot` | `host: String, port: u16` | `BotConnection` | Tests HTTP connection to bot, returns status |
-| `get_bot_status` | `host: String, port: u16` | `JSON` | Fetches full bot state from `/api/state` |
-| `health_check` | `host: String, port: u16` | `BotStatus` | Quick health check (ok/message) |
+| `get_bot_status` | `host: String, port: u16` | `JSON`          | Fetches full bot state from `/api/state`     |
+| `health_check`   | `host: String, port: u16` | `BotStatus`     | Quick health check (ok/message)              |
 
 ### File Scanner (`src-tauri/src/file_scanner.rs`)
 
-| Command | Arguments | Returns | Description |
-|---------|-----------|---------|-------------|
-| `scan_music_folder` | `path: String` | `Vec<LocalTrack>` | Recursively scan folder for audio files |
-| `get_default_music_folders` | -- | `Vec<String>` | Get platform-specific default music directories |
+| Command                     | Arguments      | Returns           | Description                                     |
+| --------------------------- | -------------- | ----------------- | ----------------------------------------------- |
+| `scan_music_folder`         | `path: String` | `Vec<LocalTrack>` | Recursively scan folder for audio files         |
+| `get_default_music_folders` | --             | `Vec<String>`     | Get platform-specific default music directories |
 
 Scanned tracks include ID3 metadata (title, artist, album, duration) parsed via the `audiotags` crate.
 
@@ -110,10 +111,10 @@ Scanned tracks include ID3 metadata (title, artist, album, duration) parsed via 
 
 ### Config Persistence (`src-tauri/src/config.rs`)
 
-| Command | Arguments | Returns | Description |
-|---------|-----------|---------|-------------|
-| `get_config` | -- | `AppConfig` | Load config from disk (creates default if missing) |
-| `save_config` | `config: AppConfig` | `()` | Write config to disk |
+| Command       | Arguments           | Returns     | Description                                        |
+| ------------- | ------------------- | ----------- | -------------------------------------------------- |
+| `get_config`  | --                  | `AppConfig` | Load config from disk (creates default if missing) |
+| `save_config` | `config: AppConfig` | `()`        | Write config to disk                               |
 
 Config is stored at `~/.config/discord-music-bot/config.json` (or platform equivalent).
 
@@ -132,25 +133,25 @@ Config is stored at `~/.config/discord-music-bot/config.json` (or platform equiv
 
 ### Tauri Configuration (`tauri.conf.json`)
 
-| Setting | Value |
-|---------|-------|
-| App name | Discord Music Bot |
-| Version | 2.0.0 |
-| Bundle ID | `com.downunder.discord-music-bot` |
-| Window size | 1280x800 (min 900x600) |
-| CSP | Allows `self`, `localhost` WS/HTTP, HTTPS images |
-| Build targets | Windows, macOS (universal), Linux |
+| Setting       | Value                                            |
+| ------------- | ------------------------------------------------ |
+| App name      | Discord Music Bot                                |
+| Version       | 2.0.0                                            |
+| Bundle ID     | `com.downunder.discord-music-bot`                |
+| Window size   | 1280x800 (min 900x600)                           |
+| CSP           | Allows `self`, `localhost` WS/HTTP, HTTPS images |
+| Build targets | Windows, macOS (universal), Linux                |
 
 ### Rust Dependencies
 
-| Crate | Purpose |
-|-------|---------|
-| `tauri` v2 | Desktop app framework |
-| `serde` / `serde_json` | Serialization |
-| `reqwest` | HTTP client for bot API |
-| `walkdir` | Recursive directory traversal |
-| `audiotags` | ID3 tag parsing |
-| `dirs` | Platform-specific config directories |
+| Crate                  | Purpose                              |
+| ---------------------- | ------------------------------------ |
+| `tauri` v2             | Desktop app framework                |
+| `serde` / `serde_json` | Serialization                        |
+| `reqwest`              | HTTP client for bot API              |
+| `walkdir`              | Recursive directory traversal        |
+| `audiotags`            | ID3 tag parsing                      |
+| `dirs`                 | Platform-specific config directories |
 
 ---
 
@@ -228,19 +229,23 @@ Fixed left sidebar with Spotify-style dark background.
 Persistent bottom bar (80px) that's always visible regardless of the active page.
 
 **Left section (track info):**
+
 - Thumbnail (56x56)
 - Track title and artist (truncated)
 
 **Center section (controls):**
+
 - Shuffle, Previous, Play/Pause, Next, Loop buttons
 - Seek bar with current position and total duration
 - Play/Pause is a white circle button; loop turns green when active
 
 **Right section (volume):**
+
 - Mute/unmute toggle
 - Volume slider (range input with green accent)
 
 **Seek bar behavior:**
+
 - Ticks forward in real-time while playing (1s interval)
 - Click anywhere on the bar to seek
 - Pauses local tick while dragging
@@ -254,17 +259,19 @@ Persistent bottom bar (80px) that's always visible regardless of the active page
 Single store manages all application state. Key slices:
 
 **Connection state:**
+
 ```typescript
 {
-  host: string       // Bot hostname (default: 'localhost')
-  port: number       // Bot port (default: 3001)
-  connected: boolean // WebSocket connected
-  botOnline: boolean // Bot process responding
-  guildId: string    // Active Discord guild
+  host: string; // Bot hostname (default: 'localhost')
+  port: number; // Bot port (default: 3001)
+  connected: boolean; // WebSocket connected
+  botOnline: boolean; // Bot process responding
+  guildId: string; // Active Discord guild
 }
 ```
 
 **Player state:**
+
 ```typescript
 {
   isPlaying: boolean
@@ -278,6 +285,7 @@ Single store manages all application state. Key slices:
 ```
 
 **Track type:**
+
 ```typescript
 {
   title: string
@@ -313,6 +321,7 @@ All player actions (`play`, `pause`, `resume`, `stop`, `skip`, `seek`, `setVolum
 - `send(data)` serializes and sends when connected
 
 **Events handled by the store:**
+
 - `connection` -- Updates `connected` status
 - `player_state` -- Merges into player state
 - `queue_update` -- Updates queue array
@@ -346,28 +355,28 @@ The app uses a Spotify-inspired dark theme defined in Tailwind and CSS variables
 
 **Tailwind colors** (`tailwind.config.cjs`):
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `spotify-green` | `#1DB954` | Primary accent, active states, play button |
-| `spotify-green-light` | `#1ED760` | Hover state for green elements |
-| `spotify-black` | `#191414` | Deepest background |
-| `spotify-dark-gray` | `#121212` | Main background |
-| `spotify-gray` | `#282828` | Card backgrounds, muted elements |
-| `spotify-light-gray` | `#B3B3B3` | Secondary text |
-| `spotify-white` | `#FFFFFF` | Primary text |
+| Token                 | Value     | Usage                                      |
+| --------------------- | --------- | ------------------------------------------ |
+| `spotify-green`       | `#1DB954` | Primary accent, active states, play button |
+| `spotify-green-light` | `#1ED760` | Hover state for green elements             |
+| `spotify-black`       | `#191414` | Deepest background                         |
+| `spotify-dark-gray`   | `#121212` | Main background                            |
+| `spotify-gray`        | `#282828` | Card backgrounds, muted elements           |
+| `spotify-light-gray`  | `#B3B3B3` | Secondary text                             |
+| `spotify-white`       | `#FFFFFF` | Primary text                               |
 
 **CSS variables** (`src/styles/globals.css`):
 
-| Variable | Value | Usage |
-|----------|-------|-------|
-| `--background` | `#121212` | Page background |
-| `--foreground` | `#ffffff` | Primary text |
-| `--muted` | `#282828` | Muted backgrounds |
-| `--muted-foreground` | `#b3b3b3` | Secondary text |
-| `--accent` | `#1DB954` | Accent color |
-| `--card` | `#181818` | Card background |
-| `--card-hover` | `#282828` | Card hover state |
-| `--border` | `#333333` | Borders |
+| Variable             | Value     | Usage             |
+| -------------------- | --------- | ----------------- |
+| `--background`       | `#121212` | Page background   |
+| `--foreground`       | `#ffffff` | Primary text      |
+| `--muted`            | `#282828` | Muted backgrounds |
+| `--muted-foreground` | `#b3b3b3` | Secondary text    |
+| `--accent`           | `#1DB954` | Accent color      |
+| `--card`             | `#181818` | Card background   |
+| `--card-hover`       | `#282828` | Card hover state  |
+| `--border`           | `#333333` | Borders           |
 
 ### Typography
 
@@ -405,6 +414,7 @@ pnpm tauri build
 ```
 
 This compiles the Rust backend and bundles the React frontend into a native installer:
+
 - **Windows**: `.msi` and `.exe`
 - **macOS**: `.dmg` and `.app`
 - **Linux**: `.deb` and `.AppImage`
