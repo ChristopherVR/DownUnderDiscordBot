@@ -230,7 +230,11 @@ export default function LocalLibraryView({ localFiles, playbackMode }: LocalLibr
     if (!p) return undefined;
     let n = p;
     if (n.startsWith('file://')) {
-      try { n = decodeURIComponent(new URL(n).pathname); } catch { n = n.slice(7); }
+      try {
+        n = decodeURIComponent(new URL(n).pathname);
+      } catch {
+        n = n.slice(7);
+      }
     }
     if (/^\/[A-Za-z]:/.test(n)) n = n.slice(1);
     return n.replace(/\//g, '\\'); // normalise to back-slashes (Windows)
@@ -238,7 +242,6 @@ export default function LocalLibraryView({ localFiles, playbackMode }: LocalLibr
   const currentFilePath = normPath(player.currentTrack?.filePath);
   const queueFilePaths = useMemo(
     () => new Set(player.queue.filter((t) => t.filePath).map((t) => normPath(t.filePath)!)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [player.queue],
   );
 
@@ -252,7 +255,7 @@ export default function LocalLibraryView({ localFiles, playbackMode }: LocalLibr
   const searchLower = search.toLowerCase();
   const filteredFiles = useMemo(() => {
     let files = localFiles;
-    if (search) {
+    if (searchLower) {
       files = files.filter(
         (f) =>
           f.title.toLowerCase().includes(searchLower) ||
@@ -656,7 +659,7 @@ function TrackTable({
                 {!isNowPlaying && (
                   <button
                     onClick={() => onPlay(track)}
-                    className="hidden text-t-tertiary hover:text-t-primary group-hover:block"
+                    className="hidden text-t-tertiary hover:text-t-primary group-hover:block active:scale-75 transition-transform duration-150"
                   >
                     <Play size={14} />
                   </button>
@@ -716,26 +719,18 @@ function TrackTable({
                 {isNowPlaying ? (
                   <button
                     onClick={() => (player.isPlaying ? onPause() : onResume())}
-                    className="rounded-full p-1.5 text-accent transition-colors hover:text-accent/80"
+                    className="rounded-full p-1.5 text-accent transition-all duration-150 hover:text-accent/80 active:scale-75"
                   >
                     {player.isPlaying ? <Pause size={14} /> : <Play size={14} />}
                   </button>
                 ) : (
-                  <>
-                    <button
-                      onClick={() => onPlay(track)}
-                      className="rounded-full p-1.5 text-t-ghost opacity-0 hover:text-t-tertiary group-hover:opacity-100"
-                    >
-                      <Play size={13} />
-                    </button>
-                    <button
-                      onClick={() => onAddToQueue(track)}
-                      className="rounded-full p-1.5 text-t-ghost opacity-0 hover:text-t-tertiary group-hover:opacity-100"
-                      title="Add to queue"
-                    >
-                      <Plus size={13} />
-                    </button>
-                  </>
+                  <button
+                    onClick={() => onAddToQueue(track)}
+                    className="rounded-full p-1.5 text-t-ghost opacity-0 transition-all duration-150 hover:text-t-tertiary active:scale-75 group-hover:opacity-100"
+                    title="Add to queue"
+                  >
+                    <Plus size={13} />
+                  </button>
                 )}
               </div>
             </div>

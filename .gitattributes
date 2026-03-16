@@ -1,3 +1,6 @@
+# Force LF line endings for all text files
+* text=auto eol=lf
+
 # Tells Github UI to allow comments in json files
 *.json linguist-language=JSON-with-Comments
 

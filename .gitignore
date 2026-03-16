@@ -45,7 +45,7 @@ pnpm-debug.log*
 
 # Cache
 .cache/
-.eslintcache
+.oxlintcache
 .rpt2_cache/
 
 # Database
@@ -54,6 +54,7 @@ pnpm-debug.log*
 
 # Tauri
 packages/desktop/src-tauri/target/
+packages/desktop/src-tauri/.dev-config.json
 
 # Rust
 **/target/

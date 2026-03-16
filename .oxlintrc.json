@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "import"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "prefer-const": "error",
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-empty-object-type": "off",
+    "react/react-in-jsx-scope": "off"
+  },
+  "ignorePatterns": ["dist/**", "node_modules/**", "build/**", "coverage/**", "packages/bot/src/database/generated/**"]
+}

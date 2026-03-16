@@ -85,8 +85,7 @@ router.get('/:channelId/messages', async (req: Request, res: Response) => {
     const fetchOptions: { limit: number; before?: string } = { limit };
     if (before) fetchOptions.before = before;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const messages = await (textChannel.messages as any).fetch(fetchOptions);
+    const messages = await (textChannel.messages as any).fetch(fetchOptions); // oxlint-disable-line
     const arr: ReturnType<typeof serializeMessage>[] = [];
     for (const [, m] of messages) {
       arr.push(serializeMessage(m as Message));

@@ -1,4 +1,4 @@
-﻿import { type Client, type Collection, TextChannel, Message } from 'discord.js';
+import { type Client, type Collection, TextChannel, Message } from 'discord.js';
 import { randomUUID } from 'crypto';
 import { deflateSync, inflateSync } from 'zlib';
 import { hostname } from 'os';
@@ -195,8 +195,7 @@ export class ChannelStateService implements IStateService {
           ...guild,
           instances: Object.fromEntries(
             Object.entries(guild.instances).map(([instanceId, instance]) => {
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const { extra, ...rest } = instance;
+              const { extra: _, ...rest } = instance;
               return [instanceId, { ...rest }];
             }),
           ),
@@ -259,7 +258,7 @@ export class ChannelStateService implements IStateService {
     }
 
     try {
-      const recent = await ch.messages.fetch({ limit: 50 }) as unknown as Collection<string, Message<true>>;
+      const recent = (await ch.messages.fetch({ limit: 50 })) as unknown as Collection<string, Message<true>>;
       recent.forEach((msg) => consider(msg));
     } catch (error) {
       console.warn('Failed to fetch recent state messages:', error);
@@ -437,7 +436,11 @@ export class ChannelStateService implements IStateService {
 
   async setOnline(
     guildId: string,
-    info: Omit<InstanceInfo, 'online' | 'lastHeartbeat' | 'isActive'> & { online: boolean; lastHeartbeat?: number; isActive?: boolean },
+    info: Omit<InstanceInfo, 'online' | 'lastHeartbeat' | 'isActive'> & {
+      online: boolean;
+      lastHeartbeat?: number;
+      isActive?: boolean;
+    },
   ): Promise<GuildState> {
     const fallback: GuildState = { guildId, activeInstanceId: null, instances: {} };
     let out: GuildState = fallback;
@@ -475,7 +478,7 @@ export class ChannelStateService implements IStateService {
           if (otherId === info.instanceId) continue;
           if (other.hostname !== hn) continue;
           // Remove if the other instance is offline or its heartbeat is stale
-          if (!other.online || (now - other.lastHeartbeat) > HEARTBEAT_TIMEOUT) {
+          if (!other.online || now - other.lastHeartbeat > HEARTBEAT_TIMEOUT) {
             delete g.instances[otherId];
             if (g.activeInstanceId === otherId) {
               g.activeInstanceId = null;
@@ -545,7 +548,7 @@ export class ChannelStateService implements IStateService {
       await new Promise((r) => setTimeout(r, 500));
 
       try {
-        const recent = await ch.messages.fetch({ limit: 30 }) as unknown as Collection<string, Message<true>>;
+        const recent = (await ch.messages.fetch({ limit: 30 })) as unknown as Collection<string, Message<true>>;
         for (const [, msg] of recent) {
           if (!msg.content.startsWith(PONG_PREFIX)) continue;
 
@@ -585,7 +588,7 @@ export class ChannelStateService implements IStateService {
 
     try {
       const ch = await this.getChannel();
-      const recent = await ch.messages.fetch({ limit: 30 }) as unknown as Collection<string, Message<true>>;
+      const recent = (await ch.messages.fetch({ limit: 30 })) as unknown as Collection<string, Message<true>>;
       const now = Date.now();
 
       for (const [, msg] of recent) {
@@ -719,7 +722,10 @@ export class ChannelStateService implements IStateService {
         if (inst.hostname) hostnameMap.set(inst.hostname, (hostnameMap.get(inst.hostname) ?? 0) + 1);
       }
       for (const count of hostnameMap.values()) {
-        if (count > 1) { needsWork = true; break; }
+        if (count > 1) {
+          needsWork = true;
+          break;
+        }
       }
       if (needsWork) break;
     }
