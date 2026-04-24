@@ -3,13 +3,16 @@ import { Innertube, UniversalCache, ClientType } from 'youtubei.js';
 import { PassThrough } from 'stream';
 import { EventEmitter } from 'events';
 import { createLogger } from '../helpers/logger.js';
+import { streamAudio as ytDlpStreamAudio } from '../helpers/ytdlp.js';
 
 const log = createLogger('youtube-extractor');
+
+export type StreamClient = 'ANDROID' | 'WEB' | 'yt-dlp';
 
 export interface StreamStatusEvent {
   videoId: string;
   status: 'resolving' | 'fallback' | 'streaming' | 'error';
-  client: 'ANDROID' | 'WEB' | 'yt-dlp';
+  client: StreamClient;
   message?: string;
 }
 
@@ -26,17 +29,17 @@ interface YouTubeExtractorOptions {
 }
 
 /**
- * Custom YouTube extractor using youtubei.js v16 with yt-dlp as the primary
- * streaming backend (most reliable against YouTube's protections).
+ * Custom YouTube extractor using youtubei.js v16, with yt-dlp as a final
+ * fallback when both Innertube streaming paths fail.
  *
  * Architecture:
- *  - WEB client → search, metadata, playlist fetching (best data quality)
- *  - yt-dlp → primary audio streaming (handles all URL decryption)
- *  - ANDROID client → first streaming fallback
- *  - WEB client → last-resort streaming fallback
+ *  - WEB client      → search, metadata, playlist fetching (best data quality)
+ *  - ANDROID client  → primary streaming (least rate-limited)
+ *  - WEB client      → secondary streaming fallback
+ *  - yt-dlp          → tertiary fallback (robust against signature regressions)
  *
- * When an ANDROID or WEB client fails to stream, it is disabled for the
- * remainder of the session to avoid repeated timeouts on every track.
+ * When any streaming backend fails it is placed on a 5-minute cooldown so
+ * subsequent tracks skip it instead of timing out repeatedly.
  */
 export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOptions> {
   static identifier = 'com.downunder.youtube' as const;
@@ -50,16 +53,19 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
   private androidInitPromise: Promise<Innertube> | null = null;
 
   /**
-   * Clients that have failed during this session and should be skipped.
-   * Once a client fails, it is disabled for the remainder of the session
-   * to avoid repeated timeouts on every track.
+   * Streaming backends that have failed during this session. Each failed
+   * backend is skipped until its cooldown expires, to avoid repeated
+   * timeouts on every subsequent track.
    */
-  private disabledClients = new Map<'ANDROID' | 'WEB', number>();
+  private disabledClients = new Map<StreamClient, number>();
 
   /** Cooldown period before retrying a failed client (5 minutes). */
   private static CLIENT_COOLDOWN_MS = 5 * 60 * 1000;
 
-  private isClientDisabled(client: 'ANDROID' | 'WEB'): boolean {
+  /** Maximum number of tracks pulled from a single playlist. */
+  private static MAX_PLAYLIST_TRACKS = 100;
+
+  private isClientDisabled(client: StreamClient): boolean {
     const disabledAt = this.disabledClients.get(client);
     if (disabledAt == null) return false;
     if (Date.now() - disabledAt >= CustomYouTubeExtractor.CLIENT_COOLDOWN_MS) {
@@ -69,7 +75,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
     return true;
   }
 
-  private disableClient(client: 'ANDROID' | 'WEB'): void {
+  private disableClient(client: StreamClient): void {
     this.disabledClients.set(client, Date.now());
   }
 
@@ -205,8 +211,13 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
     try {
       const playlist = await yt.getPlaylist(playlistId);
       const tracks: Track[] = [];
+      const maxTracks = CustomYouTubeExtractor.MAX_PLAYLIST_TRACKS;
 
       for (const video of playlist.videos) {
+        if (tracks.length >= maxTracks) {
+          log.warn({ playlistId, totalVideos: playlist.videos.length, maxTracks }, 'Playlist truncated at max size');
+          break;
+        }
         const vid = video as unknown as Record<string, unknown>;
         const title = (vid.title as { text?: string })?.text ?? String(vid.title ?? 'Unknown');
         const author = (vid.author as { name?: string })?.name ?? String(vid.author ?? 'Unknown Artist');
@@ -294,7 +305,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
 
   /* ------------------------------------------------------------------ */
   /*  stream() — returns a Readable for audio playback                   */
-  /*  Uses youtubei.js ANDROID client, then WEB fallback.                */
+  /*  Tries ANDROID → WEB → yt-dlp, placing failures on cooldown.        */
   /* ------------------------------------------------------------------ */
 
   async stream(track: Track) {
@@ -314,19 +325,19 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
         return stream;
       } catch (err) {
         this.disableClient('ANDROID');
-        log.warn({ err, videoId }, 'ANDROID client download failed — on cooldown, trying WEB fallback');
+        log.warn({ err, videoId }, 'ANDROID client download failed — placed on cooldown, trying WEB fallback');
         emitStatus({
           videoId,
           status: 'fallback',
           client: 'ANDROID',
-          message: 'ANDROID client on cooldown',
+          message: 'ANDROID client placed on cooldown',
         });
       }
     } else {
       log.debug({ videoId }, 'Skipping ANDROID client (on cooldown)');
     }
 
-    // Fallback: WEB client download.
+    // Secondary: WEB client download.
     if (!this.isClientDisabled('WEB')) {
       try {
         emitStatus({ videoId, status: 'resolving', client: 'WEB' });
@@ -337,21 +348,43 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
         return stream;
       } catch (err) {
         this.disableClient('WEB');
+        log.warn({ err, videoId }, 'WEB client download failed — placed on cooldown, trying yt-dlp fallback');
+        emitStatus({
+          videoId,
+          status: 'fallback',
+          client: 'WEB',
+          message: 'WEB client placed on cooldown',
+        });
+      }
+    } else {
+      log.debug({ videoId }, 'Skipping WEB client (on cooldown)');
+    }
+
+    // Tertiary: yt-dlp subprocess — robust against Innertube signature regressions.
+    if (!this.isClientDisabled('yt-dlp')) {
+      try {
+        emitStatus({ videoId, status: 'resolving', client: 'yt-dlp' });
+        const stream = await ytDlpStreamAudio(track.url);
+        log.debug({ videoId, title: track.title }, 'Stream piped via yt-dlp');
+        emitStatus({ videoId, status: 'streaming', client: 'yt-dlp' });
+        return stream;
+      } catch (err) {
+        this.disableClient('yt-dlp');
         log.error({ err, videoId }, 'All stream methods failed');
         emitStatus({
           videoId,
           status: 'error',
-          client: 'WEB',
+          client: 'yt-dlp',
           message: 'All stream methods failed',
         });
         throw err;
       }
     }
 
-    // All clients exhausted (on cooldown)
+    // All backends exhausted (on cooldown)
     const msg = 'All stream methods disabled or on cooldown';
     log.error({ videoId }, msg);
-    emitStatus({ videoId, status: 'error', client: 'WEB', message: msg });
+    emitStatus({ videoId, status: 'error', client: 'yt-dlp', message: msg });
     throw new Error(msg);
   }
 
@@ -394,9 +427,17 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
     (async () => {
       try {
         for await (const chunk of iter) {
+          if (passthrough.destroyed) return;
           bytesWritten += chunk.length;
           if (!passthrough.write(chunk)) {
-            await new Promise<void>((resolve) => passthrough.once('drain', resolve));
+            // Race drain against close so a destroyed passthrough doesn't
+            // leave this promise pending forever (stops the iterator too).
+            await new Promise<void>((resolve) => {
+              const done = () => resolve();
+              passthrough.once('drain', done);
+              passthrough.once('close', done);
+            });
+            if (passthrough.destroyed) return;
           }
           settleOk();
         }

@@ -2,16 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PassThrough } from 'stream';
 
 // ── Hoisted mock variables (must use vi.hoisted for vi.mock factories) ──────
-const { mockGetBasicInfo, mockGetPlaylist, mockSearch, mockDownload, mockCreateResponse } = vi.hoisted(() => ({
-  mockGetBasicInfo: vi.fn(),
-  mockGetPlaylist: vi.fn(),
-  mockSearch: vi.fn(),
-  mockDownload: vi.fn(),
-  mockCreateResponse: vi.fn((_playlist: unknown, tracks: unknown[]) => ({
-    playlist: _playlist,
-    tracks,
-  })),
-}));
+const { mockGetBasicInfo, mockGetPlaylist, mockSearch, mockDownload, mockCreateResponse, mockYtDlpStreamAudio } =
+  vi.hoisted(() => ({
+    mockGetBasicInfo: vi.fn(),
+    mockGetPlaylist: vi.fn(),
+    mockSearch: vi.fn(),
+    mockDownload: vi.fn(),
+    mockYtDlpStreamAudio: vi.fn(),
+    mockCreateResponse: vi.fn((_playlist: unknown, tracks: unknown[]) => ({
+      playlist: _playlist,
+      tracks,
+    })),
+  }));
 
 // ── Mock youtubei.js ────────────────────────────────────────────────────────
 vi.mock('youtubei.js', () => ({
@@ -92,6 +94,13 @@ vi.mock('../../../src/helpers/logger.js', () => ({
   }),
 }));
 
+// ── Mock yt-dlp helper (tertiary streaming fallback) ────────────────────────
+vi.mock('../../../src/helpers/ytdlp.js', () => ({
+  streamAudio: mockYtDlpStreamAudio,
+  getAudioStreamUrl: vi.fn(),
+  checkYtDlp: vi.fn(),
+}));
+
 // ── Import under test (after mocks) ────────────────────────────────────────
 import { CustomYouTubeExtractor } from '../../../src/extractors/YouTubeExtractor';
 
@@ -100,6 +109,9 @@ describe('CustomYouTubeExtractor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: yt-dlp fallback is unavailable in unit tests. Individual
+    // tests override this when exercising the tertiary path.
+    mockYtDlpStreamAudio.mockRejectedValue(new Error('yt-dlp unavailable in tests'));
     extractor = new CustomYouTubeExtractor({} as never);
   });
 

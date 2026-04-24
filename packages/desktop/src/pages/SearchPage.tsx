@@ -11,7 +11,7 @@ import {
   HardDrive,
   Square,
   ChevronDown,
-  Youtube,
+  PlaySquare,
   Music2,
   Cloud,
   Apple,
@@ -33,7 +33,7 @@ const platformBadgeConfig: Record<
   string,
   { label: string; bg: string; text: string; icon: React.ComponentType<{ size?: number }> }
 > = {
-  youtube: { label: 'YouTube', bg: 'bg-red-600', text: 'text-white', icon: Youtube },
+  youtube: { label: 'YouTube', bg: 'bg-red-600', text: 'text-white', icon: PlaySquare },
   spotify: { label: 'Spotify', bg: 'bg-green-600', text: 'text-white', icon: Music2 },
   soundcloud: { label: 'SoundCloud', bg: 'bg-orange-500', text: 'text-white', icon: Cloud },
   applemusic: { label: 'Apple Music', bg: 'bg-pink-500', text: 'text-white', icon: Apple },

@@ -1,9 +1,10 @@
 /**
  * yt-dlp wrapper for reliable YouTube audio streaming.
  *
- * youtubei.js v16 can no longer extract stream URLs from YouTube's API
- * (format.url, cipher, and signature_cipher all return undefined).
- * yt-dlp remains the most reliable way to resolve audio stream URLs.
+ * Used as the final fallback when youtubei.js's streaming clients (ANDROID,
+ * WEB) fail — typically due to signature-cipher regressions or throttling.
+ * yt-dlp handles URL decryption natively and remains the most robust option
+ * when Innertube-based download paths are broken.
  */
 
 import { execFile, spawn } from 'child_process';
