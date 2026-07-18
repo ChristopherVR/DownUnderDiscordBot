@@ -8,7 +8,10 @@
       name="description"
       content="A self-hosted Discord music bot with a dashboard you can run as a desktop app or in any browser. YouTube, Spotify, SoundCloud, and local files."
     />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e2914a'/%3E%3Cg fill='%2317130d'%3E%3Crect x='28' y='55' width='8' height='20' rx='4'/%3E%3Crect x='42' y='40' width='8' height='35' rx='4'/%3E%3Crect x='56' y='48' width='8' height='27' rx='4'/%3E%3Crect x='70' y='32' width='8' height='43' rx='4'/%3E%3C/g%3E%3C/svg%3E" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e2914a'/%3E%3Cg fill='%2317130d'%3E%3Crect x='28' y='55' width='8' height='20' rx='4'/%3E%3Crect x='42' y='40' width='8' height='35' rx='4'/%3E%3Crect x='56' y='48' width='8' height='27' rx='4'/%3E%3Crect x='70' y='32' width='8' height='43' rx='4'/%3E%3C/g%3E%3C/svg%3E"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -42,7 +45,11 @@
       body {
         background: var(--ink);
         color: var(--paper);
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-family:
+          'Inter',
+          system-ui,
+          -apple-system,
+          sans-serif;
         line-height: 1.55;
         -webkit-font-smoothing: antialiased;
         overflow-x: hidden;
@@ -460,12 +467,16 @@
 
     <header class="hero">
       <div class="wrap">
-        <div class="eyebrow"><span class="eyebrow-dot"></span>Self-hosted &middot; open source &middot; no account required</div>
-        <h1 class="headline">A Discord music bot with <span class="accent">a real dashboard</span>, not just slash commands.</h1>
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>Self-hosted &middot; open source &middot; no account required
+        </div>
+        <h1 class="headline">
+          A Discord music bot with <span class="accent">a real dashboard</span>, not just slash commands.
+        </h1>
         <p class="lede">
           Down Under Music plays YouTube, Spotify, SoundCloud, and local files in your server, and gives you a proper
-          control surface for it - queue, playlists, search, live status - as a desktop app or a plain
-          browser tab, running against a bot you host yourself.
+          control surface for it - queue, playlists, search, live status - as a desktop app or a plain browser tab,
+          running against a bot you host yourself.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="./dashboard/">Open the Dashboard</a>
@@ -526,8 +537,8 @@
           <div class="kicker">Tour</div>
           <h2>See it in action</h2>
           <p>
-            Captured from the real dashboard driving the bot's test harness - the same UI you get in the desktop
-            app or the browser.
+            Captured from the real dashboard driving the bot's test harness - the same UI you get in the desktop app or
+            the browser.
           </p>
         </div>
         <figure class="shot">
@@ -536,15 +547,25 @@
             alt="Animated demo: queueing tracks, searching for Down Under, and playing it from the search results"
             loading="lazy"
           />
-          <figcaption>Search across platforms, queue tracks, and hit play - the player bar and queue update live.</figcaption>
+          <figcaption>
+            Search across platforms, queue tracks, and hit play - the player bar and queue update live.
+          </figcaption>
         </figure>
         <div class="shot-grid">
           <figure class="shot">
-            <img src="./assets/dashboard.png" alt="Dashboard page showing bot status, server stats, and now playing" loading="lazy" />
+            <img
+              src="./assets/dashboard.png"
+              alt="Dashboard page showing bot status, server stats, and now playing"
+              loading="lazy"
+            />
             <figcaption>Real-time overview: bot status, servers, instances, and what's playing.</figcaption>
           </figure>
           <figure class="shot">
-            <img src="./assets/queue.png" alt="Queue page with a now-playing track and five tracks up next" loading="lazy" />
+            <img
+              src="./assets/queue.png"
+              alt="Queue page with a now-playing track and five tracks up next"
+              loading="lazy"
+            />
             <figcaption>Full queue management - reorder, shuffle, remove, clear.</figcaption>
           </figure>
           <figure class="shot">
@@ -552,7 +573,11 @@
             <figcaption>Playlists and local files in one library.</figcaption>
           </figure>
           <figure class="shot">
-            <img src="./assets/settings.png" alt="Settings page with theme, accent color, and bot integration options" loading="lazy" />
+            <img
+              src="./assets/settings.png"
+              alt="Settings page with theme, accent color, and bot integration options"
+              loading="lazy"
+            />
             <figcaption>Themes, accent colors, and bot integration settings.</figcaption>
           </figure>
         </div>
@@ -572,7 +597,10 @@
             <div>
               <h3>Run the bot</h3>
               <p>Clone the repo, install dependencies, and start it - locally or on a server you control.</p>
-              <code>git clone https://github.com/ChristopherVR/DownUnderDiscordBot.git &amp;&amp; pnpm install &amp;&amp; pnpm db:push &amp;&amp; pnpm dev</code>
+              <code
+                >git clone https://github.com/ChristopherVR/DownUnderDiscordBot.git &amp;&amp; pnpm install &amp;&amp;
+                pnpm db:push &amp;&amp; pnpm dev</code
+              >
             </div>
           </div>
           <div class="step">
@@ -605,11 +633,12 @@
             <p>
               This page contains no bot, no database, and no credentials of any kind - it's a static build of the
               dashboard's UI, the same one described in
-              <a href="https://github.com/ChristopherVR/DownUnderDiscordBot/blob/main/docs/desktop.md">docs/desktop.md</a>.
-              It talks directly from your browser to whatever bot host/port you enter, and nobody else can see that
-              connection. If your bot only listens on <code>localhost</code>, a browser may block the request from
-              this HTTPS page to plain HTTP - in that case, run the dashboard locally instead
-              (<code>pnpm dev:desktop</code> or <code>pnpm --filter discord-bot-desktop dev:web</code>).
+              <a href="https://github.com/ChristopherVR/DownUnderDiscordBot/blob/main/docs/desktop.md"
+                >docs/desktop.md</a
+              >. It talks directly from your browser to whatever bot host/port you enter, and nobody else can see that
+              connection. If your bot only listens on <code>localhost</code>, a browser may block the request from this
+              HTTPS page to plain HTTP - in that case, run the dashboard locally instead (<code>pnpm dev:desktop</code>
+              or <code>pnpm --filter discord-bot-desktop dev:web</code>).
             </p>
           </div>
         </div>

@@ -53,10 +53,10 @@ async function newPage(browser, token, opts = {}) {
     ...opts,
   });
   const page = await context.newPage();
-  await page.addInitScript(
-    ({ key, value }) => window.localStorage.setItem(key, value),
-    { key: AUTH_TOKEN_KEY, value: token },
-  );
+  await page.addInitScript(({ key, value }) => window.localStorage.setItem(key, value), {
+    key: AUTH_TOKEN_KEY,
+    value: token,
+  });
   return { context, page };
 }
 
