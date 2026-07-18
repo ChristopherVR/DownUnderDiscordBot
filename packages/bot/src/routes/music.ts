@@ -35,6 +35,42 @@ const getGuildId = (req: Request): string => {
   return guildId;
 };
 
+/**
+ * Pump a whatwg ReadableStream reader into an Express response, aborting the
+ * upstream read as soon as the client disconnects.
+ *
+ * Without this, skipping/changing tracks (which aborts the browser's fetch
+ * to this endpoint) left the recursive read loop running indefinitely —
+ * `res.write()` on a dead socket doesn't stop the loop on its own, so every
+ * track change accumulated another orphaned stream still pulling audio
+ * bytes from the upstream CDN into memory. That's the real cause behind
+ * runaway memory growth during normal skip/replay use.
+ */
+async function pumpReaderToResponse(reader: ReadableStreamDefaultReader<Uint8Array>, req: Request, res: Response) {
+  let clientGone = false;
+  const onClose = () => {
+    clientGone = true;
+    reader.cancel().catch(() => {});
+  };
+  req.on('close', onClose);
+
+  try {
+    for (;;) {
+      if (clientGone || res.destroyed) break;
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (clientGone || res.destroyed) break;
+      if (!res.write(value)) {
+        await new Promise<void>((resolve) => res.once('drain', resolve));
+      }
+    }
+  } finally {
+    req.off('close', onClose);
+    if (!res.destroyed) res.end();
+    if (!clientGone) reader.cancel().catch(() => {});
+  }
+}
+
 // Map extractor identifiers to user-facing platform names
 const identifierToPlatform: Record<string, string> = {
   [CustomYouTubeExtractor.identifier]: 'youtube',
@@ -1069,19 +1105,7 @@ router.get('/stream', async (req: Request, res: Response) => {
       });
 
       // Pipe the web ReadableStream to the Node response
-      const reader = audioRes.body.getReader();
-      const pump = async (): Promise<void> => {
-        const { done, value } = await reader.read();
-        if (done) {
-          res.end();
-          return;
-        }
-        if (!res.write(value)) {
-          await new Promise<void>((resolve) => res.once('drain', resolve));
-        }
-        return pump();
-      };
-      await pump();
+      await pumpReaderToResponse(audioRes.body.getReader(), req, res);
 
       enhancedLogger.system(LogLevel.INFO, 'Streamed YouTube audio via yt-dlp', { url: trackUrl });
       return;
@@ -1125,19 +1149,7 @@ router.get('/stream', async (req: Request, res: Response) => {
       'Transfer-Encoding': 'chunked',
     });
 
-    const reader = proxyRes.body.getReader();
-    const pump = async (): Promise<void> => {
-      const { done, value } = await reader.read();
-      if (done) {
-        res.end();
-        return;
-      }
-      if (!res.write(value)) {
-        await new Promise<void>((resolve) => res.once('drain', resolve));
-      }
-      return pump();
-    };
-    await pump();
+    await pumpReaderToResponse(proxyRes.body.getReader(), req, res);
 
     enhancedLogger.system(LogLevel.INFO, 'Streamed online audio', { url: trackUrl });
   } catch (error) {

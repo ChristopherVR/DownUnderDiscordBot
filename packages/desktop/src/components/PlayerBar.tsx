@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useBotStore } from '@/stores/useBotStore';
 import type { PlaybackMode } from '@/stores/useBotStore';
 import { formatTime } from '@/lib/utils';
+import EqBars from '@/components/EqBars';
 import {
   Play,
   Pause,
@@ -23,25 +24,6 @@ import {
   Loader2,
 } from 'lucide-react';
 
-/** Animated equalizer bars for the track-info thumbnail placeholder. */
-function PlayingBars() {
-  return (
-    <div className="flex items-end gap-[3px]" style={{ height: 14 }}>
-      {[0, 0.15, 0.3].map((delay) => (
-        <span
-          key={delay}
-          className="w-[3px] rounded-full"
-          style={{
-            background: 'var(--accent)',
-            animation: 'var(--animate-now-playing-bar)',
-            animationDelay: `${delay}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
 export default function PlayerBar() {
   const player = useBotStore((s) => s.player);
   const pause = useBotStore((s) => s.pause);
@@ -61,6 +43,7 @@ export default function PlayerBar() {
   const localHistory = useBotStore((s) => s.localHistory);
   const localQueue = useBotStore((s) => s.localQueue);
   const streamStatus = useBotStore((s) => s.streamStatus);
+  const localPlaybackLoading = useBotStore((s) => s.localPlaybackLoading);
 
   // Multi-guild player cycling
   const guildPlayers = useBotStore((s) => s.guildPlayers);
@@ -149,8 +132,10 @@ export default function PlayerBar() {
             className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg"
             style={{ background: 'var(--glass-bg)' }}
           >
-            {hasTrack && player.isPlaying ? (
-              <PlayingBars />
+            {localPlaybackLoading ? (
+              <Loader2 size={18} className="animate-spin" style={{ color: 'var(--accent)' }} />
+            ) : hasTrack && player.isPlaying ? (
+              <EqBars playing size="md" />
             ) : hasTrack ? (
               <Pause size={18} className="text-t-ghost" />
             ) : (
@@ -159,22 +144,37 @@ export default function PlayerBar() {
           </div>
         )}
         <div className="min-w-0">
-          <p data-testid="player-track-title" className="truncate text-[13px] font-semibold text-t-primary">
-            {player.currentTrack?.title ?? 'No track playing'}
+          <p
+            data-testid="player-track-title"
+            className="flex items-center gap-2 truncate text-[13px] font-semibold text-t-primary"
+          >
+            {hasTrack && !localPlaybackLoading && <EqBars playing={player.isPlaying} />}
+            <span className="truncate">{player.currentTrack?.title ?? 'No track playing'}</span>
           </p>
           <p data-testid="player-track-artist" className="truncate text-[11px] text-t-faint">
             {player.currentTrack?.artist ?? '\u00A0'}
           </p>
-          {/* Stream status indicator (resolving / fallback) */}
-          {streamStatus && (streamStatus.status === 'resolving' || streamStatus.status === 'fallback') && (
-            <p className="flex items-center gap-1 truncate text-[10px] font-medium text-amber-400">
+          {/* Local playback stream-resolution indicator (first play of a
+              track can take a few seconds server-side with otherwise no
+              feedback that anything is happening). */}
+          {localPlaybackLoading && (
+            <p className="flex items-center gap-1 truncate text-[10px] font-medium" style={{ color: 'var(--accent)' }}>
               <Loader2 size={10} className="animate-spin" />
-              {streamStatus.status === 'resolving'
-                ? `Connecting via ${streamStatus.client}…`
-                : `${streamStatus.client} failed, trying next…`}
+              Loading...
             </p>
           )}
-          {streamStatus?.status === 'error' && (
+          {/* Stream status indicator (resolving / fallback) */}
+          {!localPlaybackLoading &&
+            streamStatus &&
+            (streamStatus.status === 'resolving' || streamStatus.status === 'fallback') && (
+              <p className="flex items-center gap-1 truncate text-[10px] font-medium text-amber-400">
+                <Loader2 size={10} className="animate-spin" />
+                {streamStatus.status === 'resolving'
+                  ? `Connecting via ${streamStatus.client}…`
+                  : `${streamStatus.client} failed, trying next…`}
+              </p>
+            )}
+          {!localPlaybackLoading && streamStatus?.status === 'error' && (
             <p className="truncate text-[10px] font-medium text-red-400">Stream failed</p>
           )}
           {/* Guild indicator in bot / sync mode */}
@@ -240,11 +240,13 @@ export default function PlayerBar() {
                 }
               }
             }}
-            disabled={!canControl}
+            disabled={!canControl || localPlaybackLoading}
             className="flex h-9 w-9 items-center justify-center rounded-full shadow-glow-green transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:shadow-none disabled:hover:scale-100"
             style={{ background: 'var(--gradient-accent)', color: 'var(--btn-primary-fg)' }}
           >
-            {player.isPlaying ? (
+            {localPlaybackLoading ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : player.isPlaying ? (
               <Pause size={15} fill="currentColor" />
             ) : (
               <Play size={15} fill="currentColor" className="ml-0.5" />
@@ -319,8 +321,11 @@ export default function PlayerBar() {
         </div>
       </div>
 
-      {/* Right controls: audio mode + transfer + video preview + volume */}
-      <div className="flex w-72 items-center justify-end gap-2">
+      {/* Right controls: audio mode + transfer + video preview + volume.
+          min-w rather than a fixed width — the optional "To Bot" / video
+          preview buttons can push this past 18rem, and a hard w-72 was
+          clipping/overlapping the volume slider whenever they appeared. */}
+      <div className="flex min-w-72 shrink-0 items-center justify-end gap-2">
         {/* Audio mode switcher: Local / Bot / Sync */}
         <div
           className="flex items-center gap-0.5 rounded-lg p-0.5"
@@ -398,17 +403,19 @@ export default function PlayerBar() {
         >
           {player.volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>
-        <div
-          className="group relative h-1 w-20 cursor-pointer rounded-full"
-          style={{ background: 'var(--glass-bg-md)' }}
-        >
-          <div
-            className="h-full rounded-full transition-all"
-            style={{
-              width: `${player.volume}%`,
-              background: 'var(--text-tertiary)',
-            }}
-          />
+        {/* The visible track stays thin, but the invisible <input> gets a
+            taller hit area (h-4 vs h-1) — at 4px tall it was nearly
+            impossible to click/drag precisely. */}
+        <div className="group relative flex h-4 w-24 cursor-pointer items-center">
+          <div className="h-1 w-full rounded-full" style={{ background: 'var(--glass-bg-md)' }}>
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${player.volume}%`,
+                background: 'var(--text-tertiary)',
+              }}
+            />
+          </div>
           <input
             data-testid="player-volume"
             type="range"
@@ -416,7 +423,7 @@ export default function PlayerBar() {
             max={100}
             value={player.volume}
             onChange={(e) => setVolume(Number(e.target.value))}
-            className="absolute inset-0 cursor-pointer opacity-0"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
         </div>
       </div>

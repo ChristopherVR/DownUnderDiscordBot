@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo, memo } from 'react';
 import { api } from '@/lib/api';
 import { useBotStore } from '@/stores/useBotStore';
 import { wsService } from '@/lib/ws';
@@ -79,7 +79,7 @@ const LEVEL_STYLE: Record<string, { bg: string; text: string; icon: React.Elemen
 // LogRow
 // ---------------------------------------------------------------------------
 
-function LogRow({ item }: { item: LogItem }) {
+const LogRow = memo(function LogRow({ item }: { item: LogItem }) {
   const [expanded, setExpanded] = useState(false);
   const lvl = LEVEL_STYLE[item.level] ?? LEVEL_STYLE.info;
   const LvlIcon = lvl.icon;
@@ -172,7 +172,7 @@ function LogRow({ item }: { item: LogItem }) {
       )}
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Helpers to convert API / WS / App entries into unified LogItem
@@ -294,16 +294,29 @@ export default function LogsPage() {
     fetchAllLogs();
   }, [fetchAllLogs]);
 
-  // Real-time tailing via WebSocket (bot) + appLog listener (app)
+  // Real-time tailing via WebSocket (bot) + appLog listener (app).
+  //
+  // The bot can emit many log lines per second (every HTTP request, player
+  // event, heartbeat...). Committing a setLogs() + full re-render of up to
+  // 1000 unwindowed rows per individual message is what made "Live" mode on
+  // this page extremely slow — dozens of full-list re-renders per second
+  // under normal load. Queue incoming entries in a ref and flush them into
+  // state in one batched update on a fixed cadence instead.
   useEffect(() => {
     if (!autoRefresh) return;
 
-    const addLogItem = (logItem: LogItem) => {
+    let pending: LogItem[] = [];
+
+    const flush = () => {
+      if (pending.length === 0) return;
+      const batch = pending;
+      pending = [];
+
       setLogs((prev) => {
-        const next = sortOrder === 'desc' ? [logItem, ...prev] : [...prev, logItem];
+        const next = sortOrder === 'desc' ? [...batch.slice().reverse(), ...prev] : [...prev, ...batch];
         return next.slice(0, 1000);
       });
-      setTotal((t) => t + 1);
+      setTotal((t) => t + batch.length);
 
       requestAnimationFrame(() => {
         const el = scrollRef.current;
@@ -312,10 +325,15 @@ export default function LogsPage() {
         else el.scrollTop = el.scrollHeight;
       });
     };
+    const flushInterval = setInterval(flush, 300);
+
+    const queueLogItem = (logItem: LogItem) => {
+      pending.push(logItem);
+    };
 
     // Subscribe to app logs
     const unsubApp = onAppLog((entry) => {
-      addLogItem(appEntryToLogItem(entry));
+      queueLogItem(appEntryToLogItem(entry));
     });
 
     // Subscribe to bot logs (only when connected)
@@ -323,7 +341,7 @@ export default function LogsPage() {
     if (connected) {
       const rawUnsub = wsService.on('log_entry', (payload: unknown) => {
         const logItem = botEntryToLogItem(payload as Record<string, unknown>);
-        addLogItem(logItem);
+        queueLogItem(logItem);
       });
       unsubBot = () => {
         rawUnsub();
@@ -331,6 +349,7 @@ export default function LogsPage() {
     }
 
     return () => {
+      clearInterval(flushInterval);
       unsubApp();
       unsubBot?.();
     };

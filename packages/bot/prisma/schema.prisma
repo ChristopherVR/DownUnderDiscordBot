@@ -115,6 +115,20 @@ model UserPreferences {
   @@unique([guildId, userId])
 }
 
+model CommandExecution {
+  id        String   @id @default(uuid())
+  command   String
+  arguments String   // JSON
+  status    String   // "success" | "error" | "pending"
+  error     String?
+  result    String?  // JSON
+  timestamp DateTime @default(now())
+
+  @@index([command])
+  @@index([status])
+  @@index([timestamp])
+}
+
 model TrackCache {
   id        String   @id @default(uuid())
   platform  String

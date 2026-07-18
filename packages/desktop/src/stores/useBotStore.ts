@@ -110,6 +110,12 @@ interface BotStore {
   // Local audio/video element for local playback
   localAudio: HTMLAudioElement | HTMLVideoElement | null;
 
+  // True from the moment a local track is requested until playback actually
+  // starts — covers the (sometimes multi-second) stream-resolution gap on a
+  // track's first play, when there's otherwise no feedback that anything
+  // is happening.
+  localPlaybackLoading: boolean;
+
   // Local playback queue (separate from bot queue)
   localQueue: Track[];
 
@@ -173,6 +179,14 @@ interface BotStore {
 
   // Playlist actions — respects playbackMode
   playPlaylistById: (playlistId: string) => Promise<void>;
+
+  // Sync-mode local counterparts — only start local playback once the bot
+  // side has actually been issued (and, where possible, has actually begun
+  // playing), rather than firing both blindly at the same instant. Shared
+  // between play()/playPlaylistById() (no voice channel needed) and
+  // playWithVoiceChannel() (channel picked after the fact).
+  resolveAndPlayLocally: (query: string, platform?: string) => Promise<void>;
+  playPlaylistLocally: (playlistId: string) => Promise<void>;
 
   // Actions
   play: (query: string, platform?: string) => Promise<void>;
@@ -286,6 +300,31 @@ export interface DashboardData {
 const AUTH_TOKEN_KEY = 'downunder_auth_token';
 const MUSIC_FOLDERS_KEY = 'downunder_music_folders';
 
+/**
+ * Poll (briefly) until the bot's guild player reports it has actually
+ * started playing, or give up after `timeoutMs`.
+ *
+ * Sync mode used to fire the bot play request and local playback in the
+ * same instant — but the bot side has to join voice, resolve the stream,
+ * and start FFmpeg, while local playback (a browser <audio> element) can
+ * start almost immediately. That gap is exactly what "sync" drifted by.
+ * This doesn't guarantee sample-accurate sync (there's still WS latency
+ * reporting the state change), but it closes the multi-second gap that
+ * made the two audibly unrelated.
+ */
+async function waitForBotPlaybackStart(
+  getState: () => Pick<BotStore, 'guildPlayers'>,
+  guildId: string | null | undefined,
+  timeoutMs = 6000,
+): Promise<void> {
+  if (!guildId) return;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (getState().guildPlayers[guildId]?.isPlaying) return;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
+
 function loadMusicFolders(): string[] {
   try {
     const stored = localStorage.getItem(MUSIC_FOLDERS_KEY);
@@ -310,6 +349,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
   // Playback mode — default to local (plays through computer speakers)
   playbackMode: 'local',
   localAudio: null,
+  localPlaybackLoading: false,
   localQueue: [],
   localHistory: [],
   showVideoPreview: false,
@@ -491,6 +531,12 @@ export const useBotStore = create<BotStore>((set, get) => ({
   dashboardLoading: false,
 
   fetchDashboard: async () => {
+    // Guard against overlapping requests — the dashboard poll fires every
+    // 10s, but a single request can legitimately take longer than that
+    // (Discord API round-trips). Without this guard, requests pile up
+    // faster than they drain and each new one queues behind all the
+    // previous ones, making load times grow without bound.
+    if (get().dashboardLoading) return;
     set({ dashboardLoading: true });
     try {
       const data = await api.getDashboard();
@@ -569,12 +615,13 @@ export const useBotStore = create<BotStore>((set, get) => ({
     const { player } = get();
     if (!player.currentTrack) return;
 
-    const track = player.currentTrack;
-    const query = track.filePath ?? track.url ?? track.title;
-
-    // Always open the voice-channel picker so the user can choose
-    // which guild + voice channel to send the track to.
-    set({ pendingPlay: { query, platform: track.platform } });
+    // Delegate to setPlaybackMode('bot'), which already stops local audio,
+    // clears local playback state, and queues the current track as a
+    // handoff via pendingPlay (opening the voice-channel picker). This
+    // function used to duplicate only the pendingPlay part, which is why
+    // local audio kept playing after "To Bot" and the mode pill never
+    // flipped to Bot/Sync.
+    get().setPlaybackMode('bot');
   },
 
   setPlaybackMode: (mode: PlaybackMode) => {
@@ -976,12 +1023,19 @@ export const useBotStore = create<BotStore>((set, get) => ({
   setPendingPlaylistPlay: (id) => set({ pendingPlaylistPlay: id }),
 
   playWithVoiceChannel: async (voiceChannelId: string) => {
-    const { pendingPlay, pendingPlaylistPlay, focusedGuildId } = get();
+    const { pendingPlay, pendingPlaylistPlay, focusedGuildId, playbackMode } = get();
     // Playlist takes precedence if both happen to be set.
     if (pendingPlaylistPlay) {
       set({ pendingPlaylistPlay: null });
       try {
         await api.playPlaylist(pendingPlaylistPlay, focusedGuildId ?? undefined, voiceChannelId);
+        if (playbackMode === 'sync') {
+          // The channel pick is done — the bot side is now actually being
+          // issued, so start local now instead of back when play() first
+          // fired (which is what left local running far ahead of the bot).
+          await waitForBotPlaybackStart(get, focusedGuildId);
+          await get().playPlaylistLocally(pendingPlaylistPlay);
+        }
       } catch {
         /* handled by WS updates */
       }
@@ -991,57 +1045,68 @@ export const useBotStore = create<BotStore>((set, get) => ({
     set({ pendingPlay: null });
     try {
       await api.play(pendingPlay.query, pendingPlay.platform, voiceChannelId, focusedGuildId ?? undefined);
+      if (playbackMode === 'sync') {
+        await waitForBotPlaybackStart(get, focusedGuildId);
+        await get().resolveAndPlayLocally(pendingPlay.query, pendingPlay.platform);
+      }
     } catch {
       /* handled by WS updates */
+    }
+  },
+
+  // Load a playlist's tracks and play the first one locally, staging the
+  // rest in the local queue. Shared by the 'local' path and both sync-mode
+  // paths (immediate, and deferred until after a voice-channel pick).
+  playPlaylistLocally: async (playlistId: string) => {
+    try {
+      const detail = await api.getPlaylist(playlistId);
+      const items = detail.data?.tracks ?? [];
+      if (items.length === 0) {
+        const { toast } = await import('./useToastStore');
+        toast.error('Playlist is empty');
+        return;
+      }
+      const tracks: Track[] = items.map((t) => ({
+        title: t.title,
+        artist: t.artist ?? undefined,
+        duration: t.duration || undefined,
+        url: t.url,
+        thumbnail: t.thumbnail ?? undefined,
+        platform: t.platform,
+      }));
+      // Reset local queue and stage the rest.
+      set({ localQueue: tracks.slice(1) });
+      await get().playTrackLocally(tracks[0]);
+    } catch {
+      const { toast } = await import('./useToastStore');
+      toast.error('Failed to load playlist');
     }
   },
 
   playPlaylistById: async (playlistId: string) => {
     const { playbackMode, focusedGuildId } = get();
 
-    // Helper: load tracks and play first locally, queue the rest.
-    const playLocallyFromPlaylist = async () => {
-      try {
-        const detail = await api.getPlaylist(playlistId);
-        const items = detail.data?.tracks ?? [];
-        if (items.length === 0) {
-          const { toast } = await import('./useToastStore');
-          toast.error('Playlist is empty');
-          return;
-        }
-        const tracks: Track[] = items.map((t) => ({
-          title: t.title,
-          artist: t.artist ?? undefined,
-          duration: t.duration || undefined,
-          url: t.url,
-          thumbnail: t.thumbnail ?? undefined,
-          platform: t.platform,
-        }));
-        // Reset local queue and stage the rest.
-        set({ localQueue: tracks.slice(1) });
-        await get().playTrackLocally(tracks[0]);
-      } catch {
-        const { toast } = await import('./useToastStore');
-        toast.error('Failed to load playlist');
-      }
-    };
-
     if (playbackMode === 'local') {
-      await playLocallyFromPlaylist();
+      await get().playPlaylistLocally(playlistId);
       return;
     }
 
     if (playbackMode === 'sync') {
-      // Fire bot first; in parallel, also play locally.
       try {
         const result = await api.playPlaylist(playlistId, focusedGuildId ?? undefined);
         if (result?.requiresVoiceChannel) {
+          // Bot hasn't joined a channel yet — defer local playback until
+          // playWithVoiceChannel() actually issues bot playback, instead of
+          // starting local now and leaving the bot to catch up whenever the
+          // user finishes picking a channel (that gap is what "sync" drifted by).
           set({ pendingPlaylistPlay: playlistId });
+          return;
         }
+        await waitForBotPlaybackStart(get, focusedGuildId);
       } catch {
         /* handled by WS */
       }
-      await playLocallyFromPlaylist();
+      await get().playPlaylistLocally(playlistId);
       return;
     }
 
@@ -1060,6 +1125,40 @@ export const useBotStore = create<BotStore>((set, get) => ({
     } catch {
       const { toast } = await import('./useToastStore');
       toast.error('Failed to play playlist');
+    }
+  },
+
+  // Resolve a query (search result or local file path) into a Track and
+  // play it locally. Shared by the 'local' path and both sync-mode paths
+  // (immediate, and deferred until after a voice-channel pick).
+  resolveAndPlayLocally: async (query: string, platform?: string) => {
+    if (platform === 'local') {
+      const track: Track = {
+        title: query.split(/[\\/]/).pop() ?? query,
+        artist: 'Local File',
+        filePath: query,
+        platform: 'local',
+      };
+      await get().playTrackLocally(track);
+      return;
+    }
+    try {
+      const result = await api.search(query, platform);
+      const raw = (result.data?.tracks ?? []) as Array<Record<string, unknown>>;
+      if (raw.length > 0) {
+        const t = raw[0];
+        const track: Track = {
+          title: (t.title as string) ?? 'Unknown',
+          artist: (t.artist as string) ?? (t.author as string) ?? undefined,
+          duration: (t.duration as number) ?? undefined,
+          url: (t.url as string) ?? query,
+          thumbnail: (t.thumbnail as string) ?? (t.cover as string) ?? undefined,
+          platform: platform ?? 'auto',
+        };
+        await get().playTrackLocally(track);
+      }
+    } catch {
+      /* search failed */
     }
   },
 
@@ -1104,45 +1203,21 @@ export const useBotStore = create<BotStore>((set, get) => ({
     }
 
     if (playbackMode === 'sync') {
-      // Sync mode — play on both bot and locally simultaneously
-      // Start bot playback
       try {
         const result = await api.play(query, platform, undefined, get().focusedGuildId ?? undefined);
         if (result?.requiresVoiceChannel) {
+          // Bot hasn't joined a channel yet — defer local playback until
+          // playWithVoiceChannel() actually issues bot playback, instead of
+          // starting local now and leaving the bot to catch up whenever the
+          // user finishes picking a channel (that gap is what "sync" drifted by).
           set({ pendingPlay: { query, platform } });
+          return;
         }
+        await waitForBotPlaybackStart(get, get().focusedGuildId);
       } catch {
         /* handled by WS updates */
       }
-      // Also play locally
-      if (platform === 'local') {
-        const track: Track = {
-          title: query.split(/[\\/]/).pop() ?? query,
-          artist: 'Local File',
-          filePath: query,
-          platform: 'local',
-        };
-        await get().playTrackLocally(track);
-      } else {
-        try {
-          const result = await api.search(query, platform);
-          const raw = (result.data?.tracks ?? []) as Array<Record<string, unknown>>;
-          if (raw.length > 0) {
-            const t = raw[0];
-            const track: Track = {
-              title: (t.title as string) ?? 'Unknown',
-              artist: (t.artist as string) ?? (t.author as string) ?? undefined,
-              duration: (t.duration as number) ?? undefined,
-              url: (t.url as string) ?? query,
-              thumbnail: (t.thumbnail as string) ?? (t.cover as string) ?? undefined,
-              platform: platform ?? 'auto',
-            };
-            await get().playTrackLocally(track);
-          }
-        } catch {
-          /* search failed */
-        }
-      }
+      await get().resolveAndPlayLocally(query, platform);
       return;
     }
 
@@ -1167,6 +1242,14 @@ export const useBotStore = create<BotStore>((set, get) => ({
       existingAudio.removeAttribute('src');
       existingAudio.load();
     }
+
+    // Reflect the pick immediately — stream resolution (first play of a
+    // track especially) can take a few seconds, and without this the UI
+    // shows no sign anything happened until playback actually starts.
+    set({
+      localPlaybackLoading: true,
+      player: { ...currentPlayer, currentTrack: track, isPlaying: false, position: 0 },
+    });
 
     // Determine the stream URL
     let streamUrl: string;
@@ -1265,6 +1348,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
         (Number.isFinite(mediaEl.duration) && mediaEl.duration > 0 ? Math.floor(mediaEl.duration) : 0);
       set({
         localAudio: mediaEl,
+        localPlaybackLoading: false,
         player: {
           ...currentPlayer,
           isPlaying: true,
@@ -1278,6 +1362,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
       set((s) => ({
         player: { ...s.player, isPlaying: false, currentTrack: null, position: 0 },
         localAudio: null,
+        localPlaybackLoading: false,
       }));
       const { toast } = await import('./useToastStore');
       toast.error('Failed to play track — stream unavailable');

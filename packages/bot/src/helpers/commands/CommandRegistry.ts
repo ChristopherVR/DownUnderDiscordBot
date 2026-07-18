@@ -13,6 +13,10 @@ import { createLogger } from '../logger';
 import { MessageFlags } from 'discord.js';
 import { CommandHandler } from '../../types/commands';
 import { CommandContext, DashboardCommandContext, DashboardCommandContextOptions } from './CommandContext';
+import {
+  CommandExecutionRepository,
+  type CommandHistoryFilters,
+} from '../../database/repositories/CommandExecutionRepository.js';
 
 const registryLog = createLogger('command-registry');
 
@@ -44,13 +48,6 @@ const KNOWN_COMMAND_MODULES = [
   'ask',
   'shutdown',
 ];
-
-type CommandHistoryFilters = {
-  limit?: number;
-  command?: string;
-  status?: CommandExecution['status'];
-  since?: number;
-};
 
 const OPTION_TYPE_MAP: Record<number, CommandOption['type']> = {
   3: 'string',
@@ -104,8 +101,7 @@ export class CommandRegistry {
 
   private commands: Map<string, CommandHandler> = new Map();
   private commandLookup: Map<string, CommandHandler> = new Map();
-  private commandHistory: CommandExecution[] = [];
-  private maxHistorySize = 1000;
+  private historyRepo = new CommandExecutionRepository();
   private initializationPromise: Promise<void> | null = null;
   private hasLoaded = false;
 
@@ -334,7 +330,7 @@ export class CommandRegistry {
         execution.status = 'error';
         execution.error = validation.errors.join(', ');
         registryLog.warn({ command: commandName, errors: validation.errors }, 'Command validation failed');
-        this.addToHistory(execution);
+        await this.addToHistory(execution);
         return execution;
       }
 
@@ -342,7 +338,7 @@ export class CommandRegistry {
       if (!command) {
         execution.status = 'error';
         execution.error = `Command '${commandName}' not found`;
-        this.addToHistory(execution);
+        await this.addToHistory(execution);
         return execution;
       }
 
@@ -354,7 +350,7 @@ export class CommandRegistry {
         if (error instanceof InactiveInstanceError) {
           execution.status = 'error';
           execution.error = tErrors('bot.management.instanceOffline');
-          this.addToHistory(execution);
+          await this.addToHistory(execution);
           return execution;
         }
         throw error;
@@ -377,7 +373,7 @@ export class CommandRegistry {
       execution.error = error instanceof Error ? error.message : tErrors('generic');
     }
 
-    this.addToHistory(execution);
+    await this.addToHistory(execution);
     return execution;
   }
 
@@ -397,75 +393,39 @@ export class CommandRegistry {
     return new DashboardCommandContext({ args });
   }
 
-  private addToHistory(execution: CommandExecution): void {
-    this.commandHistory.unshift(execution);
-    if (this.commandHistory.length > this.maxHistorySize) {
-      this.commandHistory = this.commandHistory.slice(0, this.maxHistorySize);
+  private async addToHistory(execution: CommandExecution): Promise<void> {
+    try {
+      await this.historyRepo.record(execution);
+    } catch (err) {
+      // History is diagnostic, not load-bearing — never let a DB hiccup
+      // fail the command execution itself.
+      registryLog.warn({ err, executionId: execution.id }, 'Failed to persist command execution history');
     }
   }
 
-  public getCommandHistory(filters: CommandHistoryFilters = {}): CommandExecution[] {
-    let history = [...this.commandHistory];
-
-    if (filters.command) {
-      history = history.filter((execution) => execution.command === filters.command);
-    }
-
-    if (filters.status) {
-      history = history.filter((execution) => execution.status === filters.status);
-    }
-
-    if (filters.since) {
-      history = history.filter((execution) => execution.timestamp >= filters.since!);
-    }
-
-    if (filters.limit) {
-      history = history.slice(0, filters.limit);
-    }
-
-    return history;
+  public async getCommandHistory(filters: CommandHistoryFilters = {}): Promise<CommandExecution[]> {
+    return this.historyRepo.getHistory(filters);
   }
 
-  public getCommandExecution(executionId: string): CommandExecution | undefined {
-    return this.commandHistory.find((execution) => execution.id === executionId);
+  public async getCommandExecution(executionId: string): Promise<CommandExecution | undefined> {
+    return this.historyRepo.getExecution(executionId);
   }
 
-  public clearHistory(): void {
-    this.commandHistory = [];
+  public async clearHistory(): Promise<void> {
+    await this.historyRepo.clearHistory();
   }
 
-  public getStats(): {
+  public async getStats(): Promise<{
     totalCommands: number;
     totalExecutions: number;
     successfulExecutions: number;
     failedExecutions: number;
     mostUsedCommands: Array<{ command: string; count: number }>;
-  } {
-    const commandCounts = new Map<string, number>();
-    let successful = 0;
-    let failed = 0;
-
-    for (const execution of this.commandHistory) {
-      commandCounts.set(execution.command, (commandCounts.get(execution.command) ?? 0) + 1);
-
-      if (execution.status === 'success') {
-        successful += 1;
-      } else if (execution.status === 'error') {
-        failed += 1;
-      }
-    }
-
-    const mostUsedCommands = Array.from(commandCounts.entries())
-      .map(([command, count]) => ({ command, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-
+  }> {
+    const stats = await this.historyRepo.getStats();
     return {
       totalCommands: this.commands.size,
-      totalExecutions: this.commandHistory.length,
-      successfulExecutions: successful,
-      failedExecutions: failed,
-      mostUsedCommands,
+      ...stats,
     };
   }
 }

@@ -16,6 +16,33 @@ const STATE_BACKUP_INTERVAL = 300000; // 5 minutes
 const CAS_MAX_RETRIES = 3;
 const CAS_RETRY_BASE_MS = 100;
 const PIN_CLEANUP_INTERVAL = 10; // clean up pins every N updates
+// getState() does two real Discord REST calls (fetchPinned + fetch recent 50).
+// Short-TTL read cache so a burst of reads (e.g. a dashboard request that
+// calls getState() several times) doesn't hammer the channel and trip
+// Discord's rate limiter — the cause of the compounding multi-minute
+// dashboard load times seen in practice.
+const STATE_READ_CACHE_TTL_MS = 3000;
+// Ceiling on a single-flight operation. Discord rate-limit backoffs (or any
+// transient REST hang) must never be allowed to wedge the in-flight lock
+// forever — that would permanently lock out every subsequent caller, not
+// just the one that got rate-limited, for the remaining life of the process.
+const SINGLE_FLIGHT_TIMEOUT_MS = 15000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 // Ping / Pong protocol markers
 const PING_PREFIX = '[STATE] PING';
@@ -42,6 +69,9 @@ export class ChannelStateService implements IStateService {
   private memoryState: StateDoc;
   private removeSignalHandlers: Array<() => void> = [];
   private updateCounter = 0;
+  private stateReadCache: { doc: StateDoc; fetchedAt: number } | null = null;
+  private stateReadInFlight: Promise<StateDoc> | null = null;
+  private removeTimedOutInFlight: Promise<{ removed: number }> | null = null;
 
   /** Nonces of PINGs this instance has already responded to (avoids duplicate PONGs). */
   private answeredPingNonces = new Set<string>();
@@ -358,6 +388,9 @@ export class ChannelStateService implements IStateService {
           if (this.updateCounter % PIN_CLEANUP_INTERVAL === 0) {
             this.cleanupStalePins(msg.id).catch(() => {});
           }
+          // Keep the read cache in sync so callers see this write immediately
+          // instead of waiting out the read-cache TTL.
+          this.stateReadCache = { doc, fetchedAt: Date.now() };
           return doc;
         }
       } catch {
@@ -397,8 +430,29 @@ export class ChannelStateService implements IStateService {
     if (this.useMemoryStorage) {
       return this.memoryState;
     }
-    const { doc } = await this.getOrCreateStateMessage();
-    return doc;
+    if (this.stateReadCache && Date.now() - this.stateReadCache.fetchedAt < STATE_READ_CACHE_TTL_MS) {
+      return this.stateReadCache.doc;
+    }
+    // Single-flight the cold-cache fetch too — concurrent callers (e.g. a
+    // burst of overlapping dashboard requests) share one read instead of
+    // each independently re-fetching the same channel messages.
+    if (this.stateReadInFlight) {
+      return this.stateReadInFlight;
+    }
+
+    const rawFetch = this.getOrCreateStateMessage().then(({ doc }) => {
+      this.stateReadCache = { doc, fetchedAt: Date.now() };
+      return doc;
+    });
+
+    // Bound by a timeout, not the raw fetch — a genuinely hung/rate-limited
+    // Discord call must free the lock for future callers rather than
+    // wedging every subsequent getState() for the rest of the process.
+    const bounded = withTimeout(rawFetch, SINGLE_FLIGHT_TIMEOUT_MS, 'ChannelStateService.getState').finally(() => {
+      this.stateReadInFlight = null;
+    });
+    this.stateReadInFlight = bounded;
+    return bounded;
   }
 
   async getGuildState(guildId: string): Promise<GuildState> {
@@ -406,7 +460,7 @@ export class ChannelStateService implements IStateService {
       const doc = this.memoryState;
       return doc.guilds[guildId] ?? { guildId, activeInstanceId: null, instances: {} };
     }
-    const { doc } = await this.getOrCreateStateMessage();
+    const doc = await this.getState();
     return doc.guilds[guildId] ?? { guildId, activeInstanceId: null, instances: {} };
   }
 
@@ -1059,10 +1113,67 @@ export class ChannelStateService implements IStateService {
    * This is intended for explicit admin cleanup from the dashboard.
    * It removes any instance whose heartbeat exceeds HEARTBEAT_TIMEOUT
    * (except the current running instance) and performs hostname dedup.
+   *
+   * Single-flight: this is called on every dashboard load, so concurrent
+   * callers (multiple open tabs/windows, or a burst of polls) share one
+   * in-progress run instead of each racing their own CAS write against the
+   * same channel message — that pile-up was the cause of dashboard loads
+   * occasionally taking a minute or more under concurrent load.
    */
   async removeTimedOutInstances(): Promise<{ removed: number }> {
+    if (this.removeTimedOutInFlight) {
+      return this.removeTimedOutInFlight;
+    }
+    // Bound by a timeout, not the raw call — see getState() for why: a
+    // hung/rate-limited Discord call must free the lock rather than
+    // wedging every subsequent dashboard load for the rest of the process.
+    const bounded = withTimeout(
+      this.doRemoveTimedOutInstances(),
+      SINGLE_FLIGHT_TIMEOUT_MS,
+      'ChannelStateService.removeTimedOutInstances',
+    ).finally(() => {
+      this.removeTimedOutInFlight = null;
+    });
+    this.removeTimedOutInFlight = bounded;
+    return bounded;
+  }
+
+  private async doRemoveTimedOutInstances(): Promise<{ removed: number }> {
     const now = Date.now();
     let totalRemoved = 0;
+
+    // Pre-check with the (cheap, cached) read path first — skip the CAS
+    // write entirely when there's nothing to remove. This endpoint is called
+    // on every dashboard load, so doing an unconditional read+edit+refetch
+    // cycle here on every call was a major contributor to dashboard latency.
+    const currentState = await this.getState();
+    let needsWork = false;
+    for (const guild of Object.values(currentState.guilds)) {
+      for (const [instanceId, instance] of Object.entries(guild.instances)) {
+        if (instanceId === this.instanceId) continue;
+        if (now - instance.lastHeartbeat > HEARTBEAT_TIMEOUT) {
+          needsWork = true;
+          break;
+        }
+      }
+      if (needsWork) break;
+
+      const hostnameCounts = new Map<string, number>();
+      for (const inst of Object.values(guild.instances)) {
+        if (inst.hostname) hostnameCounts.set(inst.hostname, (hostnameCounts.get(inst.hostname) ?? 0) + 1);
+      }
+      for (const count of hostnameCounts.values()) {
+        if (count > 1) {
+          needsWork = true;
+          break;
+        }
+      }
+      if (needsWork) break;
+    }
+
+    if (!needsWork) {
+      return { removed: 0 };
+    }
 
     await this.update((doc) => {
       for (const guildId of Object.keys(doc.guilds)) {

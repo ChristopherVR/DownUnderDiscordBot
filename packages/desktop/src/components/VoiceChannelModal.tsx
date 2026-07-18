@@ -98,11 +98,7 @@ export default function VoiceChannelModal({ open, onClose, onSelect }: Props) {
                   className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all hover:bg-white/[0.06]"
                 >
                   {g.icon ? (
-                    <img
-                      src={`https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=32`}
-                      alt=""
-                      className="h-6 w-6 rounded-full"
-                    />
+                    <img src={g.icon} alt="" className="h-6 w-6 rounded-full object-cover" />
                   ) : (
                     <Server size={16} className="text-t-faint" />
                   )}

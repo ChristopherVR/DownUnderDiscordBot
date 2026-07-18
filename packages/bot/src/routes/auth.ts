@@ -370,7 +370,9 @@ router.get('/guilds', async (req: Request, res: Response) => {
       .map((g) => ({
         id: g.id,
         name: g.name,
-        icon: g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : null,
+        icon: g.icon
+          ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.${g.icon.startsWith('a_') ? 'gif' : 'webp'}`
+          : null,
         owner: g.owner,
         botPresent: botGuildIds.has(g.id),
       }));

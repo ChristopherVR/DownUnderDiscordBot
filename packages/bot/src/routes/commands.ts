@@ -172,17 +172,18 @@ export function initializeCommandRoutes(wsManagerInstance: CommandBroadcast, dis
     discordIntegration.setClient(discordClient);
   }
 
-  // Load known commands asynchronously
-  registryReady = commandRegistry
-    .loadKnownCommands()
-    .then(async () => {
-      if (discordClient) {
-        await ensureSlashCommandsRegistered(discordClient);
-      }
-    })
-    .catch((error) => {
-      commandLog.error({ err: error }, 'Failed to load commands');
-    });
+  // Load known commands asynchronously. registryReady signals "commands are
+  // loaded and executable" — it must resolve on its own, independent of
+  // Discord slash-command registration (a separate, slower, rate-limited
+  // Discord REST call). ensureSlashCommandsRegistered() itself awaits
+  // registryReady, so calling it from inside this chain would make
+  // registryReady's own resolution depend on a call that's waiting on
+  // registryReady — a deadlock that permanently hangs every
+  // /api/commands/execute request. Slash-command registration is kicked
+  // off separately below instead.
+  registryReady = commandRegistry.loadKnownCommands().catch((error) => {
+    commandLog.error({ err: error }, 'Failed to load commands');
+  });
 
   if (discordClient) {
     void ensureSlashCommandsRegistered(discordClient);
@@ -279,7 +280,7 @@ router.post('/execute', async (req: Request, res: Response) => {
  * GET /api/commands/history
  * Returns command execution history with optional filtering
  */
-router.get('/history', (req: Request, res: Response) => {
+router.get('/history', async (req: Request, res: Response) => {
   const log = resolveRequestLog(req).child({ endpoint: 'history' });
   const { limit = 50, command, status, since } = req.query;
   log.debug({ limit, command, status, since }, 'Command history requested');
@@ -302,7 +303,7 @@ router.get('/history', (req: Request, res: Response) => {
     options.since = parseInt(since as string, 10);
   }
 
-  const history = commandRegistry.getCommandHistory(options);
+  const history = await commandRegistry.getCommandHistory(options);
   log.info({ count: history.length }, 'Command history retrieved');
 
   res.json({
@@ -316,11 +317,11 @@ router.get('/history', (req: Request, res: Response) => {
  * GET /api/commands/history/:executionId
  * Returns a specific command execution by ID
  */
-router.get('/history/:executionId', (req: Request, res: Response) => {
+router.get('/history/:executionId', async (req: Request, res: Response) => {
   const executionId = String(req.params.executionId);
   const log = resolveRequestLog(req).child({ endpoint: 'history:execution', executionId });
   log.debug('Command execution lookup requested');
-  const execution = commandRegistry.getCommandExecution(executionId);
+  const execution = await commandRegistry.getCommandExecution(executionId);
 
   if (!execution) {
     log.warn({ executionId }, 'Command execution not found');
@@ -340,9 +341,9 @@ router.get('/history/:executionId', (req: Request, res: Response) => {
  * DELETE /api/commands/history
  * Clears command execution history
  */
-router.delete('/history', (req: Request, res: Response) => {
+router.delete('/history', async (req: Request, res: Response) => {
   const log = resolveRequestLog(req).child({ endpoint: 'history:clear' });
-  commandRegistry.clearHistory();
+  await commandRegistry.clearHistory();
   log.warn('Command history cleared');
 
   res.json({
@@ -355,10 +356,10 @@ router.delete('/history', (req: Request, res: Response) => {
  * GET /api/commands/stats
  * Returns command usage statistics
  */
-router.get('/stats', (req: Request, res: Response) => {
+router.get('/stats', async (req: Request, res: Response) => {
   const log = resolveRequestLog(req).child({ endpoint: 'stats' });
   log.debug('Command stats requested');
-  const stats = commandRegistry.getStats();
+  const stats = await commandRegistry.getStats();
   log.info({ stats }, 'Command stats calculated');
 
   res.json({
