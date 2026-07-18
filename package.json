@@ -59,6 +59,13 @@
       "allowedVersions": {
         "@tailwindcss/vite>vite": "8"
       }
+    },
+    "overrides": {
+      "esbuild": ">=0.28.1",
+      "@hono/node-server": "^1.19.13"
+    },
+    "patchedDependencies": {
+      "file-type@16.5.4": "patches/file-type@16.5.4.patch"
     }
   }
 }
