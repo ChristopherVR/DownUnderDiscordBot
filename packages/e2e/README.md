@@ -28,7 +28,7 @@ The first invocation starts two long-lived processes:
 1. The bot (`packages/bot`) with `E2E=true` so the test-mode stubs activate,
    on port **3001**.
 2. The Vite dev server for the desktop app (`packages/desktop`) on port
-   **5173**.
+   **15173**.
 
 Both are reused between test runs locally (`reuseExistingServer: true` when
 `CI` is unset), and torn down once Playwright exits on CI.

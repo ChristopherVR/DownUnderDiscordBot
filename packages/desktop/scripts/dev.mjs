@@ -10,8 +10,12 @@ const tmpConfig = join(__dirname, '..', 'src-tauri', '.dev-config.json');
 /**
  * Find an available port starting from the preferred one.
  * If the preferred port is in use, increment until a free one is found.
+ *
+ * Preferred defaults to a project-specific port (not Vite's universal 5173)
+ * so this dev server doesn't wander into the same address range every other
+ * local Vite project defaults into.
  */
-async function getAvailablePort(preferred = 5173) {
+async function getAvailablePort(preferred = 15173) {
   for (let port = preferred; port < preferred + 100; port++) {
     const free = await new Promise((resolve) => {
       const server = net.createServer();
@@ -33,10 +37,11 @@ function cleanup() {
   }
 }
 
-const port = await getAvailablePort(5173);
+const PREFERRED_PORT = 15173;
+const port = await getAvailablePort(PREFERRED_PORT);
 
-if (port !== 5173) {
-  console.log(`\u26A0 Port 5173 in use \u2014 starting on port ${port}`);
+if (port !== PREFERRED_PORT) {
+  console.log(`\u26A0 Port ${PREFERRED_PORT} in use \u2014 starting on port ${port}`);
 }
 
 // Write a temp Tauri config override file (avoids shell escaping issues)

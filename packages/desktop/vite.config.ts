@@ -15,14 +15,17 @@ export default defineConfig({
   // Vite options tailored for Tauri development
   clearScreen: false,
   server: {
-    port: parseInt(process.env.VITE_DEV_PORT || '5173'),
+    // A project-specific default (not Vite's universal 5173) so this dev
+    // server doesn't contend with every other local project's Vite instance
+    // for the same address.
+    port: parseInt(process.env.VITE_DEV_PORT || '15173'),
     strictPort: false,
     host: host || false,
     hmr: host
       ? {
           protocol: 'ws',
           host,
-          port: 5174,
+          port: 15174,
         }
       : undefined,
     proxy: {

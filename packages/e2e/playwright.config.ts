@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const BOT_PORT = Number(process.env.E2E_BOT_PORT ?? 3001);
-const VITE_PORT = Number(process.env.E2E_VITE_PORT ?? 5173);
+const VITE_PORT = Number(process.env.E2E_VITE_PORT ?? 15173);
 
 /**
  * Playwright configuration for the Down Under Discord Bot E2E suite.

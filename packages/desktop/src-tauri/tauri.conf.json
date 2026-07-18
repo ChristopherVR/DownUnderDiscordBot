@@ -5,7 +5,7 @@
   "identifier": "com.downunder.discord-music-bot",
   "build": {
     "beforeDevCommand": "pnpm dev:web",
-    "devUrl": "http://localhost:5173",
+    "devUrl": "http://localhost:15173",
     "beforeBuildCommand": "pnpm build:web",
     "frontendDist": "../dist"
   },

@@ -44,7 +44,7 @@ pnpm dev:desktop
 
 This starts:
 
-1. Vite dev server on `http://localhost:5173` (React frontend)
+1. Vite dev server on `http://localhost:15173` (React frontend)
 2. Tauri dev window pointing to the Vite server
 
 The Vite dev server proxies `/api` requests to `http://localhost:3001` (the bot) and `/ws` WebSocket connections.
