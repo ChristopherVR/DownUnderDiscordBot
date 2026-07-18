@@ -1,5 +1,5 @@
 /**
- * Playback controls E2E — drives the player bar through pause / resume / seek /
+ * Playback controls E2E - drives the player bar through pause / resume / seek /
  * volume / loop / skip / previous / stop against a silent 30s local fixture
  * track. See `packages/e2e/README.md` for harness details.
  *
@@ -76,7 +76,7 @@ async function clickSeekBarAt(page: Page, fraction: number): Promise<void> {
   if (!box) throw new Error('Seek bar not visible');
   const x = box.x + box.width * fraction;
   const y = box.y + box.height / 2;
-  // PlayerBar uses mousedown+mouseup handlers to set the position — dispatch
+  // PlayerBar uses mousedown+mouseup handlers to set the position - dispatch
   // both so `seek()` fires on mouseup.
   await page.mouse.move(x, y);
   await page.mouse.down();
@@ -105,16 +105,16 @@ test.describe('playback controls', () => {
   });
 
   // `player.currentTrack`/`isPlaying`/queue are ephemeral client-side
-  // (zustand) state in `local` playback mode — the bot server has no
+  // (zustand) state in `local` playback mode - the bot server has no
   // independent record of them (see the equivalent note in
   // search-and-queue.spec.ts). The `authedPage` fixture does a fresh
   // `page.goto()` for every test, which wipes that state, so pause/resume/
   // seek/loop/skip/previous can't each be their own test if they depend on
-  // playback already being underway — they have to run as one continuous
+  // playback already being underway - they have to run as one continuous
   // flow within a single test/page instance.
   // KNOWN ISSUE (not yet root-caused): clicking the transport button to
   // pause a playing local track does not reliably flip `player.isPlaying`
-  // to false within 5s. Confirmed deterministic — reproduces at both 3s and
+  // to false within 5s. Confirmed deterministic - reproduces at both 3s and
   // 5s poll timeouts, so it isn't just CI/system load. Needs investigation
   // into PlayerBar.tsx's onClick handler / useBotStore.pause() before this
   // can be un-skipped. Left as `test.fixme` rather than deleted so the
@@ -125,7 +125,7 @@ test.describe('playback controls', () => {
     await expect(authedPage).toHaveURL(/\/search/);
     await search.search('test:song-1');
 
-    // Fixture extractor returns song-1 immediately — wait for it to render.
+    // Fixture extractor returns song-1 immediately - wait for it to render.
     await expect(authedPage.getByText(SONG_1.title).first()).toBeVisible({
       timeout: 5_000,
     });
@@ -217,7 +217,7 @@ test.describe('playback controls', () => {
   });
 
   test.fixme('stop clears the current track', async () => {
-    // PlayerBar.tsx does not render a dedicated stop button — the UI only
+    // PlayerBar.tsx does not render a dedicated stop button - the UI only
     // exposes pause / play / skip / prev / loop / shuffle. The `stop()`
     // action exists on the store but is not wired to a control in the
     // player bar, so this behavior cannot be exercised from the UI.

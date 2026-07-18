@@ -25,7 +25,7 @@ vi.mock('discord-player', () => ({
   AudioPlayer: vi.fn(),
   GuildQueue: vi.fn(),
   // player.ts statically imports registerExtractors, which transitively pulls
-  // in every extractor module — they need these discord-player exports too.
+  // in every extractor module - they need these discord-player exports too.
   BaseExtractor: class BaseExtractor {
     static identifier = 'mock-extractor';
     context: Record<string, unknown> = {};

@@ -79,7 +79,7 @@
     }
   }
 
-  /* Box shadows — a soft matte ring rather than a bright neon halo */
+  /* Box shadows - a soft matte ring rather than a bright neon halo */
   --shadow-glow-green: 0 2px 10px var(--accent-glow);
   --shadow-glow-green-lg: 0 4px 18px var(--accent-glow);
   --shadow-glow-accent: 0 2px 10px var(--accent-glow);
@@ -101,7 +101,7 @@
     --muted: rgba(255, 250, 240, 0.06);
     --muted-foreground: #8a8074;
 
-    /* A fixed "live" signal color, independent of the user's accent choice —
+    /* A fixed "live" signal color, independent of the user's accent choice - 
        used for streaming/sync status, distinct from the primary accent. */
     --signal: #3fcfb4;
     --signal-glow: rgba(63, 207, 180, 0.25);
@@ -210,7 +210,7 @@
     color-scheme: light;
   }
 
-  /* ─── Accent: Copper (default) — a warm analog VU-meter amber ─── */
+  /* ─── Accent: Copper (default) - a warm analog VU-meter amber ─── */
   :root,
   [data-accent='copper'] {
     --accent: #e2914a;
@@ -315,7 +315,7 @@
     overflow: hidden;
   }
 
-  /* Display face carries the app's personality — headings only, used with
+  /* Display face carries the app's personality - headings only, used with
      restraint (never body copy). */
   h1,
   h2,
@@ -325,7 +325,7 @@
   }
 
   /* Route every tabular-nums readout (timers, counters, stats) through the
-     mono face — ties the "control room" identity to the exact spots that
+     mono face - ties the "control room" identity to the exact spots that
      already read as data rather than prose, with no per-component changes. */
   .tabular-nums {
     font-family: var(--font-mono);

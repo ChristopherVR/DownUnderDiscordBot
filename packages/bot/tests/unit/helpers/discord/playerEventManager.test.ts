@@ -16,7 +16,7 @@ vi.mock('../../../../src/helpers/logger/logger', () => ({
 }));
 
 // discord.js's builder classes (EmbedBuilder/ButtonBuilder/ActionRowBuilder/
-// ButtonStyle/PermissionFlagsBits) are pure, side-effect-free value classes —
+// ButtonStyle/PermissionFlagsBits) are pure, side-effect-free value classes -
 // use the real ones so assertions reflect real chaining/validation behavior.
 // TextChannel is swapped for a lightweight marker class so `instanceof`
 // checks in the source work against plain test fixtures without fighting
@@ -34,7 +34,7 @@ vi.mock('discord.js', async (importOriginal) => {
 });
 
 // The global test setup mocks 'discord-player' with only what the extractor
-// tests need (Player/BaseExtractor/Track/Playlist/QueryType) — this file
+// tests need (Player/BaseExtractor/Track/Playlist/QueryType) - this file
 // also needs the real-shaped QueueRepeatMode/GuildQueueEvent enums that
 // playerEventManager.ts switches/keys on.
 vi.mock('discord-player', async (importOriginal) => {
@@ -184,7 +184,7 @@ describe('getCompletedControllerPayload', () => {
 
 describe('controllerRegistry', () => {
   beforeEach(() => {
-    // Registry is a module-level singleton — reset between tests.
+    // Registry is a module-level singleton - reset between tests.
     controllerRegistry.deleteController('guild-a');
     controllerRegistry.deleteController('guild-b');
     controllerRegistry.clearInterval('guild-a');
@@ -391,7 +391,7 @@ describe('PlayerEventManager', () => {
 
       isPlaying = false;
       await vi.advanceTimersByTimeAsync(1000);
-      // No further edits once playback has stopped — the interval self-clears.
+      // No further edits once playback has stopped - the interval self-clears.
       await vi.advanceTimersByTimeAsync(3000);
       expect((controllerMsg as unknown as { edit: ReturnType<typeof vi.fn> }).edit).toHaveBeenCalledTimes(1);
     } finally {
@@ -485,7 +485,7 @@ describe('PlayerEventManager', () => {
     expect(editMock).toHaveBeenCalledTimes(1);
     // Controller registry entry is only cleared on successful delete, so a
     // missing-permission guild keeps its entry (matches current source
-    // behavior — no state gets silently dropped).
+    // behavior - no state gets silently dropped).
     expect(controllerRegistry.hasController('guild-1')).toBe(true);
     controllerRegistry.deleteController('guild-1');
   });

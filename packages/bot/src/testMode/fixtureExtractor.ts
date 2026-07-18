@@ -8,11 +8,11 @@
  *  - `validate()` accepts `test:<id>` URIs plus free-text queries that match a
  *    title / artist in the fixture catalog.
  *  - `stream()` returns a `ReadStream` over a bundled silent WAV file
- *    (generated at module load time). This must be a `Readable` — returning
+ *    (generated at module load time). This must be a `Readable` - returning
  *    the path string would route discord-player through `FFMPEG_ARGS_STRING`
  *    which appends HTTP-reconnect flags invalid for local files.
  *
- * We do NOT explicitly type `handle()` / `stream()` return values — discord-
+ * We do NOT explicitly type `handle()` / `stream()` return values - discord-
  * player's `BaseExtractor.handle()` declares `ExtractorInfo`, not
  * `SearchResult`, and `stream()` expects `ExtractorStreamable`
  * (`Readable | string | { stream: Readable }`). Let TypeScript infer.
@@ -110,7 +110,7 @@ export class FixtureExtractor extends BaseExtractor {
   }
 
   async stream(_track: Track) {
-    // Must return a Readable — see header comment for why a path string would
+    // Must return a Readable - see header comment for why a path string would
     // break playback on local files.
     return createReadStream(SILENCE_PATH);
   }

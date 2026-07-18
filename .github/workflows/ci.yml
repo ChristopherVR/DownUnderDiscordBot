@@ -149,7 +149,7 @@ jobs:
         run: pnpm --filter discord-dashboard-shared build
 
       - name: Build Tauri app (debug, no installers)
-        # A real `tauri build` (not just build:web) — this is what actually
+        # A real `tauri build` (not just build:web) - this is what actually
         # catches things a frontend-only build can't, e.g. the npm package
         # and Rust crate versions for tauri drifting out of sync.
         # --debug --no-bundle keeps this fast: skips optimized codegen and

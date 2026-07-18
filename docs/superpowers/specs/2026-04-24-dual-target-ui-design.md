@@ -1,4 +1,4 @@
-# Dual-target UI — Tauri + Browser
+# Dual-target UI - Tauri + Browser
 
 **Status:** Approved
 **Date:** 2026-04-24
@@ -8,8 +8,8 @@
 
 Run the same `packages/desktop` React UI in two environments:
 
-1. **Tauri** — the existing desktop app, unchanged user experience.
-2. **Browser** — served same-origin from the Express bot, usable from `http://localhost:3000` locally and from an HTTPS origin when the bot is deployed behind a real domain.
+1. **Tauri** - the existing desktop app, unchanged user experience.
+2. **Browser** - served same-origin from the Express bot, usable from `http://localhost:3000` locally and from an HTTPS origin when the bot is deployed behind a real domain.
 
 No feature loss in Tauri. Browser mode accepts graceful degradation for purely-local-machine features (OS drag-drop, tray, deep-link callback).
 
@@ -35,11 +35,11 @@ All Tauri API usage moves behind a thin module at `packages/desktop/src/platform
 ```
 packages/desktop/src/platform/
 ├── index.ts            # exports `platform` facade + capability flags
-├── detect.ts           # isTauri() — checks window.__TAURI_INTERNALS__
+├── detect.ts           # isTauri() - checks window.__TAURI_INTERNALS__
 ├── window.ts           # minimize/toggleMaximize/close/hide (noop/hidden on web)
-├── shell.ts            # openExternal(url) — tauri shell.open | window.open(url, '_blank')
-├── dragDrop.ts         # registerDragDropHandler — Tauri onDragDropEvent | HTML5 drop
-├── filePicker.ts       # pickFolder() — Tauri dialog | no-op / prompt fallback
+├── shell.ts            # openExternal(url) - tauri shell.open | window.open(url, '_blank')
+├── dragDrop.ts         # registerDragDropHandler - Tauri onDragDropEvent | HTML5 drop
+├── filePicker.ts       # pickFolder() - Tauri dialog | no-op / prompt fallback
 └── authFlow.ts         # startOAuth(): Tauri = open external + deep-link listener; web = full-page redirect
 ```
 
@@ -57,12 +57,12 @@ export const platform = {
 
 Consumer changes (one-liner summary; full list in implementation plan):
 
-- `App.tsx` — move the deep-link `useEffect` into `platform/authFlow.ts`; `App.tsx` becomes shell-agnostic.
-- `TitleBar.tsx` — wrap return in `if (!platform.showCustomTitlebar) return null;` and route button handlers through `platform.window`. The `pt-9` top padding in the layout also becomes conditional.
-- `DropZone.tsx` — keep the dual-mode it already has, but read `platform.canDragOsFiles` instead of inline `__TAURI_INTERNALS__` checks.
-- `LibraryPage.tsx` + `useBotStore.ts` — the `scan_music_folder` / `watch_folder` / `resolve_dropped_paths` / `is_directory` invokes move behind `platform.library.scan(path)` etc. Tauri implementation calls `invoke(...)`; web implementation calls new `/api/library/*` HTTP endpoints that do the same work server-side. File watching is Tauri-only — web mode falls back to manual rescan.
-- `useBotStore.connectToBot` — calls `platform.authFlow.start()` instead of `shell.open` + deep-link listener.
-- `lib/api.ts` — `baseUrl` becomes runtime-resolved (see §Runtime config).
+- `App.tsx` - move the deep-link `useEffect` into `platform/authFlow.ts`; `App.tsx` becomes shell-agnostic.
+- `TitleBar.tsx` - wrap return in `if (!platform.showCustomTitlebar) return null;` and route button handlers through `platform.window`. The `pt-9` top padding in the layout also becomes conditional.
+- `DropZone.tsx` - keep the dual-mode it already has, but read `platform.canDragOsFiles` instead of inline `__TAURI_INTERNALS__` checks.
+- `LibraryPage.tsx` + `useBotStore.ts` - the `scan_music_folder` / `watch_folder` / `resolve_dropped_paths` / `is_directory` invokes move behind `platform.library.scan(path)` etc. Tauri implementation calls `invoke(...)`; web implementation calls new `/api/library/*` HTTP endpoints that do the same work server-side. File watching is Tauri-only - web mode falls back to manual rescan.
+- `useBotStore.connectToBot` - calls `platform.authFlow.start()` instead of `shell.open` + deep-link listener.
+- `lib/api.ts` - `baseUrl` becomes runtime-resolved (see §Runtime config).
 
 ### Auth flow (dual-path callback)
 
@@ -86,7 +86,7 @@ State param carries the client kind so the callback knows how to deliver the tok
 5. Server verifies state, exchanges code, issues JWT, `302 ${origin}/#/auth/callback?token=<jwt>`.
 6. New SPA route `/auth/callback` reads `?token=`, stores in `localStorage`, `history.replaceState`s the token out of the URL, navigates to `/`.
 
-**State signing:** `jsonwebtoken` is already a dep — sign `{client, nonce, origin?, exp: 10min}` with `JWT_SECRET`. Prevents attackers from tampering with `client` to redirect the token.
+**State signing:** `jsonwebtoken` is already a dep - sign `{client, nonce, origin?, exp: 10min}` with `JWT_SECRET`. Prevents attackers from tampering with `client` to redirect the token.
 
 **Token storage + transport:** unchanged. `localStorage['downunder_auth_token']`, `Authorization: Bearer` header.
 
@@ -136,7 +136,7 @@ Similarly for WS: `new URL('/ws', baseUrl).toString().replace(/^http/, 'ws')`.
 
 ### CSP
 
-Current `tauri.conf.json` CSP hardcodes `localhost:*`. Broaden to match the runtime origin, but this only applies to Tauri (its webview enforces it). Web mode's CSP is an Express response header — new middleware:
+Current `tauri.conf.json` CSP hardcodes `localhost:*`. Broaden to match the runtime origin, but this only applies to Tauri (its webview enforces it). Web mode's CSP is an Express response header - new middleware:
 
 ```ts
 app.use((_req, res, next) => {
@@ -152,7 +152,7 @@ app.use((_req, res, next) => {
 });
 ```
 
-Tauri CSP: add `https://discord.com` to `img-src` (avatar URLs) — already works via `https:` but be explicit. The rest stays.
+Tauri CSP: add `https://discord.com` to `img-src` (avatar URLs) - already works via `https:` but be explicit. The rest stays.
 
 ### Web-mode library scan API
 
@@ -161,7 +161,7 @@ New `packages/bot/src/routes/library.ts`, mounted at `/api/library`:
 - `POST /api/library/scan` `{ path }` → returns tracks (same shape as the existing Rust `scan_music_folder` result).
 - `POST /api/library/resolve` `{ paths }` → same shape as `resolve_dropped_paths`.
 - `POST /api/library/is-directory` `{ path }` → `{ isDirectory: boolean }`.
-- Auth: `requireAuth`. Access control: operator-only — check `auth.userId === 'local'` OR a `LIBRARY_ALLOWED_USERS` env var. Filesystem paths are sensitive; we don't expose arbitrary path reads to every Discord user.
+- Auth: `requireAuth`. Access control: operator-only - check `auth.userId === 'local'` OR a `LIBRARY_ALLOWED_USERS` env var. Filesystem paths are sensitive; we don't expose arbitrary path reads to every Discord user.
 - Path validation: resolve + ensure inside a configured `LIBRARY_ROOTS` allowlist (defaults to the bot's own music dir). Reject paths outside.
 
 Tauri path uses the existing `invoke`s; the HTTP endpoints are web-only. `LibraryPage.tsx` picks via `platform.library.*`.
@@ -201,7 +201,7 @@ File watching (`watch_folder` + emitted events) stays Tauri-only. Web mode shows
 
 ## Rollout
 
-One branch, one merge. No feature flag — the detection is runtime, both paths coexist.
+One branch, one merge. No feature flag - the detection is runtime, both paths coexist.
 
 ## Open questions
 

@@ -233,7 +233,7 @@ export default function PlayerBar() {
               } else if (hasTrack) {
                 resume();
               } else if (hasQueuedTracks && (playbackMode === 'local' || playbackMode === 'sync')) {
-                // No current track but queue has items — start the first one
+                // No current track but queue has items - start the first one
                 const next = localQueue[0];
                 if (next) {
                   useBotStore.getState().skip();
@@ -322,7 +322,7 @@ export default function PlayerBar() {
       </div>
 
       {/* Right controls: audio mode + transfer + video preview + volume.
-          min-w rather than a fixed width — the optional "To Bot" / video
+          min-w rather than a fixed width - the optional "To Bot" / video
           preview buttons can push this past 18rem, and a hard w-72 was
           clipping/overlapping the volume slider whenever they appeared. */}
       <div className="flex min-w-72 shrink-0 items-center justify-end gap-2">
@@ -366,7 +366,7 @@ export default function PlayerBar() {
           ))}
         </div>
 
-        {/* Transfer to Bot — visible in local mode when there's a track */}
+        {/* Transfer to Bot - visible in local mode when there's a track */}
         {playbackMode === 'local' && hasTrack && connected && (
           <button
             onClick={() => transferToBot()}
@@ -404,7 +404,7 @@ export default function PlayerBar() {
           {player.volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>
         {/* The visible track stays thin, but the invisible <input> gets a
-            taller hit area (h-4 vs h-1) — at 4px tall it was nearly
+            taller hit area (h-4 vs h-1) - at 4px tall it was nearly
             impossible to click/drag precisely. */}
         <div className="group relative flex h-4 w-24 cursor-pointer items-center">
           <div className="h-1 w-full rounded-full" style={{ background: 'var(--glass-bg-md)' }}>

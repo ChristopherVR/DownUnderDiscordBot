@@ -42,7 +42,7 @@ export interface Track {
   thumbnail?: string;
   source: TrackSource;
   filePath?: string;
-  // Richer metadata — optional so existing bot-side producers stay valid.
+  // Richer metadata - optional so existing bot-side producers stay valid.
   platform?: TrackPlatform | string;
   mediaType?: TrackMediaType;
   videoUrl?: string;
@@ -147,7 +147,7 @@ export interface FileUploadProgress {
 /**
  * Emitted when a new track actually starts playing. The bot sends this
  * in addition to `player_state` because `player_state` also fires on
- * volume/loop changes — subscribers that care specifically about "track
+ * volume/loop changes - subscribers that care specifically about "track
  * transitions" should listen for `track_started`.
  */
 export interface TrackStartedUpdate extends Track {

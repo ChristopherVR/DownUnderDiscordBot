@@ -3,11 +3,11 @@
  *
  * Exposes:
  *   - `page` (vanilla Playwright page, ?test=true query string appended)
- *   - `authedPage` — a `Page` that has already exchanged a JWT via
+ *   - `authedPage` - a `Page` that has already exchanged a JWT via
  *     `/api/auth/quick-connect` and written it to `localStorage` under the
  *     canonical `downunder_auth_token` key before navigating to `/`.
- *   - `apiClient` — a shared `ApiClient` instance pointed at the bot.
- *   - `resetState` — an auto-fixture. File-level: runs once per spec file in
+ *   - `apiClient` - a shared `ApiClient` instance pointed at the bot.
+ *   - `resetState` - an auto-fixture. File-level: runs once per spec file in
  *     `beforeAll`, calls `/test/reset` then `/test/seed`.
  *
  * Test authors `import { test, expect } from '../harness/testFixtures'` and
@@ -32,7 +32,7 @@ export interface E2EWorkerFixtures {
 
 export const test = base.extend<E2EFixtures, E2EWorkerFixtures>({
   // Playwright inspects this function's source text for a destructuring
-  // pattern to resolve fixture dependencies — `{}` is required here even
+  // pattern to resolve fixture dependencies - `{}` is required here even
   // though nothing is destructured; renaming it breaks fixture resolution.
   // oxlint-disable-next-line no-empty-pattern
   apiClient: async ({}, use) => {
@@ -53,7 +53,7 @@ export const test = base.extend<E2EFixtures, E2EWorkerFixtures>({
         try {
           window.localStorage.setItem(key, value);
         } catch {
-          // ignore — some environments block access
+          // ignore - some environments block access
         }
       },
       { key: AUTH_TOKEN_KEY, value: token },

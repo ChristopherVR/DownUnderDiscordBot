@@ -25,7 +25,7 @@ describe('withGuildLock', () => {
     expect(result).toBe(42);
   });
 
-  it('serializes concurrent calls for the same guild — no overlap', async () => {
+  it('serializes concurrent calls for the same guild - no overlap', async () => {
     const events: string[] = [];
     const first = deferred<void>();
 
@@ -43,7 +43,7 @@ describe('withGuildLock', () => {
       events.push('b-end');
     });
 
-    // taskB must not have started yet — taskA is still holding the lock.
+    // taskB must not have started yet - taskA is still holding the lock.
     await sleep(5);
     expect(events).toEqual(['a-start']);
 
@@ -187,7 +187,7 @@ describe('guildLockMiddleware', () => {
 
     const app = buildApp(handler as unknown as (req: Request, res: Response) => void);
 
-    // supertest/superagent requests are lazy — the HTTP call isn't actually
+    // supertest/superagent requests are lazy - the HTTP call isn't actually
     // dispatched until something awaits/`.then()`s the Test object. Kick each
     // one off immediately via `.then()` instead of just holding a reference.
     const req1 = request(app).post('/test').set('x-guild-id', 'same-guild').send({});
@@ -197,7 +197,7 @@ describe('guildLockMiddleware', () => {
     const req2 = request(app).post('/test').set('x-guild-id', 'same-guild').send({});
     const req2Promise = req2.then((res) => res);
     // Give req2 time to actually reach the server and attempt to acquire the
-    // (still-held) lock before we let req1 finish — otherwise this wouldn't
+    // (still-held) lock before we let req1 finish - otherwise this wouldn't
     // exercise contention at all.
     await sleep(200);
 
@@ -226,7 +226,7 @@ describe('guildLockMiddleware', () => {
     const res1 = await request(app).get('/boom').set('x-guild-id', 'guild-err');
     expect(res1.status).toBe(500);
 
-    // The lock must have been released — a second request for the same guild
+    // The lock must have been released - a second request for the same guild
     // should not hang.
     const res2 = await request(app).get('/boom').set('x-guild-id', 'guild-err');
     expect(res2.status).toBe(500);

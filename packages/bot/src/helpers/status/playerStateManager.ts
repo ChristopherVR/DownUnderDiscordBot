@@ -87,7 +87,7 @@ export class PlayerStateManager {
    * Start a 1-second interval that broadcasts *only* the current playback
    * position so the desktop UI can keep its progress bar in sync. Coarse
    * state (track, queue, volume, loop) is emitted via `updatePlayerState`
-   * on discrete events — not on every tick.
+   * on discrete events - not on every tick.
    */
   private startPositionBroadcast(guildId: string): void {
     this.stopPositionBroadcast(guildId);
@@ -216,7 +216,7 @@ export class PlayerStateManager {
         p = p.slice(7); // fallback: strip "file://"
       }
     }
-    // On Windows, pathname may start with /D:/... — strip leading slash before drive letter
+    // On Windows, pathname may start with /D:/... - strip leading slash before drive letter
     if (/^\/[A-Za-z]:/.test(p)) {
       p = p.slice(1);
     }

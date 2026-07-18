@@ -1,5 +1,5 @@
 /**
- * Page object for the Library page — list of playlists, create-playlist
+ * Page object for the Library page - list of playlists, create-playlist
  * action, and open-playlist navigation.
  */
 import type { Page, Locator } from '@playwright/test';

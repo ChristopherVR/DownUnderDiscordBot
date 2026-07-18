@@ -162,9 +162,9 @@ describe('SpotifyExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — single track                                            */
+  /*  handle() - single track                                            */
   /* ------------------------------------------------------------------ */
-  describe('handle — track URL', () => {
+  describe('handle - track URL', () => {
     it('should fetch Spotify track metadata and return a track', async () => {
       mockGetTrack.mockResolvedValue({
         body: {
@@ -199,9 +199,9 @@ describe('SpotifyExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — playlist                                                */
+  /*  handle() - playlist                                                */
   /* ------------------------------------------------------------------ */
-  describe('handle — playlist URL', () => {
+  describe('handle - playlist URL', () => {
     it('should fetch Spotify playlist and return tracks', async () => {
       mockGetPlaylist.mockResolvedValue({
         body: {
@@ -282,9 +282,9 @@ describe('SpotifyExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — album                                                   */
+  /*  handle() - album                                                   */
   /* ------------------------------------------------------------------ */
-  describe('handle — album URL', () => {
+  describe('handle - album URL', () => {
     it('should fetch Spotify album and return tracks', async () => {
       mockGetAlbum.mockResolvedValue({
         body: {
@@ -320,9 +320,9 @@ describe('SpotifyExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — artist                                                  */
+  /*  handle() - artist                                                  */
   /* ------------------------------------------------------------------ */
-  describe('handle — artist URL', () => {
+  describe('handle - artist URL', () => {
     it('should fetch artist top tracks', async () => {
       mockGetArtistTopTracks.mockResolvedValue({
         body: {
@@ -348,9 +348,9 @@ describe('SpotifyExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — text search                                             */
+  /*  handle() - text search                                             */
   /* ------------------------------------------------------------------ */
-  describe('handle — text search', () => {
+  describe('handle - text search', () => {
     it('should search Spotify and return tracks', async () => {
       mockSearchTracks.mockResolvedValue({
         body: {
@@ -379,7 +379,7 @@ describe('SpotifyExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  stream() — Spotify-to-YouTube bridge                               */
+  /*  stream() - Spotify-to-YouTube bridge                               */
   /* ------------------------------------------------------------------ */
   describe('stream', () => {
     it('should bridge to YouTube by searching for track title + author', async () => {
@@ -415,7 +415,7 @@ describe('SpotifyExtractor', () => {
   /* ------------------------------------------------------------------ */
   /*  handle() without credentials                                       */
   /* ------------------------------------------------------------------ */
-  describe('handle — no credentials', () => {
+  describe('handle - no credentials', () => {
     it('should return empty response when Spotify API is not initialized', async () => {
       const noCredExtractor = new SpotifyExtractor({} as never, {});
       // activate without env vars or options

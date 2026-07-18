@@ -41,7 +41,7 @@ const getGuildId = (req: Request): string => {
  * upstream read as soon as the client disconnects.
  *
  * Without this, skipping/changing tracks (which aborts the browser's fetch
- * to this endpoint) left the recursive read loop running indefinitely —
+ * to this endpoint) left the recursive read loop running indefinitely -
  * `res.write()` on a dead socket doesn't stop the loop on its own, so every
  * track change accumulated another orphaned stream still pulling audio
  * bytes from the upstream CDN into memory. That's the real cause behind
@@ -240,7 +240,7 @@ router.post('/search', async (req: Request, res: Response) => {
   const isUrl = /^https?:\/\//.test(query.trim());
 
   try {
-    // For URLs, let discord-player resolve via validate() — that still works.
+    // For URLs, let discord-player resolve via validate() - that still works.
     if (isUrl) {
       const result = await player.search(query, { searchEngine: QueryType.AUTO });
       const urlPlatform = detectPlatformFromUrl(query);
@@ -281,7 +281,7 @@ router.post('/search', async (req: Request, res: Response) => {
       applemusic: AppleMusicExtractor.identifier,
     };
 
-    // For 'auto', default to YouTube search (most universal) — except in E2E
+    // For 'auto', default to YouTube search (most universal) - except in E2E
     // mode, where the real platform extractors aren't registered at all
     // (initializePlayer swaps in FixtureExtractor instead; see player.ts).
     const autoIdentifier = isE2EMode() ? FixtureExtractor.identifier : CustomYouTubeExtractor.identifier;
@@ -358,7 +358,7 @@ router.post('/search', async (req: Request, res: Response) => {
 router.post('/play', async (req: Request, res: Response) => {
   const guildId = getGuildId(req);
   const { query, source: sourceRaw, platform, filePath: filePathRaw, playNow = false, voiceChannelId } = req.body;
-  // Desktop sends `platform` while older callers use `source` — accept both.
+  // Desktop sends `platform` while older callers use `source` - accept both.
   const source: string = sourceRaw ?? platform ?? 'online';
   // When the desktop plays a local file in bot mode it sends the path as `query`
   // with platform='local' but no separate `filePath` field.
@@ -426,7 +426,7 @@ router.post('/play', async (req: Request, res: Response) => {
     queue.delete();
     return res.status(502).json({
       success: false,
-      error: 'Voice connection timed out. Discord voice server may be unreachable — please try again.',
+      error: 'Voice connection timed out. Discord voice server may be unreachable - please try again.',
     });
   }
 
@@ -1112,14 +1112,14 @@ router.get('/stream', async (req: Request, res: Response) => {
       return;
     }
 
-    // Generic URL proxy — for SoundCloud, Spotify resolved URLs, etc.
+    // Generic URL proxy - for SoundCloud, Spotify resolved URLs, etc.
     // First try to resolve via discord-player to get the actual track URL
     const player = useDefaultPlayer();
     const searchResult = await player.search(trackUrl, { searchEngine: QueryType.AUTO });
     const resolvedTrack = searchResult.tracks[0];
 
     // Fixture tracks (E2E mode) use a non-fetchable placeholder `url`
-    // (e.g. "test:song-1") — the actual audio comes from the extractor's
+    // (e.g. "test:song-1") - the actual audio comes from the extractor's
     // own stream() method (a Readable over a bundled silent WAV), not an
     // HTTP resource. Every other branch here proxies a real network fetch,
     // which fails immediately for these.
@@ -1172,7 +1172,7 @@ router.get('/stream', async (req: Request, res: Response) => {
 // GET /api/music/stream/local - Stream a local file from a Tauri music folder path.
 // The desktop app sends the full file path, and the bot reads and serves it.
 // Gated to the trusted local identity / allowlisted operators, same as
-// /api/library — reading an arbitrary filesystem path is sensitive
+// /api/library - reading an arbitrary filesystem path is sensitive
 // regardless of intent.
 router.get('/stream/local', requireLibraryOperator, async (req: Request, res: Response) => {
   const filePath = req.query.path as string | undefined;
@@ -1180,7 +1180,7 @@ router.get('/stream/local', requireLibraryOperator, async (req: Request, res: Re
     return res.status(400).json({ success: false, error: 'path query parameter is required' });
   }
 
-  // filePath is client-supplied and otherwise unrestricted — without this,
+  // filePath is client-supplied and otherwise unrestricted - without this,
   // any caller could read arbitrary files off the host (e.g. ?path=../../.env)
   // rather than being confined to the operator's configured music folders.
   if (!(await pathIsAllowed(filePath))) {

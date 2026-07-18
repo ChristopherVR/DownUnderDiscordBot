@@ -47,11 +47,11 @@ interface YouTubeExtractorOptions {
 export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOptions> {
   static identifier = 'com.downunder.youtube' as const;
 
-  /** WEB client — used for search / metadata / playlists */
+  /** WEB client - used for search / metadata / playlists */
   private webYt: Innertube | null = null;
   private webInitPromise: Promise<Innertube> | null = null;
 
-  /** ANDROID client — used exclusively for streaming */
+  /** ANDROID client - used exclusively for streaming */
   private androidYt: Innertube | null = null;
   private androidInitPromise: Promise<Innertube> | null = null;
 
@@ -166,7 +166,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
   }
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — called by discord-player for every query                */
+  /*  handle() - called by discord-player for every query                */
   /* ------------------------------------------------------------------ */
 
   async handle(query: string, context: ExtractorSearchContext) {
@@ -189,7 +189,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
   /* ------------------------------------------------------------------ */
 
   private async handleVideo(yt: Innertube, videoId: string, context: ExtractorSearchContext) {
-    // Cache lookup — skip the Innertube getBasicInfo call if we've seen this videoId.
+    // Cache lookup - skip the Innertube getBasicInfo call if we've seen this videoId.
     const cached = await this.readCache(videoId);
     if (cached) {
       const track = new Track(this.context.player, {
@@ -260,14 +260,14 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
         duration: row.duration,
       };
     } catch (err) {
-      log.warn({ err, videoId }, 'TrackCache lookup failed — falling back to Innertube');
+      log.warn({ err, videoId }, 'TrackCache lookup failed - falling back to Innertube');
       return null;
     }
   }
 
   /**
    * Persist a YouTube video's metadata in the TrackCache. DB errors are
-   * swallowed — the extractor still succeeds with the Innertube response.
+   * swallowed - the extractor still succeeds with the Innertube response.
    * Duration is stored in seconds (matching Innertube's `basic.duration`).
    */
   private async writeCache(
@@ -285,7 +285,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
         thumbnail: data.thumbnail,
       });
     } catch (err) {
-      log.warn({ err, videoId }, 'TrackCache write failed — continuing without caching');
+      log.warn({ err, videoId }, 'TrackCache write failed - continuing without caching');
     }
   }
 
@@ -386,7 +386,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
   }
 
   /* ------------------------------------------------------------------ */
-  /*  stream() — returns a Readable for audio playback                   */
+  /*  stream() - returns a Readable for audio playback                   */
   /*  Tries ANDROID → WEB → yt-dlp, placing failures on cooldown.        */
   /* ------------------------------------------------------------------ */
 
@@ -407,7 +407,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
         return stream;
       } catch (err) {
         this.disableClient('ANDROID');
-        log.warn({ err, videoId }, 'ANDROID client download failed — placed on cooldown, trying WEB fallback');
+        log.warn({ err, videoId }, 'ANDROID client download failed - placed on cooldown, trying WEB fallback');
         emitStatus({
           videoId,
           status: 'fallback',
@@ -430,7 +430,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
         return stream;
       } catch (err) {
         this.disableClient('WEB');
-        log.warn({ err, videoId }, 'WEB client download failed — placed on cooldown, trying yt-dlp fallback');
+        log.warn({ err, videoId }, 'WEB client download failed - placed on cooldown, trying yt-dlp fallback');
         emitStatus({
           videoId,
           status: 'fallback',
@@ -442,7 +442,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
       log.debug({ videoId }, 'Skipping WEB client (on cooldown)');
     }
 
-    // Tertiary: yt-dlp subprocess — robust against Innertube signature regressions.
+    // Tertiary: yt-dlp subprocess - robust against Innertube signature regressions.
     if (!this.isClientDisabled('yt-dlp')) {
       try {
         emitStatus({ videoId, status: 'resolving', client: 'yt-dlp' });
@@ -554,7 +554,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
   }
 
   /* ------------------------------------------------------------------ */
-  /*  getRelatedTracks() — autoplay / radio mode                         */
+  /*  getRelatedTracks() - autoplay / radio mode                         */
   /*  Uses search-based approach since watch_next_feed is unreliable.    */
   /* ------------------------------------------------------------------ */
 

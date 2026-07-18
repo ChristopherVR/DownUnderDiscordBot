@@ -139,9 +139,9 @@ describe('SoundCloudExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — track URL                                               */
+  /*  handle() - track URL                                               */
   /* ------------------------------------------------------------------ */
-  describe('handle — track URL', () => {
+  describe('handle - track URL', () => {
     it('should fetch a SoundCloud track and return it', async () => {
       mockTracksGet.mockResolvedValue({
         title: 'Test Track',
@@ -172,9 +172,9 @@ describe('SoundCloudExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — playlist URL                                            */
+  /*  handle() - playlist URL                                            */
   /* ------------------------------------------------------------------ */
-  describe('handle — playlist URL', () => {
+  describe('handle - playlist URL', () => {
     it('should fetch a SoundCloud playlist and return tracks', async () => {
       mockPlaylistsGet.mockResolvedValue({
         title: 'Test Playlist',
@@ -225,9 +225,9 @@ describe('SoundCloudExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — text search                                             */
+  /*  handle() - text search                                             */
   /* ------------------------------------------------------------------ */
-  describe('handle — text search', () => {
+  describe('handle - text search', () => {
     it('should search SoundCloud and return matching tracks', async () => {
       mockTracksSearch.mockResolvedValue({
         collection: [
@@ -308,9 +308,9 @@ describe('SoundCloudExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — no client                                               */
+  /*  handle() - no client                                               */
   /* ------------------------------------------------------------------ */
-  describe('handle — no client', () => {
+  describe('handle - no client', () => {
     it('should return empty response when SoundCloud client is not initialized', async () => {
       await extractor.deactivate();
 
@@ -361,7 +361,7 @@ describe('SoundCloudExtractor', () => {
   /* ------------------------------------------------------------------ */
   describe('lifecycle', () => {
     it('should initialize SoundCloud client on activate', async () => {
-      // Verify the client is working by calling a method — if activate
+      // Verify the client is working by calling a method - if activate
       // failed to create the client, handle() would return empty.
       mockTracksGet.mockResolvedValue({
         title: 'Init Test',

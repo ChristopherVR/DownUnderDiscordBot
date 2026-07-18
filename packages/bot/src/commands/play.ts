@@ -191,7 +191,7 @@ const playAndQueue = async (
     log.info({ track: track.title, guildId: queue.guild.id }, 'Queued track via playAndQueue');
   }
 
-  // NOTE: Do NOT post controller here — PlayerEventManager owns the controller.
+  // NOTE: Do NOT post controller here - PlayerEventManager owns the controller.
   return track;
 };
 

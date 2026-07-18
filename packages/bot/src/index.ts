@@ -46,7 +46,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // packages/bot/src (tsx dev) or packages/bot/dist (compiled) → packages/bot →
 // packages → project root. Both src/ and dist/ sit at the same depth under
-// packages/bot/, so this is 3 levels up either way — the previous version
+// packages/bot/, so this is 3 levels up either way - the previous version
 // used a different depth per case, which produced a `packages/packages/...`
 // path outside a compiled dist build (e.g. under `tsx`/e2e).
 const projectRoot = path.resolve(__dirname, '..', '..', '..');
@@ -308,7 +308,7 @@ async function main() {
     res.json({ channels });
   });
 
-  // Bot management endpoint — status info
+  // Bot management endpoint - status info
   app.get('/api/bot/status', requireAuth, (_req, res) => {
     const client = botCtx.client;
     res.json({
@@ -320,7 +320,7 @@ async function main() {
     });
   });
 
-  // Comprehensive dashboard endpoint — aggregates all status info
+  // Comprehensive dashboard endpoint - aggregates all status info
   app.get('/api/dashboard', requireAuth, async (_req, res) => {
     const client = botCtx.client;
     const wsStats = wsManager.getStats();
@@ -589,11 +589,11 @@ async function main() {
   // File upload routes
   app.use('/api/upload', requireAuth, uploadRoutes);
 
-  // Music player routes — every endpoint is guild-scoped via x-guild-id header / guildId body
+  // Music player routes - every endpoint is guild-scoped via x-guild-id header / guildId body
   // Mutating music requests are serialized per-guild via guildLockMiddleware
   // so rapid /play or /skip calls on the same guild don't race each other.
-  // GET requests are read-only — skip the lock to keep status polling cheap.
-  // Search is also exempt from guild-access — it queries external services,
+  // GET requests are read-only - skip the lock to keep status polling cheap.
+  // Search is also exempt from guild-access - it queries external services,
   // not a specific guild's player.
   app.use(
     '/api/music',
@@ -621,10 +621,10 @@ async function main() {
   // Playlist routes (user-scoped; no guild)
   app.use('/api/playlists', requireAuth, playlistRoutes);
 
-  // Library routes — server-side filesystem scans used by web-mode UI
+  // Library routes - server-side filesystem scans used by web-mode UI
   app.use('/api/library', requireAuth, libraryRoutes);
 
-  // Command system routes — slash-command execution is guild-scoped
+  // Command system routes - slash-command execution is guild-scoped
   serverLog.info('Mounting command routes');
   app.use('/api/commands', requireAuth, initializeCommandRoutes(wsManager, botCtx.client));
   serverLog.info('Command routes ready');
@@ -712,20 +712,20 @@ async function main() {
     res.json({ nonce });
   });
 
-  // SPA static serving — the built desktop bundle is served same-origin so
+  // SPA static serving - the built desktop bundle is served same-origin so
   // the web UI and the API share a host. Disable by setting DISABLE_SPA=1.
   if (process.env.DISABLE_SPA !== '1') {
     const spaDir = process.env.SPA_DIST_DIR ?? path.resolve(projectRoot, 'packages', 'desktop', 'dist');
     try {
       await fs.access(path.join(spaDir, 'index.html'));
       app.use(express.static(spaDir, { index: false }));
-      // SPA history fallback — anything that isn't an API/WS route renders index.html.
+      // SPA history fallback - anything that isn't an API/WS route renders index.html.
       app.get(/^\/(?!api\/|ws(\/|$)).*/, (_req, res) => {
         res.sendFile(path.join(spaDir, 'index.html'));
       });
       serverLog.info({ spaDir }, 'Serving SPA assets from dist');
     } catch {
-      serverLog.info({ spaDir }, 'No SPA build found — skipping static serving (run `pnpm build:desktop`)');
+      serverLog.info({ spaDir }, 'No SPA build found - skipping static serving (run `pnpm build:desktop`)');
     }
   }
 

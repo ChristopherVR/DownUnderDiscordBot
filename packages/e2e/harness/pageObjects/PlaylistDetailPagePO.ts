@@ -1,5 +1,5 @@
 /**
- * Page object for the Playlist detail page — track list, add / remove tracks,
+ * Page object for the Playlist detail page - track list, add / remove tracks,
  * and play-playlist action.
  */
 import type { Page, Locator } from '@playwright/test';
@@ -44,7 +44,7 @@ export class PlaylistDetailPagePO {
       .or(this.page.getByPlaceholder(/search.*add|add.*track/i));
     await input.fill(query);
     await input.press('Enter');
-    // Submitting the query only searches — it doesn't add anything. The
+    // Submitting the query only searches - it doesn't add anything. The
     // first matching result still needs its own "add to playlist" button
     // clicked to actually add the track.
     const firstResultAddButton = this.page.locator('[data-testid="playlist-add-track-result"]').first();

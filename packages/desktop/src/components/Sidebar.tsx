@@ -76,7 +76,7 @@ function DraggableNavItem({ item, collapsed }: { item: NavItem; collapsed: boole
           to={item.to}
           title={collapsed ? item.label : undefined}
           onPointerDown={(_e) => {
-            // Allow drag to start from anywhere on the row —
+            // Allow drag to start from anywhere on the row -
             // NavLink only navigates on click (pointerup), so this is safe.
           }}
           className={({ isActive }) =>
@@ -208,7 +208,7 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Main Navigation — drag-and-drop reorderable */}
+      {/* Main Navigation - drag-and-drop reorderable */}
       <Reorder.Group
         as="nav"
         axis="y"

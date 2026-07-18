@@ -371,7 +371,7 @@ export default function ChatPanel() {
         resetCommandArgs();
       }
     } else {
-      // Regular text message — send to channel
+      // Regular text message - send to channel
       if (!selectedChannelId) return;
       setSending(true);
       try {

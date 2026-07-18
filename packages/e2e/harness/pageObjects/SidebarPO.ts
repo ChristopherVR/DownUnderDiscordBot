@@ -1,5 +1,5 @@
 /**
- * Page object for the primary app sidebar — navigation + collapse toggle.
+ * Page object for the primary app sidebar - navigation + collapse toggle.
  *
  * Locators prefer `data-testid` (once the desktop package adopts them) then
  * fall back to accessible role + name, which are stable against visual
@@ -40,7 +40,7 @@ export class SidebarPO {
   async isCollapsed(): Promise<boolean> {
     const attr = await this.root().getAttribute('data-collapsed');
     if (attr !== null) return attr === 'true';
-    // Heuristic fallback — check a CSS width.
+    // Heuristic fallback - check a CSS width.
     const box = await this.root().boundingBox();
     return !!box && box.width < 120;
   }

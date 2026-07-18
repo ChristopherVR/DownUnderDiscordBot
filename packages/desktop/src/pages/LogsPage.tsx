@@ -299,7 +299,7 @@ export default function LogsPage() {
   // The bot can emit many log lines per second (every HTTP request, player
   // event, heartbeat...). Committing a setLogs() + full re-render of up to
   // 1000 unwindowed rows per individual message is what made "Live" mode on
-  // this page extremely slow — dozens of full-list re-renders per second
+  // this page extremely slow - dozens of full-list re-renders per second
   // under normal load. Queue incoming entries in a ref and flush them into
   // state in one batched update on a fixed cadence instead.
   useEffect(() => {
@@ -425,7 +425,7 @@ export default function LogsPage() {
   }, [logs]);
 
   // -----------------------------------------------------------------------
-  // Render — always shown, even if the bot is offline
+  // Render - always shown, even if the bot is offline
   // -----------------------------------------------------------------------
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -434,7 +434,7 @@ export default function LogsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-t-primary">Logs</h1>
           <p className="text-sm text-t-faint">
-            {connected ? 'Bot & application logs' : 'Bot offline — showing app logs only'}
+            {connected ? 'Bot & application logs' : 'Bot offline - showing app logs only'}
           </p>
         </div>
         <div className="flex items-center gap-2">

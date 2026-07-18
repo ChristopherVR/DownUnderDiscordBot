@@ -308,7 +308,7 @@ router.post('/:id/play', async (req: Request, res: Response) => {
       queue.delete();
       return res.status(502).json({
         success: false,
-        error: 'Voice connection timed out. Discord voice server may be unreachable — please try again.',
+        error: 'Voice connection timed out. Discord voice server may be unreachable - please try again.',
       });
     }
 

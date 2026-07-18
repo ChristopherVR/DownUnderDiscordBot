@@ -90,7 +90,7 @@ describe('LocalExtractor', () => {
     vi.clearAllMocks();
 
     // Default: file access checks succeed, EXCEPT for the uploads/audio
-    // directory that activate() probes — reject that so it doesn't add
+    // directory that activate() probes - reject that so it doesn't add
     // an extra folder to musicFolders.
     mockAccess.mockImplementation(async (p: string) => {
       if (typeof p === 'string' && p.includes('uploads')) {
@@ -258,7 +258,7 @@ describe('LocalExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  stream() — CRITICAL: must return ReadStream, NOT a string path     */
+  /*  stream() - CRITICAL: must return ReadStream, NOT a string path     */
   /* ------------------------------------------------------------------ */
   describe('stream', () => {
     it('should return a Readable stream, NOT a string path', async () => {

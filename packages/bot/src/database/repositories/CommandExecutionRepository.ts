@@ -30,7 +30,7 @@ function toCommandExecution(row: {
   try {
     args = JSON.parse(row.arguments) as Record<string, unknown>;
   } catch {
-    /* malformed — fall back to empty args rather than throwing on read */
+    /* malformed - fall back to empty args rather than throwing on read */
   }
 
   let result: unknown;
@@ -71,7 +71,7 @@ export class CommandExecutionRepository {
       },
     });
 
-    // Keep the table bounded — this mirrors the previous in-memory cap so
+    // Keep the table bounded - this mirrors the previous in-memory cap so
     // command history can't grow forever, while now surviving restarts.
     const total = await this.db.commandExecution.count();
     if (total > MAX_HISTORY_SIZE) {
@@ -113,7 +113,7 @@ export class CommandExecutionRepository {
       this.db.commandExecution.count({ where: { status: 'success' } }),
       this.db.commandExecution.count({ where: { status: 'error' } }),
       // Prisma's groupBy doesn't play well with this SQLite adapter setup
-      // (see HistoryRepository.getMostPlayed) — raw query instead.
+      // (see HistoryRepository.getMostPlayed) - raw query instead.
       this.db.$queryRaw<Array<{ command: string; count: number }>>`
         SELECT command, COUNT(*) as count
         FROM CommandExecution

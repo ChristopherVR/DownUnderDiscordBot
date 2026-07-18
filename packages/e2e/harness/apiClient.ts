@@ -4,7 +4,7 @@
  *
  * All requests target the local bot started by `playwright.config.ts`
  * `webServer`. The port defaults to 3001 but can be overridden via the
- * `E2E_BOT_PORT` env var — matches the config.
+ * `E2E_BOT_PORT` env var - matches the config.
  */
 
 export interface ApiClientOptions {
@@ -55,7 +55,7 @@ export class ApiClient {
     const text = await res.text();
     const json = text ? (JSON.parse(text) as T) : (undefined as T);
     if (!res.ok) {
-      throw new Error(`API ${method} ${path} failed: ${res.status} ${res.statusText} — ${text}`);
+      throw new Error(`API ${method} ${path} failed: ${res.status} ${res.statusText} - ${text}`);
     }
     return json;
   }
@@ -94,5 +94,5 @@ export class ApiClient {
   }
 }
 
-/** Shared default client — reuse from tests to avoid spinning up fresh sockets. */
+/** Shared default client - reuse from tests to avoid spinning up fresh sockets. */
 export const api = new ApiClient();

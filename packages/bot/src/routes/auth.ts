@@ -28,7 +28,7 @@ const JWT_EXPIRY = '7d';
 
 /** True if the request arrived over the loopback interface (same machine).
  *  `req.socket.remoteAddress` is the actual TCP peer, not the `X-Forwarded-*`
- *  headers a client could otherwise spoof — Express's `trust proxy` isn't
+ *  headers a client could otherwise spoof - Express's `trust proxy` isn't
  *  enabled here, so this can't be bypassed by a header alone. */
 function isLoopbackRequest(req: Request): boolean {
   const addr = req.socket.remoteAddress ?? '';
@@ -339,7 +339,7 @@ router.get('/guilds', async (req: Request, res: Response) => {
     const token = authHeader.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as TokenPayload;
 
-    // Quick-connect users (local) — return bot's guild list directly
+    // Quick-connect users (local) - return bot's guild list directly
     if (payload.userId === 'local' || !payload.accessToken) {
       if (!_botClient) {
         return res.json({ guilds: [] });
@@ -393,7 +393,7 @@ router.get('/guilds', async (req: Request, res: Response) => {
   }
 });
 
-// Bot guild cache — set externally after bot starts
+// Bot guild cache - set externally after bot starts
 let _botGuildIds: Set<string> = new Set();
 let _botClient: Client | null = null;
 
@@ -431,13 +431,13 @@ router.get('/status', (_req: Request, res: Response) => {
 
 /**
  * GET /api/auth/quick-connect
- * Returns the bot's guild list directly — no OAuth needed.
+ * Returns the bot's guild list directly - no OAuth needed.
  * Used when Discord OAuth isn't configured.
  *
  * Loopback-only: this mints a fully-privileged dashboard token for whoever
  * asks, with no credentials at all. That's a reasonable trade for local
  * convenience (bot and dashboard on the same machine), but it must never be
- * reachable from anywhere else — a bot exposed beyond localhost (a public
+ * reachable from anywhere else - a bot exposed beyond localhost (a public
  * server, a port-forward) needs real Discord OAuth instead.
  */
 router.get('/quick-connect', (req: Request, res: Response) => {
@@ -548,7 +548,7 @@ async function fetchUserGuildIds(accessToken: string): Promise<Set<string> | nul
   const guildIds = new Set(userGuilds.map((g) => g.id));
 
   userGuildCache.set(accessToken, { guildIds, expiresAt: Date.now() + USER_GUILD_TTL_MS });
-  // Periodic cleanup to cap memory — drop expired entries when cache grows.
+  // Periodic cleanup to cap memory - drop expired entries when cache grows.
   if (userGuildCache.size > 500) {
     const now = Date.now();
     for (const [key, value] of userGuildCache.entries()) {
@@ -578,8 +578,8 @@ function extractGuildId(req: Request): string | null {
  * Must run AFTER requireAuth. Requires an explicit guildId on the request.
  *
  * Rules:
- *  - Quick-connect tokens (userId === 'local') — trusted, any bot guild allowed.
- *  - Discord-OAuth tokens — user must be a member of the guild (via Discord API) AND the bot must be in it.
+ *  - Quick-connect tokens (userId === 'local') - trusted, any bot guild allowed.
+ *  - Discord-OAuth tokens - user must be a member of the guild (via Discord API) AND the bot must be in it.
  */
 export async function requireGuildAccess(req: Request, res: Response, next: NextFunction): Promise<void> {
   const auth = (req as AuthedRequest).auth;

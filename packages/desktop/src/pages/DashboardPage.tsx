@@ -512,7 +512,7 @@ export default function DashboardPage() {
   const stepAuth = !!botUser;
   const stepConnected = connected;
 
-  // ---- Not fully connected — show inline setup ----
+  // ---- Not fully connected - show inline setup ----
   if (!connected) {
     return (
       <div className="flex flex-col gap-6">
@@ -539,7 +539,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Step 1 — Authenticate */}
+            {/* Step 1 - Authenticate */}
             <div className="flex flex-col gap-4">
               <SetupStep
                 number={1}
@@ -600,7 +600,7 @@ export default function DashboardPage() {
                 )}
               </SetupStep>
 
-              {/* Step 2 — Live Connection */}
+              {/* Step 2 - Live Connection */}
               <SetupStep
                 number={2}
                 title="Live Connection"
@@ -810,14 +810,14 @@ export default function DashboardPage() {
         <StatCard
           icon={Server}
           label="Servers"
-          value={bot?.guildCount ?? '—'}
+          value={bot?.guildCount ?? ' - '}
           sub={`${activePlayerCount} with active players`}
           color="text-purple-400"
         />
         <StatCard
           icon={Cpu}
           label="Bot Instances"
-          value={instances?.health.onlineInstances ?? '—'}
+          value={instances?.health.onlineInstances ?? ' - '}
           sub={`${instances?.health.totalInstances ?? 0} total registered`}
           color="text-cyan-400"
           pulse={(instances?.health.onlineInstances ?? 0) > 0}
@@ -876,7 +876,7 @@ export default function DashboardPage() {
             <div className="mb-3 flex items-center gap-2">
               <Activity size={14} className="text-spotify-green" />
               <span className="text-[11px] font-medium uppercase tracking-wider text-t-faint">
-                Now Playing — Current Guild
+                Now Playing - Current Guild
               </span>
             </div>
             <div className="flex items-center gap-4">

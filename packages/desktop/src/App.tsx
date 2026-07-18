@@ -59,7 +59,7 @@ export default function App() {
     };
   }, []);
 
-  // App always opens directly — no login or server selection gates
+  // App always opens directly - no login or server selection gates
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--background)]">
       {platform.showCustomTitlebar && <TitleBar />}

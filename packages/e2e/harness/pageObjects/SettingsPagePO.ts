@@ -1,5 +1,5 @@
 /**
- * Page object for the Settings page — theme selector and music-folder config
+ * Page object for the Settings page - theme selector and music-folder config
  * are the two areas E2E tests touch.
  */
 import type { Page } from '@playwright/test';
@@ -27,7 +27,7 @@ export class SettingsPagePO {
     const container = this.themeSelect();
     // Try <select>-style first (in case a future implementation uses one),
     // then fall back to the real ThemeSelector.tsx UI: a button grid with no
-    // select/listbox semantics — click the button labelled "Light"/"Dark"/"System".
+    // select/listbox semantics - click the button labelled "Light"/"Dark"/"System".
     const tag = await container.evaluate((el) => el.tagName.toLowerCase()).catch(() => 'unknown');
     if (tag === 'select') {
       await container.selectOption(theme);

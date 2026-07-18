@@ -11,7 +11,7 @@
  *   7. Deleting the new playlist (window.confirm handled)
  *   8. Playing the seeded playlist and confirming the PlayerBar updates
  *
- * State flows within the file — the `resetState` worker fixture seeds
+ * State flows within the file - the `resetState` worker fixture seeds
  * FIXTURE_PLAYLIST once at suite start; subsequent steps mutate and assert.
  */
 import { test, expect, type Page } from '../harness/testFixtures';
@@ -57,7 +57,7 @@ test.describe('library and playlists', () => {
       await expect(authedPage.getByText(title).first()).toBeVisible();
     }
     // Track row count should equal the seeded track count (rows are rendered
-    // with the title text — use `getByText` scoped to track-row area).
+    // with the title text - use `getByText` scoped to track-row area).
     const visibleTrackTitles = SEED_SONG_TITLES.filter(Boolean);
     expect(visibleTrackTitles.length).toBe(FIXTURE_PLAYLIST.trackIds.length);
   });
@@ -74,7 +74,7 @@ test.describe('library and playlists', () => {
   });
 
   // KNOWN ISSUE (not yet root-caused): this test and the three that follow
-  // it (which all depend on the playlist state it creates) fail — the
+  // it (which all depend on the playlist state it creates) fail - the
   // AddToPlaylistModal flow either hangs or leaves the app/browser context
   // in a broken state ("Target page, context or browser has been closed"),
   // and the "E2E Test Playlist" card it's supposed to populate is never
@@ -89,7 +89,7 @@ test.describe('library and playlists', () => {
     await sidebar.navigateTo('search');
     await expect(authedPage.getByRole('heading', { name: /^search$/i })).toBeVisible();
 
-    // Run the canned fixture query — this is resolved by the fixtureExtractor.
+    // Run the canned fixture query - this is resolved by the fixtureExtractor.
     await search.search(`test:${SONG_3.id}`);
 
     // Result row for Test Song 3 must be visible before we act on it.
@@ -100,7 +100,7 @@ test.describe('library and playlists', () => {
     await resultRow.hover();
 
     // Click the "Add to playlist" button on that row (title attribute is a
-    // stable locator — button has no dedicated test-id today).
+    // stable locator - button has no dedicated test-id today).
     const addToPlaylistBtn = resultRow.getByRole('button', { name: /add to playlist/i });
     await expect(addToPlaylistBtn).toBeVisible();
     await addToPlaylistBtn.click();
@@ -117,7 +117,7 @@ test.describe('library and playlists', () => {
     await expect(targetBtn).toBeVisible();
     await targetBtn.click();
 
-    // The UI does not fire a toast on add — it replaces the button's trailing
+    // The UI does not fire a toast on add - it replaces the button's trailing
     // affordance with "Added" text. Wait for that as the success signal. If
     // a toast DOES fire (future enhancement), accept that too.
     const addedIndicator = modal.getByText(/^added$/i).first();
@@ -140,7 +140,7 @@ test.describe('library and playlists', () => {
       });
   });
 
-  // Depends on the AddToPlaylistModal flow above — see the fixme note there.
+  // Depends on the AddToPlaylistModal flow above - see the fixme note there.
   test.fixme('newly added track appears in the new playlist detail view', async ({ authedPage }) => {
     const library = new LibraryPagePO(authedPage);
     await gotoLibrary(authedPage);
@@ -162,7 +162,7 @@ test.describe('library and playlists', () => {
       });
   });
 
-  // Depends on the AddToPlaylistModal flow above — see the fixme note there.
+  // Depends on the AddToPlaylistModal flow above - see the fixme note there.
   test.fixme('removes a track from the new playlist', async ({ authedPage }) => {
     const library = new LibraryPagePO(authedPage);
     await gotoLibrary(authedPage);
@@ -173,24 +173,24 @@ test.describe('library and playlists', () => {
     await expect(row).toBeVisible();
     await row.hover();
 
-    // "Remove from playlist" button — sourced by title attribute.
+    // "Remove from playlist" button - sourced by title attribute.
     const removeBtn = row.getByRole('button', { name: /remove from playlist|remove/i });
     await expect(removeBtn).toBeVisible();
     await removeBtn.click();
 
     // Track row must disappear.
     await expect(row).toBeHidden({ timeout: 5_000 });
-    // And an "empty state" should surface — "No tracks yet".
+    // And an "empty state" should surface - "No tracks yet".
     await expect(authedPage.getByText(/no tracks yet/i)).toBeVisible();
   });
 
-  // Depends on the AddToPlaylistModal flow above — see the fixme note there.
+  // Depends on the AddToPlaylistModal flow above - see the fixme note there.
   test.fixme('deletes the new playlist, leaving the seeded playlist intact', async ({ authedPage }) => {
     const library = new LibraryPagePO(authedPage);
     await gotoLibrary(authedPage);
     await library.openPlaylist(NEW_PLAYLIST_NAME);
 
-    // PlaylistDetailPage.handleDelete uses window.confirm — auto-accept.
+    // PlaylistDetailPage.handleDelete uses window.confirm - auto-accept.
     authedPage.once('dialog', (dialog) => {
       void dialog.accept();
     });
@@ -211,7 +211,7 @@ test.describe('library and playlists', () => {
     await gotoLibrary(authedPage);
     await library.openPlaylist(FIXTURE_PLAYLIST.name);
 
-    // Click "Play All" — rendered as a pill with text "PLAY ALL".
+    // Click "Play All" - rendered as a pill with text "PLAY ALL".
     const playAllBtn = authedPage.getByRole('button', { name: /play all/i });
     await expect(playAllBtn).toBeVisible();
     await playAllBtn.click();

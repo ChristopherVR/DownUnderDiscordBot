@@ -41,7 +41,7 @@ export default function NowPlayingPage() {
   return (
     <div className="relative flex h-[calc(100vh-10rem)] flex-col items-center justify-center overflow-hidden">
       {/* Ambient backdrop: an oversized, near-invisible level meter behind the
-          album art — the page's signature motif at rest, not a generic
+          album art - the page's signature motif at rest, not a generic
           gradient blob. */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.05]">
         <div className="flex items-end gap-6">

@@ -42,7 +42,7 @@ export const HistoryCommand = (): CommandHandler => ({
         .setColor(0xffd700)
         .setDescription(
           topTracks
-            .map((t, i) => `**${i + 1}.** ${t.title} — ${t.artist ?? 'Unknown'} (${t.play_count} plays)`)
+            .map((t, i) => `**${i + 1}.** ${t.title} - ${t.artist ?? 'Unknown'} (${t.play_count} plays)`)
             .join('\n'),
         );
 
@@ -62,7 +62,7 @@ export const HistoryCommand = (): CommandHandler => ({
           recent
             .map((t, i) => {
               const ago = getTimeAgo(t.playedAt);
-              return `**${i + 1}.** ${t.title} — ${t.artist ?? 'Unknown'} (${ago})`;
+              return `**${i + 1}.** ${t.title} - ${t.artist ?? 'Unknown'} (${ago})`;
             })
             .join('\n'),
         );

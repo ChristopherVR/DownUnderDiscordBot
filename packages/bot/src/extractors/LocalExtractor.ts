@@ -80,7 +80,7 @@ export class LocalExtractor extends BaseExtractor<LocalExtractorOptions> {
   }
 
   async handle(query: string, context: ExtractorSearchContext) {
-    // Direct file path — use fileURLToPath for file:// URLs so Windows
+    // Direct file path - use fileURLToPath for file:// URLs so Windows
     // drive-letter paths are resolved correctly (avoids /D:/... issues).
     let filePath: string;
     if (query.startsWith('file://')) {

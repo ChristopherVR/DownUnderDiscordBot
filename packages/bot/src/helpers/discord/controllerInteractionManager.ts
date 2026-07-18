@@ -249,7 +249,7 @@ async function onShowQueue(i: ButtonInteraction, queue: GuildQueue): Promise<voi
   const lines = queue.tracks
     .toArray()
     .slice(0, 10)
-    .map((t, idx) => `**${idx + 1}.** ${t.title} — ${t.author}`);
+    .map((t, idx) => `**${idx + 1}.** ${t.title} - ${t.author}`);
   const now = queue.currentTrack;
   const embed = new EmbedBuilder()
     .setColor('Random')

@@ -4,7 +4,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
  * Serializes operations per guildId.
  *
  * discord-player accepts concurrent `queue.play(...)` and queue mutations
- * without explicit coordination — two rapid POSTs to `/api/music/play` for
+ * without explicit coordination - two rapid POSTs to `/api/music/play` for
  * the same guild can interleave and produce duplicate adds or out-of-order
  * track loads. This helper forces one-at-a-time execution *per guild* while
  * leaving cross-guild calls fully concurrent.

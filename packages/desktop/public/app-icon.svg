@@ -9,7 +9,7 @@
   <!-- Rounded square background -->
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
 
-  <!-- Beamed eighth notes (white) — the beam curves like a boomerang -->
+  <!-- Beamed eighth notes (white) - the beam curves like a boomerang -->
   <g fill="white">
     <!-- Left note head -->
     <ellipse cx="160" cy="350" rx="48" ry="35" transform="rotate(-15 160 350)"/>

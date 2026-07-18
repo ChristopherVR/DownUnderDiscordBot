@@ -2,7 +2,7 @@
  * yt-dlp wrapper for reliable YouTube audio streaming.
  *
  * Used as the final fallback when youtubei.js's streaming clients (ANDROID,
- * WEB) fail — typically due to signature-cipher regressions or throttling.
+ * WEB) fail - typically due to signature-cipher regressions or throttling.
  * yt-dlp handles URL decryption natively and remains the most robust option
  * when Innertube-based download paths are broken.
  */
@@ -20,7 +20,7 @@ const COMMON_ARGS = [
   '--no-warnings',
   '--no-playlist',
   '--js-runtimes',
-  'nodejs', // Required — YouTube needs a JS runtime for URL decryption
+  'nodejs', // Required - YouTube needs a JS runtime for URL decryption
 ];
 
 /**
@@ -78,7 +78,7 @@ export function streamAudio(videoUrl: string): Promise<PassThrough> {
       stderrBuf += chunk.toString();
     });
 
-    // Wait for first data chunk before resolving — proves yt-dlp is working
+    // Wait for first data chunk before resolving - proves yt-dlp is working
     proc.stdout.once('data', (chunk: Buffer) => {
       if (!settled) {
         settled = true;
@@ -132,7 +132,7 @@ export async function checkYtDlp(): Promise<boolean> {
   return new Promise((resolve) => {
     execFile(YT_DLP_BIN, ['--version'], { timeout: 5000 }, (error, stdout) => {
       if (error) {
-        log.warn('yt-dlp not found or not working — YouTube streaming will be unavailable');
+        log.warn('yt-dlp not found or not working - YouTube streaming will be unavailable');
         resolve(false);
       } else {
         log.info({ version: stdout.trim() }, 'yt-dlp available');

@@ -1,5 +1,5 @@
 /**
- * Page object for the Queue page — inspect tracks, remove a track,
+ * Page object for the Queue page - inspect tracks, remove a track,
  * shuffle and clear the queue.
  */
 import type { Page, Locator } from '@playwright/test';

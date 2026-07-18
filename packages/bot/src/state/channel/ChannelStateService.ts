@@ -11,7 +11,7 @@ const COMPRESSED_HEADER = 'STATE_JSON_COMPRESSED v1';
 const MAX_MESSAGE_LENGTH = 1900;
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const HEARTBEAT_TIMEOUT = 90000; // 90 seconds (3 missed heartbeats)
-const STALE_INSTANCE_REMOVAL = 7200000; // 2 hours — hard-remove instances with no heartbeat
+const STALE_INSTANCE_REMOVAL = 7200000; // 2 hours - hard-remove instances with no heartbeat
 const STATE_BACKUP_INTERVAL = 300000; // 5 minutes
 const CAS_MAX_RETRIES = 3;
 const CAS_RETRY_BASE_MS = 100;
@@ -19,12 +19,12 @@ const PIN_CLEANUP_INTERVAL = 10; // clean up pins every N updates
 // getState() does two real Discord REST calls (fetchPinned + fetch recent 50).
 // Short-TTL read cache so a burst of reads (e.g. a dashboard request that
 // calls getState() several times) doesn't hammer the channel and trip
-// Discord's rate limiter — the cause of the compounding multi-minute
+// Discord's rate limiter - the cause of the compounding multi-minute
 // dashboard load times seen in practice.
 const STATE_READ_CACHE_TTL_MS = 3000;
 // Ceiling on a single-flight operation. Discord rate-limit backoffs (or any
 // transient REST hang) must never be allowed to wedge the in-flight lock
-// forever — that would permanently lock out every subsequent caller, not
+// forever - that would permanently lock out every subsequent caller, not
 // just the one that got rate-limited, for the remaining life of the process.
 const SINGLE_FLIGHT_TIMEOUT_MS = 15000;
 
@@ -383,7 +383,7 @@ export class ChannelStateService implements IStateService {
         const refetched = await msg.fetch(true);
         const verified = this.parse(refetched.content);
         if (verified && verified.docVersion === doc.docVersion) {
-          // CAS succeeded — periodic pin cleanup
+          // CAS succeeded - periodic pin cleanup
           this.updateCounter++;
           if (this.updateCounter % PIN_CLEANUP_INTERVAL === 0) {
             this.cleanupStalePins(msg.id).catch(() => {});
@@ -394,10 +394,10 @@ export class ChannelStateService implements IStateService {
           return doc;
         }
       } catch {
-        // Refetch failed — treat as conflict and retry
+        // Refetch failed - treat as conflict and retry
       }
 
-      // Conflict detected — wait with jitter then retry
+      // Conflict detected - wait with jitter then retry
       const jitter = CAS_RETRY_BASE_MS + Math.random() * CAS_RETRY_BASE_MS * 2;
       await new Promise((r) => setTimeout(r, jitter));
     }
@@ -433,7 +433,7 @@ export class ChannelStateService implements IStateService {
     if (this.stateReadCache && Date.now() - this.stateReadCache.fetchedAt < STATE_READ_CACHE_TTL_MS) {
       return this.stateReadCache.doc;
     }
-    // Single-flight the cold-cache fetch too — concurrent callers (e.g. a
+    // Single-flight the cold-cache fetch too - concurrent callers (e.g. a
     // burst of overlapping dashboard requests) share one read instead of
     // each independently re-fetching the same channel messages.
     if (this.stateReadInFlight) {
@@ -445,7 +445,7 @@ export class ChannelStateService implements IStateService {
       return doc;
     });
 
-    // Bound by a timeout, not the raw fetch — a genuinely hung/rate-limited
+    // Bound by a timeout, not the raw fetch - a genuinely hung/rate-limited
     // Discord call must free the lock for future callers rather than
     // wedging every subsequent getState() for the rest of the process.
     const bounded = withTimeout(rawFetch, SINGLE_FLIGHT_TIMEOUT_MS, 'ChannelStateService.getState').finally(() => {
@@ -1054,12 +1054,12 @@ export class ChannelStateService implements IStateService {
    * Derive the heartbeat health status for a given instance.
    *
    * Tiers (based on time since lastHeartbeat):
-   *  - `stopped`  — forcefully stopped via the dashboard
-   *  - `healthy`  — within one heartbeat interval (30 s)
-   *  - `missed`   — 1 heartbeat missed (30–60 s)
-   *  - `late`     — 2+ heartbeats missed but below timeout (60–90 s)
-   *  - `timeout`  — past the heartbeat timeout (90 s – 2 h)
-   *  - `stale`    — past the stale removal threshold (> 2 h)
+   *  - `stopped` - forcefully stopped via the dashboard
+   *  - `healthy` - within one heartbeat interval (30 s)
+   *  - `missed` - 1 heartbeat missed (30–60 s)
+   *  - `late` - 2+ heartbeats missed but below timeout (60–90 s)
+   *  - `timeout` - past the heartbeat timeout (90 s – 2 h)
+   *  - `stale` - past the stale removal threshold (> 2 h)
    */
   getHeartbeatStatus(instance: InstanceInfo): HeartbeatStatus {
     if (instance.forceStopped) return 'stopped';
@@ -1117,14 +1117,14 @@ export class ChannelStateService implements IStateService {
    * Single-flight: this is called on every dashboard load, so concurrent
    * callers (multiple open tabs/windows, or a burst of polls) share one
    * in-progress run instead of each racing their own CAS write against the
-   * same channel message — that pile-up was the cause of dashboard loads
+   * same channel message - that pile-up was the cause of dashboard loads
    * occasionally taking a minute or more under concurrent load.
    */
   async removeTimedOutInstances(): Promise<{ removed: number }> {
     if (this.removeTimedOutInFlight) {
       return this.removeTimedOutInFlight;
     }
-    // Bound by a timeout, not the raw call — see getState() for why: a
+    // Bound by a timeout, not the raw call - see getState() for why: a
     // hung/rate-limited Discord call must free the lock rather than
     // wedging every subsequent dashboard load for the rest of the process.
     const bounded = withTimeout(
@@ -1142,7 +1142,7 @@ export class ChannelStateService implements IStateService {
     const now = Date.now();
     let totalRemoved = 0;
 
-    // Pre-check with the (cheap, cached) read path first — skip the CAS
+    // Pre-check with the (cheap, cached) read path first - skip the CAS
     // write entirely when there's nothing to remove. This endpoint is called
     // on every dashboard load, so doing an unconditional read+edit+refetch
     // cycle here on every call was a major contributor to dashboard latency.
@@ -1199,7 +1199,7 @@ export class ChannelStateService implements IStateService {
           totalRemoved++;
         }
 
-        // Hostname deduplication — keep only the freshest per hostname
+        // Hostname deduplication - keep only the freshest per hostname
         const byHostname = new Map<string, Array<[string, InstanceInfo]>>();
         for (const [instanceId, instance] of Object.entries(guild.instances)) {
           if (!instance.hostname) continue;

@@ -35,7 +35,7 @@ export default function VideoPreview() {
       container.appendChild(videoEl);
 
       return () => {
-        // Don't pause when detaching — just remove from DOM
+        // Don't pause when detaching - just remove from DOM
         if (container.contains(videoEl)) {
           container.removeChild(videoEl);
         }

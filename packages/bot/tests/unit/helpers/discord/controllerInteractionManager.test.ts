@@ -114,7 +114,7 @@ function makeQueue(overrides: Partial<Record<string, unknown>> = {}) {
   return { ...base, ...overrides };
 }
 
-describe('registerControllerInteractionHandlers — router', () => {
+describe('registerControllerInteractionHandlers - router', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     controllerRegistry.deleteController('guild-1');
@@ -279,7 +279,7 @@ describe('back', () => {
       node: { isPaused: () => false, play, getTimestamp: () => null, createProgressBar: () => null },
     });
     // Mutate the real queue object (not a getter) so the "after" read in
-    // onBack sees the change — spreading an object with a getter (as
+    // onBack sees the change - spreading an object with a getter (as
     // makeQueue does internally) would freeze the getter's first value.
     queue.history.back = vi.fn().mockImplementation(async () => {
       queue.currentTrack = prevTrack;
@@ -292,7 +292,7 @@ describe('back', () => {
     await client.dispatch(makeButtonInteraction('back'));
 
     expect(queue.history.back).toHaveBeenCalledWith(true);
-    // history.back() succeeded in moving to the previous track — no manual fallback play needed.
+    // history.back() succeeded in moving to the previous track - no manual fallback play needed.
     expect(play).not.toHaveBeenCalled();
   });
 
@@ -429,7 +429,7 @@ describe('loop', () => {
   it('cycles OFF -> TRACK -> AUTOPLAY -> OFF', async () => {
     const setRepeatMode = vi.fn();
     const queue = makeQueue({ repeatMode: QueueRepeatMode.OFF });
-    // Mutate the real queue object (not a getter) — see the `back` tests for
+    // Mutate the real queue object (not a getter) - see the `back` tests for
     // why spreading a getter inside makeQueue would break this.
     queue.setRepeatMode = (next: number) => {
       queue.repeatMode = next;

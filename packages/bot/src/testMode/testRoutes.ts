@@ -110,7 +110,7 @@ export function registerTestRoutes(app: Express, deps: TestRouteDeps): void {
       // 3. Truncate Prisma tables
       await truncateAll(deps.prisma);
 
-      // 4. Re-seed Discord cache (cheap — pure in-memory) so the canonical
+      // 4. Re-seed Discord cache (cheap - pure in-memory) so the canonical
       //    fixture guilds remain visible to subsequent tests.
       seedDiscordCache(deps.client, FIXTURES);
 

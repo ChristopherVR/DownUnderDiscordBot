@@ -50,10 +50,10 @@ interface ItunesResponse {
  * Supports:
  *  - Apple Music track URLs (album?i=trackId and /song/ URLs)
  *  - Apple Music album URLs
- *  - Apple Music playlist URLs (metadata only — tracks fetched via lookup)
+ *  - Apple Music playlist URLs (metadata only - tracks fetched via lookup)
  *  - Text search via iTunes Search API
  *
- * No Apple Developer credentials are required — the iTunes API is public.
+ * No Apple Developer credentials are required - the iTunes API is public.
  */
 export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOptions> {
   static identifier = 'com.downunder.applemusic' as const;
@@ -146,7 +146,7 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
   }
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — called by discord-player for every matching query       */
+  /*  handle() - called by discord-player for every matching query       */
   /* ------------------------------------------------------------------ */
 
   async handle(query: string, context: ExtractorSearchContext) {
@@ -275,7 +275,7 @@ export class AppleMusicExtractor extends BaseExtractor<AppleMusicExtractorOption
   }
 
   /* ------------------------------------------------------------------ */
-  /*  Streaming — bridge to YouTube (same pattern as Spotify)            */
+  /*  Streaming - bridge to YouTube (same pattern as Spotify)            */
   /* ------------------------------------------------------------------ */
 
   /**

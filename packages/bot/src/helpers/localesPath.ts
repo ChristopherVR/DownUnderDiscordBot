@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
  * Resolve the i18next `loadPath` for server-side translations.
  *
  * `discord-dashboard-shared`'s own default heuristic locates its locale JSON
- * files relative to its own compiled module location — that only works when
+ * files relative to its own compiled module location - that only works when
  * shared's `dist/` sits next to its `src/` (true in the monorepo, false once
  * bundled: the published bot inlines shared's code into a single file via
  * esbuild, so every `import.meta.url` in that bundle collapses to the
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'url';
  *    the package root, with `locales/` copied alongside it (0 levels up).
  *  - tsc dist build (`scripts/copy-locales.mjs`): this module compiles to
  *    `dist/helpers/localesPath.js`, with `locales/` copied to `dist/`
- *    (1 level up) — `import.meta.url` reflects *this* file's own location
+ *    (1 level up) - `import.meta.url` reflects *this* file's own location
  *    regardless of which module calls the function.
  * Falls back to the monorepo-relative `packages/shared/src/localization/locales`
  * for `tsx`-run dev/e2e, where no build has copied anything yet.

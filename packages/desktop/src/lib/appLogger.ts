@@ -6,7 +6,7 @@
 
 export interface AppLogEntry {
   id: string;
-  origin: 'app'; // always 'app' — distinguishes from bot logs
+  origin: 'app'; // always 'app' - distinguishes from bot logs
   category: string; // e.g. 'ui', 'store', 'network', 'system'
   level: 'info' | 'warn' | 'error' | 'debug';
   message: string;

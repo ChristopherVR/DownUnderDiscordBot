@@ -173,12 +173,12 @@ export function initializeCommandRoutes(wsManagerInstance: CommandBroadcast, dis
   }
 
   // Load known commands asynchronously. registryReady signals "commands are
-  // loaded and executable" — it must resolve on its own, independent of
+  // loaded and executable" - it must resolve on its own, independent of
   // Discord slash-command registration (a separate, slower, rate-limited
   // Discord REST call). ensureSlashCommandsRegistered() itself awaits
   // registryReady, so calling it from inside this chain would make
   // registryReady's own resolution depend on a call that's waiting on
-  // registryReady — a deadlock that permanently hangs every
+  // registryReady - a deadlock that permanently hangs every
   // /api/commands/execute request. Slash-command registration is kicked
   // off separately below instead.
   registryReady = commandRegistry.loadKnownCommands().catch((error) => {

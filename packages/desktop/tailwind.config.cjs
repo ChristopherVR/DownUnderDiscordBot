@@ -13,7 +13,7 @@ module.exports = {
         },
         // Semantic surfaces
         surface: 'var(--surface)',
-        // Legacy spotify aliases — still valid when accent is "green"
+        // Legacy spotify aliases - still valid when accent is "green"
         spotify: {
           green: '#1DB954',
           'green-light': '#1ED760',

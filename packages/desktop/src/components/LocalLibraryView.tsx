@@ -699,7 +699,7 @@ function TrackTable({
               {/* Album column (desktop) */}
               {showAlbum && (
                 <p className="relative z-[1] hidden w-[18%] truncate text-[12px] text-t-faint lg:block">
-                  {track.album ?? '—'}
+                  {track.album ?? ' - '}
                 </p>
               )}
 

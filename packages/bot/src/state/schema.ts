@@ -1,11 +1,11 @@
 /**
  * Derived heartbeat health indicator.
- * - `healthy`  — heartbeat received within the expected interval
- * - `missed`   — at least one heartbeat window missed (≥ 1 × interval)
- * - `late`     — multiple heartbeats missed but not yet timed-out
- * - `timeout`  — exceeded the hard timeout; instance marked offline
- * - `stale`    — no heartbeat for an extended period; pending removal
- * - `stopped`  — forcefully stopped via the dashboard
+ * - `healthy` - heartbeat received within the expected interval
+ * - `missed` - at least one heartbeat window missed (≥ 1 × interval)
+ * - `late` - multiple heartbeats missed but not yet timed-out
+ * - `timeout` - exceeded the hard timeout; instance marked offline
+ * - `stale` - no heartbeat for an extended period; pending removal
+ * - `stopped` - forcefully stopped via the dashboard
  */
 export type HeartbeatStatus = 'healthy' | 'missed' | 'late' | 'timeout' | 'stale' | 'stopped';
 

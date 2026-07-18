@@ -35,7 +35,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
     const clientSecret = this.options.clientSecret ?? process.env.SPOTIFY_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      log.warn('Spotify credentials not provided — Spotify URL resolution disabled');
+      log.warn('Spotify credentials not provided - Spotify URL resolution disabled');
       return;
     }
 
@@ -126,7 +126,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
       return this.handleAlbum(albumMatch[1], context);
     }
 
-    // Artist URL — get top tracks
+    // Artist URL - get top tracks
     const artistMatch = query.match(SPOTIFY_ARTIST_REGEX);
     if (artistMatch) {
       return this.handleArtist(artistMatch[1], context);
@@ -138,7 +138,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
 
   private async handleSearch(query: string, context: ExtractorSearchContext) {
     if (!this.spotifyApi) {
-      log.warn('Spotify API not initialized — cannot perform search');
+      log.warn('Spotify API not initialized - cannot perform search');
       return this.createResponse(null, []);
     }
 
@@ -169,7 +169,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
   }
 
   private async handleTrack(trackId: string, context: ExtractorSearchContext) {
-    // Cache lookup — skip the API if we've seen this trackId before.
+    // Cache lookup - skip the API if we've seen this trackId before.
     const cached = await this.readCache(trackId);
     if (cached) {
       const track = new Track(this.context.player, {
@@ -223,14 +223,14 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
         duration: row.duration,
       };
     } catch (err) {
-      log.warn({ err, trackId }, 'TrackCache lookup failed — falling back to Spotify API');
+      log.warn({ err, trackId }, 'TrackCache lookup failed - falling back to Spotify API');
       return null;
     }
   }
 
   /**
    * Persist a Spotify track's metadata in the TrackCache. Any DB error is
-   * swallowed — the extractor still succeeds with the API response.
+   * swallowed - the extractor still succeeds with the API response.
    */
   private async writeCache(trackId: string, body: Record<string, unknown>): Promise<void> {
     try {
@@ -249,7 +249,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
         thumbnail: images?.[0]?.url,
       });
     } catch (err) {
-      log.warn({ err, trackId }, 'TrackCache write failed — continuing without caching');
+      log.warn({ err, trackId }, 'TrackCache write failed - continuing without caching');
     }
   }
 
@@ -354,7 +354,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
   }
 
   /**
-   * Spotify tracks can't stream directly — bridge to YouTube search.
+   * Spotify tracks can't stream directly - bridge to YouTube search.
    * The discord-player framework will automatically try the next extractor
    * in the chain when this returns a search query string.
    */

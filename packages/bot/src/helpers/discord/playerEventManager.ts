@@ -20,7 +20,7 @@ import { WebSocketManager } from '../websocket';
  * Guild-scoped registry for the per-guild controller Message and refresh
  * interval. Every method takes `guildId` as its first argument, so callers
  * cannot accidentally key on something else. Previously these were two
- * free-standing `Map` instances — safe only by convention.
+ * free-standing `Map` instances - safe only by convention.
  */
 class GuildControllerRegistry {
   private controllers = new Map<string, Message>();

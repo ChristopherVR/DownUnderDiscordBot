@@ -43,7 +43,7 @@ export class WebSocketService {
   private doConnect() {
     if (this.ws?.readyState === WebSocket.OPEN) return;
     if (!this._token) {
-      // Don't attempt a connection until we have a token — the server will
+      // Don't attempt a connection until we have a token - the server will
       // reject the upgrade, and the reconnect loop would hammer it.
       return;
     }

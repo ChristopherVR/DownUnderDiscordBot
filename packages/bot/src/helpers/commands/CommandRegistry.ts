@@ -397,7 +397,7 @@ export class CommandRegistry {
     try {
       await this.historyRepo.record(execution);
     } catch (err) {
-      // History is diagnostic, not load-bearing — never let a DB hiccup
+      // History is diagnostic, not load-bearing - never let a DB hiccup
       // fail the command execution itself.
       registryLog.warn({ err, executionId: execution.id }, 'Failed to persist command execution history');
     }

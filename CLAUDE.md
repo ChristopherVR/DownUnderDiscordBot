@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A multi-platform Discord music bot with a Tauri desktop dashboard. pnpm monorepo with four workspace packages:
 
-- **`packages/bot`** — Node.js/TypeScript Discord bot (discord.js + discord-player) + Express REST/WebSocket API server. Runs standalone; SQLite via Prisma.
-- **`packages/desktop`** — Tauri v2 app (Rust shell + React 19 frontend). Connects to a running bot over HTTP/WebSocket; does **not** run the bot itself. The frontend also runs standalone in a plain browser (see "Dual-target desktop UI" below).
-- **`packages/shared`** (`discord-dashboard-shared`) — Shared TypeScript types and i18next localization, built to `dist/` and consumed by both bot and desktop.
-- **`packages/e2e`** (`discord-bot-e2e`) — Playwright end-to-end suite driving the desktop web UI against a real bot running in test mode.
+- **`packages/bot`** - Node.js/TypeScript Discord bot (discord.js + discord-player) + Express REST/WebSocket API server. Runs standalone; SQLite via Prisma.
+- **`packages/desktop`** - Tauri v2 app (Rust shell + React 19 frontend). Connects to a running bot over HTTP/WebSocket; does **not** run the bot itself. The frontend also runs standalone in a plain browser (see "Dual-target desktop UI" below).
+- **`packages/shared`** (`discord-dashboard-shared`) - Shared TypeScript types and i18next localization, built to `dist/` and consumed by both bot and desktop.
+- **`packages/e2e`** (`discord-bot-e2e`) - Playwright end-to-end suite driving the desktop web UI against a real bot running in test mode.
 
 The bot exposes a REST + WebSocket API on port 3001; the desktop app is purely a client of that API, so the bot can run on a server while the dashboard runs anywhere.
 
@@ -56,7 +56,7 @@ pnpm --filter discord-bot-e2e test -- playback-controls.spec.ts   # single spec
 pnpm --filter discord-bot-e2e test:ui                  # interactive Playwright UI mode
 ```
 
-`pnpm precommit` (lint + format:check + test) runs via husky's `pre-commit` hook through `lint-staged` — don't bypass with `--no-verify`.
+`pnpm precommit` (lint + format:check + test) runs via husky's `pre-commit` hook through `lint-staged` - don't bypass with `--no-verify`.
 
 ## Architecture notes
 
@@ -76,8 +76,8 @@ Custom `discord-player` extractors live in `packages/bot/src/extractors/` and ar
 
 The desktop React app is being made to run both inside Tauri and as a plain browser tab, gated behind a `packages/desktop/src/platform/` abstraction:
 
-- `platform.isTauri` / `detect.ts` — runtime check for Tauri vs browser.
-- `platform/window.ts`, `shell.ts`, `dragDrop.ts`, `filePicker.ts`, `authFlow.ts`, `library.ts` — capability modules that branch on `isTauri()` internally (native window controls, external links, OS drag-drop, native folder picker, deep-link vs redirect OAuth, folder scanning) so page/component code calls one API regardless of target.
+- `platform.isTauri` / `detect.ts` - runtime check for Tauri vs browser.
+- `platform/window.ts`, `shell.ts`, `dragDrop.ts`, `filePicker.ts`, `authFlow.ts`, `library.ts` - capability modules that branch on `isTauri()` internally (native window controls, external links, OS drag-drop, native folder picker, deep-link vs redirect OAuth, folder scanning) so page/component code calls one API regardless of target.
 - Feature flags (`platform.canMinimizeToTray`, `canDragOsFiles`, `canPickClientFolder`, `showCustomTitlebar`) let components conditionally render Tauri-only UI (e.g. the custom titlebar) without importing `@tauri-apps/api` directly.
 
 When adding a feature that touches native capabilities (files, windowing, OAuth redirect), add/extend a `platform/*` module rather than calling Tauri APIs from components/pages directly, so the browser build keeps working.
@@ -87,7 +87,7 @@ When adding a feature that touches native capabilities (files, windowing, OAuth 
 The bot has an inert-by-default test-mode runtime in `packages/bot/src/testMode/`, activated only with `E2E=true`:
 
 - Skips real Discord login; `discordStub.ts` seeds `client.guilds.cache` with fixture guilds and emits `ClientReady`.
-- `FixtureExtractor` replaces all real music extractors — search/play resolves to a 30s silent WAV instead of hitting real platforms.
+- `FixtureExtractor` replaces all real music extractors - search/play resolves to a 30s silent WAV instead of hitting real platforms.
 - `queue.connect()` is monkey-patched to resolve with a synthetic ready voice connection (no real Discord voice/UDP handshake).
 - `POST /test/reset` and `POST /test/seed` (registered via `registerTestRoutes`) clear/reseed Prisma tables and in-process player state.
 - Everything else (Express routes, WebSocket, JWT auth, real Prisma queries, playlist CRUD) runs unmodified.
@@ -96,18 +96,19 @@ The bot has an inert-by-default test-mode runtime in `packages/bot/src/testMode/
 
 ## discord-player v7 + discord-voip gotchas
 
-- Local file extractors **must** return `createReadStream(path)`, not the path string — a string return makes discord-player use `FFMPEG_ARGS_STRING`, which adds `-reconnect` flags that are only valid for HTTP(S) and fail silently on local files.
+- Local file extractors **must** return `createReadStream(path)`, not the path string - a string return makes discord-player use `FFMPEG_ARGS_STRING`, which adds `-reconnect` flags that are only valid for HTTP(S) and fail silently on local files.
 - `queue.connect()` resolves before voice is actually `Ready`. Always `waitForVoiceReady(queue)` (via `entersState()` from `discord-voip`) before `queue.node.play()`, or FFmpeg can finish before the AudioPlayer starts reading.
-- `maxMissedFrames` defaults to 5 in discord-voip — pass `createAudioPlayer({ behaviors: { maxMissedFrames: 500 } })` via `queue.connect(channel, { audioPlayer })` for startup tolerance.
+- `maxMissedFrames` defaults to 5 in discord-voip - pass `createAudioPlayer({ behaviors: { maxMissedFrames: 500 } })` via `queue.connect(channel, { audioPlayer })` for startup tolerance.
 - `discord-voip` isn't fully re-exported by `discord-player`; depend on it directly for `entersState`/`VoiceConnectionStatus`.
-- `skipFFmpeg: true` is the default Player option in v7, but it only takes effect when the stream format is `$fmt` in `{Opus, OggOpus, WebmOpus}` — plain strings and Readables still go through FFmpeg.
-- `BaseExtractor.handle()` returns `ExtractorInfo`, not `SearchResult` — let TypeScript infer the type from `createResponse()` rather than annotating it.
-- `ExtractorStreamable = Readable | string | { stream: Readable }` — don't over-annotate `stream()`'s return type explicitly.
+- `skipFFmpeg: true` is the default Player option in v7, but it only takes effect when the stream format is `$fmt` in `{Opus, OggOpus, WebmOpus}` - plain strings and Readables still go through FFmpeg.
+- `BaseExtractor.handle()` returns `ExtractorInfo`, not `SearchResult` - let TypeScript infer the type from `createResponse()` rather than annotating it.
+- `ExtractorStreamable = Readable | string | { stream: Readable }` - don't over-annotate `stream()`'s return type explicitly.
 
 ## Other conventions
 
 - Shared `Track` type uses `thumbnail` (not `cover`).
 - `useRef<T>()` under React 19 strict mode needs an explicit argument: `useRef<T>(undefined)`.
-- `packages/bot/src/database/generated/` is generated Prisma client output — don't hand-edit; run `pnpm --filter discord-bot db:generate` after schema changes. It's also excluded from oxlint.
+- `packages/bot/src/database/generated/` is generated Prisma client output, don't hand-edit; run `pnpm --filter discord-bot db:generate` after schema changes. It's also excluded from oxlint.
 - Desktop path alias `@/*` maps to `packages/desktop/src/*` (see `tsconfig.json`).
 - Windows shells: quote paths containing backslashes.
+- No em dashes anywhere in this repo: code, comments, docs, commit messages. Use a comma, period, parentheses, or a hyphen instead.

@@ -30,7 +30,7 @@ const SUPPORTED_VIDEO_FORMATS = [
 // All supported media formats (audio + video)
 const SUPPORTED_MEDIA_FORMATS = [...SUPPORTED_AUDIO_FORMATS, ...SUPPORTED_VIDEO_FORMATS];
 
-// File size limits (200MB — video files can be large)
+// File size limits (200MB - video files can be large)
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 // Upload directories

@@ -1,5 +1,5 @@
 /**
- * Page object for the Search page — query input, result list, and result-row
+ * Page object for the Search page - query input, result list, and result-row
  * interactions (play / add to queue / add to playlist).
  */
 import type { Page, Locator } from '@playwright/test';

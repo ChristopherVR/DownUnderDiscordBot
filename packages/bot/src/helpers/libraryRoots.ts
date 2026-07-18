@@ -9,7 +9,7 @@ const log = createLogger('library-roots');
 /** Comma-separated allowlist of absolute path prefixes. Any endpoint that reads
  *  an arbitrary filesystem path supplied by a client must resolve inside one
  *  of these. Falls back to MUSIC_FOLDER_PATH when unset. If neither is
- *  configured, every path is rejected — filesystem access must be explicitly
+ *  configured, every path is rejected - filesystem access must be explicitly
  *  opted into, never open by default. */
 const configuredRoots = (process.env.LIBRARY_ROOTS ?? '')
   .split(',')
@@ -49,7 +49,7 @@ export async function pathIsAllowed(targetPath: string): Promise<boolean> {
 
 /** Comma-separated Discord user IDs allowed to touch filesystem-path
  *  endpoints, in addition to the trusted quick-connect ('local') identity.
- *  Filesystem paths are sensitive — this is operator-only by design, not
+ *  Filesystem paths are sensitive - this is operator-only by design, not
  *  open to every authenticated Discord user. */
 const LIBRARY_ALLOWED_USERS = new Set(
   (process.env.LIBRARY_ALLOWED_USERS ?? '')

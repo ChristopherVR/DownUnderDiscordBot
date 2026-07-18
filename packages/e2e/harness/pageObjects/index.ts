@@ -1,5 +1,5 @@
 /**
- * Barrel file — import every page object from a single path.
+ * Barrel file - import every page object from a single path.
  */
 export { SidebarPO } from './SidebarPO';
 export type { SidebarNavItem } from './SidebarPO';

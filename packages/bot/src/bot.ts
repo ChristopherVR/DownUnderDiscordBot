@@ -54,7 +54,7 @@ export async function startBot(wsManager?: WebSocketManager) {
     }
   });
   if (isE2EMode()) {
-    botLog.warn('E2E mode enabled — skipping Discord login');
+    botLog.warn('E2E mode enabled - skipping Discord login');
   } else {
     botLog.info('Logging into Discord API');
     await client.login(process.env.CLIENT_TOKEN);
@@ -121,7 +121,7 @@ export async function startBot(wsManager?: WebSocketManager) {
     botLog.info({ guildIds }, 'Presence published for guilds on ready');
   });
 
-  // heartbeat — skipped in E2E mode to avoid touching the (stubbed) Discord
+  // heartbeat - skipped in E2E mode to avoid touching the (stubbed) Discord
   // state channel every 15 s.
   if (!isE2EMode()) {
     setInterval(async () => {

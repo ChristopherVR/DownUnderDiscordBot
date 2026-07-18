@@ -12,7 +12,7 @@ export class PlayerBarPO {
   readonly root = () => this.page.locator('[data-testid="player-bar"]').or(this.page.locator('footer')).first();
 
   // Play/pause is a single combined toggle button (data-testid="player-play"
-  // in both states) — its aria-label flips between "Play"/"Pause" rather
+  // in both states) - its aria-label flips between "Play"/"Pause" rather
   // than there being two separate elements.
   readonly playButton = () =>
     this.page.locator('[data-testid="player-play"]').or(this.page.getByRole('button', { name: /^play$/i }));
@@ -90,7 +90,7 @@ export class PlayerBarPO {
 
   async isPlaying(): Promise<boolean> {
     // The play/pause control is one combined toggle button whose aria-label
-    // flips between "Play" and "Pause" — it's always visible, so visibility
+    // flips between "Play" and "Pause" - it's always visible, so visibility
     // can't distinguish state; the label can.
     const label = await this.playButton()
       .getAttribute('aria-label')

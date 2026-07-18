@@ -392,7 +392,7 @@ export class WebSocketManager {
   }
 
   /**
-   * Broadcast a fine-grained position tick — cheaper than a full player_state
+   * Broadcast a fine-grained position tick - cheaper than a full player_state
    * since it only carries guildId + position. Sent once per second during
    * playback.
    */

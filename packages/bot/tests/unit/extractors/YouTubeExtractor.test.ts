@@ -161,9 +161,9 @@ describe('CustomYouTubeExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — video                                                   */
+  /*  handle() - video                                                   */
   /* ------------------------------------------------------------------ */
-  describe('handle — video URL', () => {
+  describe('handle - video URL', () => {
     it('should fetch video info and return a track', async () => {
       mockGetBasicInfo.mockResolvedValue({
         basic_info: {
@@ -198,9 +198,9 @@ describe('CustomYouTubeExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — playlist                                                */
+  /*  handle() - playlist                                                */
   /* ------------------------------------------------------------------ */
-  describe('handle — playlist URL', () => {
+  describe('handle - playlist URL', () => {
     it('should fetch playlist and return multiple tracks', async () => {
       mockGetPlaylist.mockResolvedValue({
         videos: [
@@ -237,9 +237,9 @@ describe('CustomYouTubeExtractor', () => {
   });
 
   /* ------------------------------------------------------------------ */
-  /*  handle() — search                                                  */
+  /*  handle() - search                                                  */
   /* ------------------------------------------------------------------ */
-  describe('handle — text search', () => {
+  describe('handle - text search', () => {
     it('should search YouTube and return matching tracks', async () => {
       mockSearch.mockResolvedValue({
         results: [
@@ -387,7 +387,7 @@ describe('CustomYouTubeExtractor', () => {
     it('should clean up on deactivate', async () => {
       await extractor.activate();
       await extractor.deactivate();
-      // No error thrown — internals nulled out
+      // No error thrown - internals nulled out
     });
   });
 

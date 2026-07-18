@@ -121,7 +121,7 @@ function SearchResult({
       {/* Duration */}
       <span className="text-[11px] tabular-nums text-t-ghost">{track.duration ? formatTime(track.duration) : ''}</span>
 
-      {/* Action buttons — visible on hover */}
+      {/* Action buttons - visible on hover */}
       <div className="flex items-center gap-0.5 opacity-0 transition-all group-hover:opacity-100">
         {/* Play */}
         <button

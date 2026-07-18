@@ -5,7 +5,7 @@
 //
 // discord-dashboard-shared is a private workspace package (not published to
 // npm) with real runtime code (i18n init), so it's inlined into the bundle
-// rather than left as an external dependency — everything else in
+// rather than left as an external dependency - everything else in
 // package.json's "dependencies" stays external and gets installed normally
 // by npm/pnpm for consumers.
 import { build } from 'esbuild';
@@ -24,7 +24,7 @@ const BIN_NAME = 'down-under-discord-bot';
 const external = [
   ...Object.keys(pkg.dependencies).filter((name) => name !== 'discord-dashboard-shared'),
   // Internal helper package required at runtime by the generated Prisma
-  // client (src/database/generated/) — not one of our own declared
+  // client (src/database/generated/) - not one of our own declared
   // dependencies, but a transitive dependency of @prisma/client that's
   // resolvable in node_modules for consumers, same as @prisma/client itself.
   '@prisma/client-runtime-utils',
@@ -44,7 +44,7 @@ async function main() {
     external,
     // Two things the banner needs to do:
     //  1. Shebang, so the bin entry is directly executable.
-    //  2. A real `require` in scope — esbuild's ESM output wraps every
+    //  2. A real `require` in scope - esbuild's ESM output wraps every
     //     externalized CJS `require()` call (e.g. the generated Prisma
     //     client's eager `require("@prisma/client-runtime-utils")`) in a
     //     helper that uses `require` if present in scope and otherwise
@@ -56,14 +56,14 @@ async function main() {
   });
 
   // Locale JSON files: resolveI18nLoadPath() (src/helpers/localesPath.ts)
-  // looks for a `locales/` directory next to its own compiled location —
+  // looks for a `locales/` directory next to its own compiled location -
   // once bundled, that's this same `publish/` directory (see the comment on
   // that function for why the offset differs from the plain tsc build).
   const localesSrc = path.resolve(pkgRoot, '..', 'shared', 'src', 'localization', 'locales');
   await cp(localesSrc, path.join(outDir, 'locales'), { recursive: true });
 
   // Shipped for consumer convenience (`npx prisma db push` to set up their
-  // own SQLite file on first run) — NOT regenerated on install. The bundle
+  // own SQLite file on first run) - NOT regenerated on install. The bundle
   // already contains the fully generated Prisma client baked in at build
   // time; queries run through @prisma/adapter-better-sqlite3 + better-sqlite3
   // (both real external deps, rebuilt for the consumer's platform by their
@@ -75,7 +75,7 @@ async function main() {
   await cp(path.join(pkgRoot, '.env.example'), path.join(outDir, '.env.example')).catch(() => {});
 
   const publishPkg = {
-    // The workspace package is internally named "discord-bot" — the
+    // The workspace package is internally named "discord-bot" - the
     // published npm package uses the project's public name instead.
     name: 'down-under-discord-bot',
     version: pkg.version,
@@ -87,7 +87,7 @@ async function main() {
     files: ['index.js', 'locales', 'prisma', 'prisma.config.ts', '.env.example'],
     dependencies: {
       ...Object.fromEntries(external.map((name) => [name, pkg.dependencies[name]])),
-      // Only needed as a CLI for the consumer's own `npx prisma db push` —
+      // Only needed as a CLI for the consumer's own `npx prisma db push` -
       // not invoked automatically (see comment above `cp` of schema.prisma).
       prisma: pkg.devDependencies.prisma,
     },

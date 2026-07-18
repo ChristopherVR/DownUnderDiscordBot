@@ -214,7 +214,7 @@ export default function TitleBar() {
         <span className="text-[11px] font-medium tracking-wide text-t-tertiary">Down Under</span>
       </div>
 
-      {/* Status indicators — clickable */}
+      {/* Status indicators - clickable */}
       <div className="relative flex items-center">
         <button
           onClick={() => setShowStatus((v) => !v)}

@@ -1,5 +1,5 @@
 /**
- * discordStub.ts — seed the discord.js client cache with fixture guilds /
+ * discordStub.ts - seed the discord.js client cache with fixture guilds /
  * channels and intercept voice-connect calls so the bot can run end-to-end
  * without ever touching the Discord gateway or UDP voice stack.
  */
@@ -64,7 +64,7 @@ function buildFakeGuild(
  * and emit `ClientReady` on the next tick so downstream code that awaits
  * `client.once(Events.ClientReady)` unblocks.
  *
- * Safe to call multiple times — idempotent per fixture id.
+ * Safe to call multiple times - idempotent per fixture id.
  */
 export function seedDiscordCache(client: Client, fixtures: FixtureData = FIXTURES): void {
   // discord.js's GuildManager exposes `cache` as a getter-only property, so we
@@ -84,7 +84,7 @@ export function seedDiscordCache(client: Client, fixtures: FixtureData = FIXTURE
     try {
       Object.defineProperty(obj, key, { value, writable: true, configurable: true });
     } catch {
-      // ignore — non-configurable, caller can live without it
+      // ignore - non-configurable, caller can live without it
     }
   };
 
@@ -189,7 +189,7 @@ export function patchVoiceConnect(player: Player): void {
         log.debug({ guildId, channelId }, 'Synthesised voice connection (E2E stub)');
         return queue;
       } catch (err) {
-        log.warn({ err }, 'Voice-connect stub failed — falling back to original');
+        log.warn({ err }, 'Voice-connect stub failed - falling back to original');
         return originalConnect(channel as Parameters<typeof originalConnect>[0]);
       }
     };

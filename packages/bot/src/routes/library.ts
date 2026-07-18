@@ -29,7 +29,7 @@ function toWireFormat(t: LocalTrack) {
   };
 }
 
-/** POST /api/library/scan — scan a folder recursively and return tracks. */
+/** POST /api/library/scan - scan a folder recursively and return tracks. */
 router.post('/scan', async (req: Request, res: Response) => {
   const { path: folderPath } = req.body as { path?: string };
   if (!folderPath || typeof folderPath !== 'string') {
@@ -47,7 +47,7 @@ router.post('/scan', async (req: Request, res: Response) => {
   }
 });
 
-/** POST /api/library/resolve — given a mix of file paths, return track metadata
+/** POST /api/library/resolve - given a mix of file paths, return track metadata
  *  for the playable files (mirrors Tauri's `resolve_dropped_paths`). */
 router.post('/resolve', async (req: Request, res: Response) => {
   const { paths } = req.body as { paths?: string[] };
@@ -76,7 +76,7 @@ router.post('/resolve', async (req: Request, res: Response) => {
   res.json(tracks.map(toWireFormat));
 });
 
-/** POST /api/library/is-directory — mirrors Tauri's `is_directory` check. */
+/** POST /api/library/is-directory - mirrors Tauri's `is_directory` check. */
 router.post('/is-directory', async (req: Request, res: Response) => {
   const { path: p } = req.body as { path?: string };
   if (!p || typeof p !== 'string') {

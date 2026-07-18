@@ -15,7 +15,7 @@
  */
 import { test, expect, type Page } from '../harness/testFixtures';
 
-// Navigate to dashboard — it's where "Connected"/"Disconnected" status text is
+// Navigate to dashboard - it's where "Connected"/"Disconnected" status text is
 // rendered most explicitly. The NavLink selector falls back to a role lookup
 // in case the testid isn't present.
 async function openDashboard(page: Page): Promise<void> {
@@ -33,7 +33,7 @@ async function openDashboard(page: Page): Promise<void> {
  */
 async function exposeStoreAndWs(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    // Mark that we're in test mode — useful for assertions later.
+    // Mark that we're in test mode - useful for assertions later.
     (window as unknown as { __E2E__?: boolean }).__E2E__ = true;
 
     // Kick off the imports early; they'll resolve before our test code
@@ -52,7 +52,7 @@ async function exposeStoreAndWs(page: Page): Promise<void> {
           (window as unknown as { __bot?: unknown }).__bot = store.useBotStore;
           (window as unknown as { __ws?: unknown }).__ws = ws.wsService;
         } catch {
-          // Leave undefined — tests will poll and surface a clear timeout.
+          // Leave undefined - tests will poll and surface a clear timeout.
         }
       }
     })();
@@ -112,7 +112,7 @@ test.describe('disconnect and reconnect', () => {
     // UI reflection: Dashboard's session-context strip shows "Connected".
     // The text "Connected" appears in two places (server count subtitle and
     // the websocket-status block). The websocket block's parent contains
-    // host:port subtitle — scope by that to avoid the server-count match.
+    // host:port subtitle - scope by that to avoid the server-count match.
     const connectedBlock = authedPage.getByText(/^Connected$/).first();
     await expect(connectedBlock).toBeVisible({ timeout: 10_000 });
   });
@@ -151,7 +151,7 @@ test.describe('disconnect and reconnect', () => {
     await expect.poll(() => storeConnected(authedPage), { timeout: 3_000 }).toBe(false);
 
     // Exponential backoff: first retry fires at 1s. Give it generous room
-    // — the first attempt sometimes races with the browser closing state.
+    // - the first attempt sometimes races with the browser closing state.
     await expect.poll(() => storeConnected(authedPage), { timeout: 8_000 }).toBe(true);
   });
 
@@ -161,7 +161,7 @@ test.describe('disconnect and reconnect', () => {
     await expect.poll(() => storeHasBotUser(authedPage), { timeout: 10_000 }).toBe(true);
     await expect.poll(() => storeConnected(authedPage), { timeout: 10_000 }).toBe(true);
 
-    // Trigger the full teardown — clears token, closes WS, resets guilds.
+    // Trigger the full teardown - clears token, closes WS, resets guilds.
     await authedPage.evaluate(() => {
       type StoreLike = { getState: () => { disconnectBot: () => void } };
       const bot = (window as unknown as { __bot?: StoreLike }).__bot;

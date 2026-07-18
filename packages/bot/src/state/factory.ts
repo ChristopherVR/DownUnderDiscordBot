@@ -14,7 +14,7 @@ export function createStateService(deps: {
       // activates when `client.channels.fetch` is not a function. We expose
       // that path explicitly by passing a stripped-down client shim.
       const shim = {
-        // Crucially: no `channels.fetch` — triggers `useMemoryStorage = true`.
+        // Crucially: no `channels.fetch` - triggers `useMemoryStorage = true`.
         channels: {},
         guilds: deps.discordClient.guilds,
       } as unknown as import('discord.js').Client;

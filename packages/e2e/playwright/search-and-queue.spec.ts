@@ -17,7 +17,7 @@ const [SONG_1, SONG_2] = FIXTURE_TRACKS;
 
 /**
  * A result row in the Search UI is rendered as a div without a
- * `data-testid`. Locate it via the track title text — each fixture track
+ * `data-testid`. Locate it via the track title text - each fixture track
  * has a unique title ("Test Song 1", "Test Song 2", ...).
  */
 function searchResultRow(page: Page, title: string) {
@@ -74,7 +74,7 @@ test.describe('search and queue', () => {
   // Tests 3+4 and 5+6 are each a single test rather than split across the
   // file's usual one-test-per-scenario style: `player.currentTrack` and the
   // local queue are ephemeral client-side (zustand) state for `local`
-  // playback mode — the bot server has no independent record of them. The
+  // playback mode - the bot server has no independent record of them. The
   // `authedPage` fixture does a fresh `page.goto()` for every test, which
   // wipes that state, so a later test can never observe an earlier test's
   // local-mode playback/queue side effects. Splitting these would just
@@ -195,10 +195,10 @@ test.describe('search and queue', () => {
     const sidebar = new SidebarPO(authedPage);
     const queuePage = new QueuePagePO(authedPage);
 
-    // Fresh page load per test (see test 2) — navigate back to the queue first.
+    // Fresh page load per test (see test 2) - navigate back to the queue first.
     await sidebar.navigateTo('queue');
 
-    // Ensure there is at least something to clear — add a track back.
+    // Ensure there is at least something to clear - add a track back.
     const beforeClear = await queuePage.count();
     if (beforeClear === 0) {
       const searchPage = new SearchPagePO(authedPage);

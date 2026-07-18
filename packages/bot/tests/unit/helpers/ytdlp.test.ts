@@ -178,7 +178,7 @@ describe('yt-dlp helper', () => {
 
       const promise = streamAudio('https://youtube.com/watch?v=abc');
 
-      // First data arrives — settles the promise
+      // First data arrives - settles the promise
       proc.stdout.emit('data', Buffer.from('audio-data'));
       const stream = await promise;
 

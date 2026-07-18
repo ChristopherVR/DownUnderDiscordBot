@@ -79,7 +79,7 @@ describe('Auth API Routes', () => {
       const originalClientId = process.env.DISCORD_CLIENT_ID;
       process.env.DISCORD_CLIENT_ID = 'test-client-id';
 
-      // Re-import to pick up the env change — but since it's already evaluated,
+      // Re-import to pick up the env change - but since it's already evaluated,
       // we test against whatever the module resolved at import time.
       const response = await request(app).get('/api/auth/discord');
 
