@@ -1,76 +1,17 @@
-import { Request, Response, NextFunction, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import type { Router as RouterType } from 'express';
 import path from 'path';
-import { promises as fs, realpathSync } from 'fs';
+import { promises as fs } from 'fs';
 import { LocalMusicService, type LocalTrack } from '../services/LocalMusicService.js';
 import { createLogger } from '../helpers/logger.js';
-import type { AuthedRequest } from './auth.js';
+import { pathIsAllowed, requireLibraryOperator } from '../helpers/libraryRoots.js';
 
 const log = createLogger('library');
 const router: RouterType = Router();
 
 const localMusicService = new LocalMusicService();
 
-/** Comma-separated allowlist of absolute path prefixes. Web-mode library scans
- *  must resolve inside one of these. Falls back to MUSIC_FOLDER_PATH when unset.
- *  If neither is configured, every scan is rejected — filesystem access must be
- *  explicitly opted into, never open by default. */
-const configuredRoots = (process.env.LIBRARY_ROOTS ?? '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
-if (configuredRoots.length === 0 && process.env.MUSIC_FOLDER_PATH) {
-  configuredRoots.push(process.env.MUSIC_FOLDER_PATH);
-}
-// Resolve symlinks in the roots themselves too, so a symlinked root can't be
-// used to redefine the allowlist to something broader than intended.
-const LIBRARY_ROOTS = configuredRoots.flatMap((p) => {
-  try {
-    return [realpathSync(path.resolve(p))];
-  } catch (err) {
-    log.warn({ err, path: p }, 'LIBRARY_ROOTS entry does not exist on disk; ignoring it');
-    return [];
-  }
-});
-
-if (LIBRARY_ROOTS.length === 0) {
-  log.warn('LIBRARY_ROOTS (and MUSIC_FOLDER_PATH) are unset; all /api/library scans will be rejected.');
-}
-
-/** Comma-separated Discord user IDs allowed to use the library scan endpoints,
- *  in addition to the trusted quick-connect ('local') identity. Filesystem
- *  paths are sensitive — this is operator-only by design, not open to every
- *  authenticated Discord user. */
-const LIBRARY_ALLOWED_USERS = new Set(
-  (process.env.LIBRARY_ALLOWED_USERS ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean),
-);
-
-function requireLibraryOperator(req: Request, res: Response, next: NextFunction): void {
-  const auth = (req as AuthedRequest).auth;
-  if (auth?.userId === 'local' || (auth?.userId && LIBRARY_ALLOWED_USERS.has(auth.userId))) {
-    next();
-    return;
-  }
-  res.status(403).json({ error: 'Not authorized to access the filesystem library' });
-}
 router.use(requireLibraryOperator);
-
-/** Resolves symlinks before comparing so a symlink inside an allowed root
- *  can't be used to escape it. Returns false (disallowed) if the path doesn't
- *  exist yet or can't be resolved. */
-async function pathIsAllowed(targetPath: string): Promise<boolean> {
-  if (LIBRARY_ROOTS.length === 0) return false;
-  let real: string;
-  try {
-    real = await fs.realpath(targetPath);
-  } catch {
-    return false;
-  }
-  return LIBRARY_ROOTS.some((root) => real === root || real.startsWith(root + path.sep));
-}
 
 /** Convert the bot-internal LocalTrack shape (camelCase) to the snake_case
  *  shape produced by the Tauri Rust commands, so desktop clients get the same

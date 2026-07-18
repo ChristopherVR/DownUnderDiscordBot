@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import fs from 'fs';
 import { getAudioStreamUrl } from '../helpers/ytdlp.js';
+import { pathIsAllowed, requireLibraryOperator } from '../helpers/libraryRoots.js';
 import { CustomYouTubeExtractor } from '../extractors/YouTubeExtractor.js';
 import { SpotifyExtractor } from '../extractors/SpotifyExtractor.js';
 import { SoundCloudExtractor } from '../extractors/SoundCloudExtractor.js';
@@ -1170,10 +1171,20 @@ router.get('/stream', async (req: Request, res: Response) => {
 
 // GET /api/music/stream/local - Stream a local file from a Tauri music folder path.
 // The desktop app sends the full file path, and the bot reads and serves it.
-router.get('/stream/local', async (req: Request, res: Response) => {
+// Gated to the trusted local identity / allowlisted operators, same as
+// /api/library — reading an arbitrary filesystem path is sensitive
+// regardless of intent.
+router.get('/stream/local', requireLibraryOperator, async (req: Request, res: Response) => {
   const filePath = req.query.path as string | undefined;
   if (!filePath) {
     return res.status(400).json({ success: false, error: 'path query parameter is required' });
+  }
+
+  // filePath is client-supplied and otherwise unrestricted — without this,
+  // any caller could read arbitrary files off the host (e.g. ?path=../../.env)
+  // rather than being confined to the operator's configured music folders.
+  if (!(await pathIsAllowed(filePath))) {
+    return res.status(403).json({ success: false, error: 'Path is not inside an allowed library root' });
   }
 
   try {

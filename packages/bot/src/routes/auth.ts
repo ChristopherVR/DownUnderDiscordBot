@@ -26,6 +26,15 @@ const JWT_SECRET = (() => {
 
 const JWT_EXPIRY = '7d';
 
+/** True if the request arrived over the loopback interface (same machine).
+ *  `req.socket.remoteAddress` is the actual TCP peer, not the `X-Forwarded-*`
+ *  headers a client could otherwise spoof — Express's `trust proxy` isn't
+ *  enabled here, so this can't be bypassed by a header alone. */
+function isLoopbackRequest(req: Request): boolean {
+  const addr = req.socket.remoteAddress ?? '';
+  return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+}
+
 // Auto-detect client ID from bot token if DISCORD_CLIENT_ID not explicitly set
 function getClientIdFromToken(): string {
   const token = process.env.CLIENT_TOKEN || '';
@@ -424,8 +433,22 @@ router.get('/status', (_req: Request, res: Response) => {
  * GET /api/auth/quick-connect
  * Returns the bot's guild list directly — no OAuth needed.
  * Used when Discord OAuth isn't configured.
+ *
+ * Loopback-only: this mints a fully-privileged dashboard token for whoever
+ * asks, with no credentials at all. That's a reasonable trade for local
+ * convenience (bot and dashboard on the same machine), but it must never be
+ * reachable from anywhere else — a bot exposed beyond localhost (a public
+ * server, a port-forward) needs real Discord OAuth instead.
  */
-router.get('/quick-connect', (_req: Request, res: Response) => {
+router.get('/quick-connect', (req: Request, res: Response) => {
+  if (!isLoopbackRequest(req)) {
+    log.warn({ ip: req.socket.remoteAddress }, 'Rejected non-loopback quick-connect attempt');
+    return res.status(403).json({
+      error:
+        'quick-connect is only available from localhost. Configure Discord OAuth (DISCORD_CLIENT_ID/SECRET) instead.',
+    });
+  }
+
   if (!_botClient) {
     return res.status(503).json({ error: 'Bot not ready' });
   }
