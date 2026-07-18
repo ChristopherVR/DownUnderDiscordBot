@@ -55,8 +55,13 @@ test.describe('search and queue', () => {
   });
 
   test('2. Free-text search surfaces a fixture track', async ({ authedPage }) => {
+    const sidebar = new SidebarPO(authedPage);
     const searchPage = new SearchPagePO(authedPage);
 
+    // The `authedPage` fixture navigates fresh to the dashboard for every
+    // test, so despite this file's shared-state design, each test still
+    // needs its own navigation to the page it actually exercises.
+    await sidebar.navigateTo('search');
     await searchPage.enterQuery('Test Song');
     await searchPage.submit();
 
@@ -66,10 +71,19 @@ test.describe('search and queue', () => {
     await expect(anyResult).toBeVisible({ timeout: 10_000 });
   });
 
-  test('3. Clicking Play on a result starts playback and populates the queue', async ({ authedPage }) => {
+  // Tests 3+4 and 5+6 are each a single test rather than split across the
+  // file's usual one-test-per-scenario style: `player.currentTrack` and the
+  // local queue are ephemeral client-side (zustand) state for `local`
+  // playback mode — the bot server has no independent record of them. The
+  // `authedPage` fixture does a fresh `page.goto()` for every test, which
+  // wipes that state, so a later test can never observe an earlier test's
+  // local-mode playback/queue side effects. Splitting these would just
+  // reintroduce that same false assumption.
+  test('3+4. Clicking Play on a result starts playback, and the queue page reflects it', async ({ authedPage }) => {
+    const sidebar = new SidebarPO(authedPage);
     const searchPage = new SearchPagePO(authedPage);
 
-    // Re-run a targeted search so we have a stable row to click.
+    await sidebar.navigateTo('search');
     await searchPage.enterQuery(`test:${SONG_1.id}`);
     await searchPage.submit();
     const row = searchResultRow(authedPage, SONG_1.title);
@@ -108,11 +122,9 @@ test.describe('search and queue', () => {
         { timeout: 5_000, message: 'Player bar did not reflect an `isPlaying` state' },
       )
       .toBe('playing');
-  });
 
-  test('4. Queue page shows the just-played track', async ({ authedPage }) => {
-    const sidebar = new SidebarPO(authedPage);
-
+    // Same page instance, so the client-side state survives this navigation
+    // (unlike a fresh `authedPage` in a separate test).
     await sidebar.navigateTo('queue');
     await expect(authedPage).toHaveURL(/\/queue/);
 
@@ -123,7 +135,9 @@ test.describe('search and queue', () => {
     });
   });
 
-  test('5. Adding a second track from search shows up in the queue', async ({ authedPage }) => {
+  test('5+6. Adding a second track shows up in the queue, then removing it shrinks the queue', async ({
+    authedPage,
+  }) => {
     const sidebar = new SidebarPO(authedPage);
     const searchPage = new SearchPagePO(authedPage);
     const queuePage = new QueuePagePO(authedPage);
@@ -149,15 +163,12 @@ test.describe('search and queue', () => {
       timeout: 5_000,
     });
 
-    // And that the queue now has at least one item.
-    await expect.poll(async () => queuePage.count(), { timeout: 5_000 }).toBeGreaterThanOrEqual(1);
-  });
-
-  test('6. Removing an item from the queue shrinks it', async ({ authedPage }) => {
-    const queuePage = new QueuePagePO(authedPage);
-
+    // And that the queue now has at least one item. Poll rather than a bare
+    // synchronous count(): the queue-item testid can commit a moment after
+    // the title text becomes visible (which itself retries), so an immediate
+    // count() right after can still race and read 0.
+    await expect.poll(async () => queuePage.count(), { timeout: 5_000 }).toBeGreaterThan(0);
     const before = await queuePage.count();
-    expect(before).toBeGreaterThan(0);
 
     // Hover the row so the remove button becomes visible, then click.
     const firstItem = queuePage.queueItems().first();
@@ -181,12 +192,15 @@ test.describe('search and queue', () => {
   });
 
   test('7. Clear queue empties the list', async ({ authedPage }) => {
+    const sidebar = new SidebarPO(authedPage);
     const queuePage = new QueuePagePO(authedPage);
+
+    // Fresh page load per test (see test 2) — navigate back to the queue first.
+    await sidebar.navigateTo('queue');
 
     // Ensure there is at least something to clear — add a track back.
     const beforeClear = await queuePage.count();
     if (beforeClear === 0) {
-      const sidebar = new SidebarPO(authedPage);
       const searchPage = new SearchPagePO(authedPage);
       await sidebar.navigateTo('search');
       await searchPage.enterQuery(`test:${SONG_2.id}`);

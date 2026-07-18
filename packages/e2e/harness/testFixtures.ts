@@ -31,7 +31,11 @@ export interface E2EWorkerFixtures {
 }
 
 export const test = base.extend<E2EFixtures, E2EWorkerFixtures>({
-  apiClient: async (_fixtures, use) => {
+  // Playwright inspects this function's source text for a destructuring
+  // pattern to resolve fixture dependencies — `{}` is required here even
+  // though nothing is destructured; renaming it breaks fixture resolution.
+  // oxlint-disable-next-line no-empty-pattern
+  apiClient: async ({}, use) => {
     const client = new ApiClient({ baseUrl: BOT_URL });
     await use(client);
   },
@@ -63,7 +67,8 @@ export const test = base.extend<E2EFixtures, E2EWorkerFixtures>({
   },
 
   resetState: [
-    async (_fixtures, use) => {
+    // oxlint-disable-next-line no-empty-pattern
+    async ({}, use) => {
       const client = new ApiClient({ baseUrl: BOT_URL });
       await client.resetTestState();
       await client.seedTestState();

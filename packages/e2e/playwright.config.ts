@@ -63,7 +63,10 @@ export default defineConfig({
       stdout: 'pipe',
       stderr: 'pipe',
       env: {
-        VITE_BOT_PORT: String(BOT_PORT),
+        // vite.config.ts's dev proxy for /api and /ws reads this — not
+        // VITE_BOT_PORT, which nothing in the desktop app actually consumes.
+        VITE_DEV_PROXY_TARGET: `http://localhost:${BOT_PORT}`,
+        VITE_DEV_PORT: String(VITE_PORT),
       },
     },
   ],

@@ -11,11 +11,14 @@ export class PlayerBarPO {
 
   readonly root = () => this.page.locator('[data-testid="player-bar"]').or(this.page.locator('footer')).first();
 
+  // Play/pause is a single combined toggle button (data-testid="player-play"
+  // in both states) — its aria-label flips between "Play"/"Pause" rather
+  // than there being two separate elements.
   readonly playButton = () =>
     this.page.locator('[data-testid="player-play"]').or(this.page.getByRole('button', { name: /^play$/i }));
 
   readonly pauseButton = () =>
-    this.page.locator('[data-testid="player-pause"]').or(this.page.getByRole('button', { name: /^pause$/i }));
+    this.page.locator('[data-testid="player-play"]').or(this.page.getByRole('button', { name: /^pause$/i }));
 
   readonly skipButton = () =>
     this.page.locator('[data-testid="player-skip"]').or(this.page.getByRole('button', { name: /next|skip/i }));
@@ -86,11 +89,16 @@ export class PlayerBarPO {
   }
 
   async isPlaying(): Promise<boolean> {
-    // When playing, the pause button is visible; when paused/stopped, the
-    // play button is visible. Tolerate either DOM approach.
-    const pauseVisible = await this.pauseButton()
+    // The play/pause control is one combined toggle button whose aria-label
+    // flips between "Play" and "Pause" — it's always visible, so visibility
+    // can't distinguish state; the label can.
+    const label = await this.playButton()
+      .getAttribute('aria-label')
+      .catch(() => null);
+    if (label) return /pause/i.test(label);
+    // Fallback for a two-element implementation, if this ever changes back.
+    return this.pauseButton()
       .isVisible()
       .catch(() => false);
-    return pauseVisible;
   }
 }

@@ -44,6 +44,12 @@ export class PlaylistDetailPagePO {
       .or(this.page.getByPlaceholder(/search.*add|add.*track/i));
     await input.fill(query);
     await input.press('Enter');
+    // Submitting the query only searches — it doesn't add anything. The
+    // first matching result still needs its own "add to playlist" button
+    // clicked to actually add the track.
+    const firstResultAddButton = this.page.locator('[data-testid="playlist-add-track-result"]').first();
+    await firstResultAddButton.waitFor({ state: 'visible' });
+    await firstResultAddButton.click();
   }
 
   async getTrackTitles(): Promise<string[]> {

@@ -4,7 +4,7 @@
  */
 import type { Page } from '@playwright/test';
 
-export type ThemeOption = 'light' | 'dark' | 'system' | 'amoled';
+export type ThemeOption = 'light' | 'dark' | 'system';
 
 export class SettingsPagePO {
   constructor(private readonly page: Page) {}
@@ -24,20 +24,30 @@ export class SettingsPagePO {
     this.page.locator('[data-testid="settings-save"]').or(this.page.getByRole('button', { name: /^save|apply$/i }));
 
   async setTheme(theme: ThemeOption): Promise<void> {
-    const select = this.themeSelect();
-    // Try <select>-style first, then fall back to clicking a labelled option.
-    const tag = await select.evaluate((el) => el.tagName.toLowerCase()).catch(() => 'unknown');
+    const container = this.themeSelect();
+    // Try <select>-style first (in case a future implementation uses one),
+    // then fall back to the real ThemeSelector.tsx UI: a button grid with no
+    // select/listbox semantics — click the button labelled "Light"/"Dark"/"System".
+    const tag = await container.evaluate((el) => el.tagName.toLowerCase()).catch(() => 'unknown');
     if (tag === 'select') {
-      await select.selectOption(theme);
+      await container.selectOption(theme);
     } else {
-      await select.click();
-      await this.page.getByRole('option', { name: new RegExp(theme, 'i') }).click();
+      await container.getByRole('button', { name: new RegExp(`^${theme}$`, 'i') }).click();
     }
   }
 
   async getTheme(): Promise<string> {
-    const select = this.themeSelect();
-    return (await select.inputValue().catch(() => null)) ?? (await select.textContent()) ?? '';
+    const container = this.themeSelect();
+    const value = await container.inputValue().catch(() => null);
+    if (value) return value;
+    // Button-grid UI: the active mode button has no ARIA "selected" state,
+    // so match ThemeSelector.tsx's own convention for the active button.
+    for (const theme of ['light', 'dark', 'system'] as const) {
+      const button = container.getByRole('button', { name: new RegExp(`^${theme}$`, 'i') });
+      const className = await button.getAttribute('class').catch(() => null);
+      if (className?.includes('border-[var(--accent)]/40')) return theme;
+    }
+    return '';
   }
 
   async setMusicFolder(path: string): Promise<void> {
