@@ -17,6 +17,7 @@ import { CustomYouTubeExtractor } from '../extractors/YouTubeExtractor.js';
 import { SpotifyExtractor } from '../extractors/SpotifyExtractor.js';
 import { SoundCloudExtractor } from '../extractors/SoundCloudExtractor.js';
 import { AppleMusicExtractor } from '../extractors/AppleMusicExtractor.js';
+import { isE2EMode, FixtureExtractor } from '../testMode/index.js';
 import { ValidationError, NotFoundError } from '../helpers/errorHandler';
 import { expressRouter } from '../helpers/expressRouter';
 import { LogLevel } from '../types/logging';
@@ -243,11 +244,11 @@ router.post('/search', async (req: Request, res: Response) => {
       applemusic: AppleMusicExtractor.identifier,
     };
 
-    // For 'auto', default to YouTube search (most universal)
-    const identifiers =
-      engine === 'auto'
-        ? [CustomYouTubeExtractor.identifier]
-        : [engineToIdentifier[engine] ?? CustomYouTubeExtractor.identifier];
+    // For 'auto', default to YouTube search (most universal) — except in E2E
+    // mode, where the real platform extractors aren't registered at all
+    // (initializePlayer swaps in FixtureExtractor instead; see player.ts).
+    const autoIdentifier = isE2EMode() ? FixtureExtractor.identifier : CustomYouTubeExtractor.identifier;
+    const identifiers = engine === 'auto' ? [autoIdentifier] : [engineToIdentifier[engine] ?? autoIdentifier];
 
     let tracks: (DashboardTrack & { platform?: string })[] = [];
     let playlistData: { title: string; description: string; thumbnail: string; url: string } | null = null;
@@ -1090,11 +1091,25 @@ router.get('/stream', async (req: Request, res: Response) => {
     // First try to resolve via discord-player to get the actual track URL
     const player = useDefaultPlayer();
     const searchResult = await player.search(trackUrl, { searchEngine: QueryType.AUTO });
+    const resolvedTrack = searchResult.tracks[0];
+
+    // Fixture tracks (E2E mode) use a non-fetchable placeholder `url`
+    // (e.g. "test:song-1") — the actual audio comes from the extractor's
+    // own stream() method (a Readable over a bundled silent WAV), not an
+    // HTTP resource. Every other branch here proxies a real network fetch,
+    // which fails immediately for these.
+    if (isE2EMode() && resolvedTrack?.extractor?.identifier === FixtureExtractor.identifier) {
+      const stream = await resolvedTrack.extractor.stream(resolvedTrack);
+      res.writeHead(200, { 'Content-Type': 'audio/wav', 'Accept-Ranges': 'bytes' });
+      (stream as fs.ReadStream).pipe(res);
+      enhancedLogger.system(LogLevel.INFO, 'Streamed fixture track (E2E mode)', { url: trackUrl });
+      return;
+    }
 
     let resolvedUrl = trackUrl;
-    if (searchResult.tracks.length > 0) {
+    if (resolvedTrack) {
       // Try to get a streamable URL from the first track
-      resolvedUrl = searchResult.tracks[0].url || trackUrl;
+      resolvedUrl = resolvedTrack.url || trackUrl;
     }
 
     const proxyRes = await fetch(resolvedUrl, {
