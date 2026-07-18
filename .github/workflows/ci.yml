@@ -148,6 +148,13 @@ jobs:
       - name: Build shared package
         run: pnpm --filter discord-dashboard-shared build
 
+      - name: Build bot sidecar resources
+        # tauri.conf.json declares the sidecar as an externalBin/resources
+        # requirement checked at compile time (in tauri-build's build
+        # script), not just when actually bundling installers - even a
+        # --no-bundle smoke build fails without this having run first.
+        run: pnpm --filter discord-bot run build:sidecar
+
       - name: Build Tauri app (debug, no installers)
         # A real `tauri build` (not just build:web) - this is what actually
         # catches things a frontend-only build can't, e.g. the npm package
