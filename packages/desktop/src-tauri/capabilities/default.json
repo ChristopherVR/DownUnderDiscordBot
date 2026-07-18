@@ -23,6 +23,8 @@
     "shell:allow-open",
     "shell:default",
     "dialog:default",
-    "dialog:allow-open"
+    "dialog:allow-open",
+    "updater:default",
+    "process:default"
   ]
 }

@@ -36,6 +36,17 @@ export default function ToastContainer() {
           >
             <Icon size={16} className={colors[t.type]} />
             <span className="text-[13px] text-t-secondary">{t.message}</span>
+            {t.action && (
+              <button
+                onClick={() => {
+                  t.action?.onClick();
+                  removeToast(t.id);
+                }}
+                className="btn-primary ml-1 whitespace-nowrap px-2.5 py-1 text-[12px]"
+              >
+                {t.action.label}
+              </button>
+            )}
             <button
               onClick={() => removeToast(t.id)}
               className="ml-2 text-t-ghost transition-colors hover:text-t-secondary"

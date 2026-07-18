@@ -10,6 +10,8 @@ export { startOAuth, registerDeepLinkAuth, clientKind } from './authFlow';
 export type { ClientKind } from './authFlow';
 export { libraryPlatform } from './library';
 export type { ScannedTrack, FolderChangeEvent } from './library';
+export { updaterPlatform } from './updater';
+export type { UpdateInfo, UpdateProgress } from './updater';
 
 export const platform = {
   isTauri: isTauri(),
@@ -17,4 +19,5 @@ export const platform = {
   canDragOsFiles: isTauri(),
   canPickClientFolder: isTauri(),
   showCustomTitlebar: isTauri(),
+  canCheckForUpdates: isTauri(),
 };

@@ -19,7 +19,8 @@ import SettingsPage from '@/pages/SettingsPage';
 import CommandLogsPage from '@/pages/CommandLogsPage';
 import LogsPage from '@/pages/LogsPage';
 import AuthCallbackPage from '@/pages/AuthCallbackPage';
-import { registerDeepLinkAuth, platform } from '@/platform';
+import { registerDeepLinkAuth, updaterPlatform, platform } from '@/platform';
+import { toast } from '@/stores/useToastStore';
 import { MessageSquare } from 'lucide-react';
 
 export default function App() {
@@ -44,6 +45,20 @@ export default function App() {
   useEffect(() => {
     restoreBotConnection();
   }, [restoreBotConnection]);
+
+  // Check for an app update on startup (no-op in browser mode)
+  useEffect(() => {
+    updaterPlatform.checkForUpdate().then((update) => {
+      if (!update) return;
+      toast.info(`Update v${update.version} available`, {
+        label: 'Install & Restart',
+        onClick: async () => {
+          await updaterPlatform.downloadAndInstall();
+          await updaterPlatform.relaunch();
+        },
+      });
+    });
+  }, []);
 
   // Tauri deep-link auth listener. No-op in browser mode (web uses the
   // `/auth/callback` route below to pick the token out of the URL).

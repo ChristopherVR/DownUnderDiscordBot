@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useBotStore } from '@/stores/useBotStore';
 import ThemeSelector from '@/components/ThemeSelector';
-import { Save, RefreshCw, Server, Bot, LogIn, LogOut, Loader2, Crown, Palette } from 'lucide-react';
+import { platform, updaterPlatform } from '@/platform';
+import { toast } from '@/stores/useToastStore';
+import { Save, RefreshCw, Server, Bot, LogIn, LogOut, Loader2, Crown, Palette, DownloadCloud } from 'lucide-react';
 
 interface Guild {
   id: string;
@@ -29,6 +31,7 @@ export default function SettingsPage() {
 
   const [host, setHost] = useState(connection.host);
   const [port, setPort] = useState(connection.port.toString());
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   // Fetch guilds when bot connects
   useEffect(() => {
@@ -39,6 +42,26 @@ export default function SettingsPage() {
     setConnection(host, parseInt(port, 10) || 3001);
     disconnect();
     setTimeout(() => connect(), 200);
+  };
+
+  const handleCheckForUpdates = async () => {
+    setCheckingUpdate(true);
+    try {
+      const update = await updaterPlatform.checkForUpdate();
+      if (!update) {
+        toast.success("You're up to date");
+        return;
+      }
+      toast.info(`Update v${update.version} available`, {
+        label: 'Install & Restart',
+        onClick: async () => {
+          await updaterPlatform.downloadAndInstall();
+          await updaterPlatform.relaunch();
+        },
+      });
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   return (
@@ -235,6 +258,29 @@ export default function SettingsPage() {
           </div>
         )}
       </section>
+
+      {/* Application / Updates */}
+      {platform.canCheckForUpdates && (
+        <section className="card-glass mb-6 rounded-xl !p-6">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500/20 to-blue-400/10">
+              <DownloadCloud size={18} className="text-sky-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-t-primary">Application</h2>
+              <p className="text-[11px] text-t-faint">Check for a newer version of the app</p>
+            </div>
+          </div>
+          <button
+            onClick={handleCheckForUpdates}
+            disabled={checkingUpdate}
+            className="btn-glass flex items-center gap-2 text-xs disabled:opacity-50"
+          >
+            {checkingUpdate ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            Check for Updates
+          </button>
+        </section>
+      )}
     </div>
   );
 }

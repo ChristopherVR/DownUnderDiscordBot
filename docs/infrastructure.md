@@ -355,10 +355,12 @@ curl http://localhost:3001/api/health
 
 Set these in your GitHub repository under Settings > Secrets and variables > Actions:
 
-| Secret         | Used By         | Description                     |
-| -------------- | --------------- | ------------------------------- |
-| `NPM_TOKEN`    | release-bot     | npm publish token (provenance)  |
-| `GITHUB_TOKEN` | release-desktop | Auto-provided by GitHub Actions |
+| Secret                               | Used By         | Description                                                                          |
+| ------------------------------------ | --------------- | ------------------------------------------------------------------------------------ |
+| `NPM_TOKEN`                          | release-bot     | npm publish token (provenance)                                                       |
+| `GITHUB_TOKEN`                       | release-desktop | Auto-provided by GitHub Actions                                                      |
+| `TAURI_SIGNING_PRIVATE_KEY`          | release-desktop | Auto-updater signing key, generated via `tauri signer generate` (not yet configured) |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | release-desktop | Password for the signing key above (not yet configured)                              |
 
 The Azure secrets below (`ACR_LOGIN_SERVER`, `ACR_USERNAME`, `ACR_PASSWORD`,
 `AZURE_CREDENTIALS`, `AZURE_RESOURCE_GROUP`) are only needed if you re-add a

@@ -581,6 +581,22 @@ git push origin v2.0.0
 
 This creates a draft GitHub Release with all platform installers attached.
 
+**The release must be manually published before the auto-updater can see it.**
+`releases/latest/download/latest.json` (the endpoint the in-app updater polls)
+only resolves published, non-prerelease releases - a draft is invisible to it.
+After CI finishes, go to the repo's Releases page and click Publish, or no
+user's app will detect the new version.
+
+### Auto-Updates
+
+The desktop app checks for updates on startup and via a "Check for Updates"
+button in Settings, using Tauri's official updater plugin
+(`@tauri-apps/plugin-updater` / `tauri-plugin-updater`). Update artifacts are
+signed; the private signing key is stored as the `TAURI_SIGNING_PRIVATE_KEY`
+/ `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` GitHub secrets (see
+[docs/infrastructure.md](infrastructure.md)), and the corresponding public key
+lives in `tauri.conf.json`'s `plugins.updater.pubkey`.
+
 ---
 
 ## Project Structure
