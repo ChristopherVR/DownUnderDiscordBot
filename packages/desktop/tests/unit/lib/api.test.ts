@@ -301,12 +301,12 @@ describe('api', () => {
 
     it('getLocalStreamUrl encodes path parameter', () => {
       const url = api.getLocalStreamUrl('/music/my song.mp3');
-      expect(url).toBe('http://localhost:3000/api/music/stream/local?path=%2Fmusic%2Fmy%20song.mp3');
+      expect(url).toBe('http://localhost:3000/api/music/stream/local?path=%2Fmusic%2Fmy+song.mp3');
     });
 
     it('getUploadStreamUrl encodes fileName parameter', () => {
       const url = api.getUploadStreamUrl('song file.mp3');
-      expect(url).toBe('http://localhost:3000/api/music/stream?filePath=song%20file.mp3');
+      expect(url).toBe('http://localhost:3000/api/music/stream?filePath=song+file.mp3');
     });
 
     it('getVideoStreamUrl returns same format as getLocalStreamUrl', () => {

@@ -43,6 +43,7 @@ const { mockApi, mockWsService, localStorageMap } = vi.hoisted(() => {
     disconnect: vi.fn(),
     on: vi.fn(() => () => {}),
     send: vi.fn(),
+    setAuthToken: vi.fn(),
     connected: false,
   };
   return { mockApi: _mockApi, mockWsService: _mockWsService, localStorageMap: _localStorageMap };
@@ -63,6 +64,8 @@ vi.stubGlobal('localStorage', {
 vi.mock('@/lib/api', () => ({
   api: mockApi,
   setApiBaseUrl: vi.fn(),
+  setAuthFailureHandler: vi.fn(),
+  setAuthToken: vi.fn(),
 }));
 
 vi.mock('@/lib/ws', () => ({
@@ -162,7 +165,7 @@ describe('useBotStore', () => {
 
     it('connect calls wsService.connect and registers event handlers', () => {
       useBotStore.getState().connect();
-      expect(mockWsService.connect).toHaveBeenCalledWith('localhost', 3000);
+      expect(mockWsService.connect).toHaveBeenCalledWith('localhost', 3000, null);
       expect(mockWsService.on).toHaveBeenCalledWith('connection', expect.any(Function));
       expect(mockWsService.on).toHaveBeenCalledWith('player_state', expect.any(Function));
       expect(mockWsService.on).toHaveBeenCalledWith('queue_update', expect.any(Function));

@@ -26,6 +26,7 @@ vi.mock('../../../src/helpers/logger', () => ({
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
+    fatal: vi.fn(),
     child: vi.fn().mockReturnThis(),
   }),
   logger: {
@@ -33,6 +34,7 @@ vi.mock('../../../src/helpers/logger', () => ({
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
+    fatal: vi.fn(),
   },
 }));
 

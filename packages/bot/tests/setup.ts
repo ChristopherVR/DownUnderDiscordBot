@@ -99,3 +99,4 @@ vi.mock('fs', async () => {
 (process.env as Record<string, string>).NODE_ENV = 'test';
 (process.env as Record<string, string>).DISCORD_TOKEN = 'test-token';
 (process.env as Record<string, string>).PORT = '3001';
+(process.env as Record<string, string>).JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long';
