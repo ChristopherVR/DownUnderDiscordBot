@@ -6,6 +6,9 @@ import { promises as fs } from 'fs';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import http from 'http';
+import type { IncomingMessage } from 'http';
+
+type IncomingMessageWithAuth = IncomingMessage & { auth?: { userId: string; username?: string } };
 import { v4 as uuid } from 'uuid';
 import { fileURLToPath } from 'url';
 import type { Logger } from 'pino';
@@ -13,16 +16,27 @@ import { logger, createLogger, onLogEntry } from './helpers/logger';
 import uploadRoutes from './routes/upload';
 import musicRoutes from './routes/music';
 import playlistRoutes from './routes/playlists';
-import authRoutes, { setBotGuildIds, setBotClient } from './routes/auth';
+import libraryRoutes from './routes/library';
+import authRoutes, {
+  setBotGuildIds,
+  setBotClient,
+  requireAuth,
+  requireGuildAccess,
+  verifyJwtToken,
+} from './routes/auth';
 import { initializeCommandRoutes } from './routes/commands';
 import { initializeChannelRoutes } from './routes/channels';
 import { createLogsRouter } from './routes/logs';
 import { ensureUploadDir } from './helpers/fileUpload';
+import { guildLockMiddleware } from './helpers/guildLock';
 import { WebSocketManager } from './helpers/websocket';
 import { tErrors, initI18n } from 'discord-dashboard-shared/localization';
 
 import { LogMessage } from './types';
 import { startBot } from './bot';
+import { isE2EMode, registerTestRoutes } from './testMode/index';
+import { getDatabase } from './database/client';
+import { getPlayerStateManager } from './helpers/discord/player';
 
 // index.ts (or the first file that runs)
 // import ffmpeg from '@ffmpeg-installer/ffmpeg';
@@ -87,6 +101,24 @@ async function main() {
   app.use(cors());
   app.use(express.json());
 
+  // Content-Security-Policy for browser (web-mode) clients. Tauri enforces its
+  // own CSP from tauri.conf.json and ignores this header.
+  app.use((_req, res, next) => {
+    res.setHeader(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "connect-src 'self' ws: wss: https://discord.com https://cdn.discordapp.com",
+        "img-src 'self' https: data:",
+        "media-src 'self' blob:",
+        "style-src 'self' 'unsafe-inline'",
+        "script-src 'self' 'unsafe-inline'",
+        "font-src 'self' data:",
+      ].join('; '),
+    );
+    next();
+  });
+
   app.get('/api/locales/:lng/:ns', async (req, res) => {
     const { lng, ns } = req.params;
     const namespace = ns.replace(/\.json$/, '');
@@ -122,7 +154,10 @@ async function main() {
     message: string,
     source?: string,
     metadata?: Record<string, unknown>,
+    guildId?: string,
   ) {
+    const resolvedGuildId =
+      guildId ?? (metadata && typeof metadata.guildId === 'string' ? (metadata.guildId as string) : undefined);
     const log: LogMessage = {
       id: uuid(),
       category,
@@ -130,6 +165,7 @@ async function main() {
       message,
       ts: Date.now(),
       source,
+      guildId: resolvedGuildId,
       metadata,
     };
     if (category === 'audit') auditLogs.unshift(log);
@@ -144,8 +180,44 @@ async function main() {
   // WebSocket setup
   // ------------------------------
   const server = http.createServer(app);
-  const wss = new WebSocketServer({ server, path: '/ws' });
+  const wss = new WebSocketServer({ noServer: true });
   const wsManager = new WebSocketManager(wss);
+
+  // Manual HTTP upgrade handling so we can verify the JWT before the WS
+  // handshake completes. The token is expected as a `?token=` query parameter
+  // on the upgrade request (browsers cannot set Authorization headers on WS).
+  server.on('upgrade', (req, socket, head) => {
+    if (!req.url?.startsWith('/ws')) {
+      socket.destroy();
+      return;
+    }
+
+    const rejectUnauthorized = (body?: string) => {
+      const message = body ?? 'Unauthorized';
+      socket.write(
+        `HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nContent-Length: ${Buffer.byteLength(message)}\r\nConnection: close\r\n\r\n${message}`,
+      );
+      socket.destroy();
+    };
+
+    try {
+      const parsed = new URL(req.url, 'http://localhost');
+      const token = parsed.searchParams.get('token');
+      if (!token) {
+        rejectUnauthorized('Missing token');
+        return;
+      }
+      const payload = verifyJwtToken(token);
+      (req as IncomingMessageWithAuth).auth = { userId: payload.userId, username: payload.username };
+
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        wss.emit('connection', ws, req);
+      });
+    } catch (err) {
+      wsLog.warn({ err }, 'WebSocket upgrade rejected: invalid token');
+      rejectUnauthorized('Invalid or expired token');
+    }
+  });
 
   function broadcastLog(data: { type: 'log'; payload: LogMessage }) {
     const logEntry = {
@@ -161,6 +233,7 @@ async function main() {
     const level = entry.level as string;
     const msg = String(entry.msg ?? '');
     const context = (entry.context as string) ?? 'system';
+    const entryGuildId = typeof entry.guildId === 'string' ? (entry.guildId as string) : undefined;
 
     // Map pino level label to our level type
     let logLevel: 'info' | 'warn' | 'error' | 'debug' = 'info';
@@ -173,7 +246,7 @@ async function main() {
     if (context.toLowerCase().includes('command')) category = 'command';
     else if (context.toLowerCase().includes('audit')) category = 'audit';
 
-    pushLog(category, logLevel, msg, context, entry as Record<string, unknown>);
+    pushLog(category, logLevel, msg, context, entry as Record<string, unknown>, entryGuildId);
   });
 
   // ------------------------------
@@ -212,7 +285,7 @@ async function main() {
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
   // Guild voice channels endpoint
-  app.get('/api/guild/:guildId/voice-channels', (req, res) => {
+  app.get('/api/guild/:guildId/voice-channels', requireAuth, requireGuildAccess, (req, res) => {
     const guildId = String(req.params.guildId);
     const guild = botCtx.client.guilds.cache.get(guildId);
     if (!guild) {
@@ -231,7 +304,7 @@ async function main() {
   });
 
   // Bot management endpoint — status info
-  app.get('/api/bot/status', (_req, res) => {
+  app.get('/api/bot/status', requireAuth, (_req, res) => {
     const client = botCtx.client;
     res.json({
       online: client.isReady(),
@@ -243,7 +316,7 @@ async function main() {
   });
 
   // Comprehensive dashboard endpoint — aggregates all status info
-  app.get('/api/dashboard', async (_req, res) => {
+  app.get('/api/dashboard', requireAuth, async (_req, res) => {
     const client = botCtx.client;
     const wsStats = wsManager.getStats();
 
@@ -394,8 +467,8 @@ async function main() {
   });
 
   // Force-stop an instance (admin dashboard action)
-  app.post('/api/instances/:instanceId/force-stop', async (req, res) => {
-    const { instanceId } = req.params;
+  app.post('/api/instances/:instanceId/force-stop', requireAuth, async (req, res) => {
+    const instanceId = String(req.params.instanceId);
 
     try {
       // Force-stop in every guild that contains this instance
@@ -423,7 +496,7 @@ async function main() {
   });
 
   // Ping a specific bot instance (or all) via the state channel and wait for PONG(s)
-  app.post('/api/instances/ping', async (req, res) => {
+  app.post('/api/instances/ping', requireAuth, async (req, res) => {
     const { instanceId, timeoutMs } = req.body ?? {};
 
     try {
@@ -453,7 +526,7 @@ async function main() {
   app.use('/api/auth', authRoutes);
 
   // Remove all timed-out / stale instances (admin dashboard action)
-  app.delete('/api/instances/stale', async (_req, res) => {
+  app.delete('/api/instances/stale', requireAuth, async (_req, res) => {
     try {
       const result = await state.removeTimedOutInstances();
       res.json({ success: true, removed: result.removed });
@@ -509,39 +582,68 @@ async function main() {
   });
 
   // File upload routes
-  app.use('/api/upload', uploadRoutes);
+  app.use('/api/upload', requireAuth, uploadRoutes);
 
-  // Music player routes
-  app.use('/api/music', musicRoutes);
+  // Music player routes — every endpoint is guild-scoped via x-guild-id header / guildId body
+  // Mutating music requests are serialized per-guild via guildLockMiddleware
+  // so rapid /play or /skip calls on the same guild don't race each other.
+  // GET requests are read-only — skip the lock to keep status polling cheap.
+  // Search is also exempt from guild-access — it queries external services,
+  // not a specific guild's player.
+  app.use(
+    '/api/music',
+    requireAuth,
+    (req, res, next) => {
+      // Skip guild-access check for endpoints that aren't guild-scoped:
+      // - /search queries external services
+      // - /stream proxies audio for desktop playback
+      if (req.path === '/search' || req.path.startsWith('/stream')) {
+        next();
+        return;
+      }
+      requireGuildAccess(req, res, next);
+    },
+    (req, res, next) => {
+      if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+        next();
+        return;
+      }
+      guildLockMiddleware(req, res, next);
+    },
+    musicRoutes,
+  );
 
-  // Playlist routes
-  app.use('/api/playlists', playlistRoutes);
+  // Playlist routes (user-scoped; no guild)
+  app.use('/api/playlists', requireAuth, playlistRoutes);
 
-  // Command system routes
+  // Library routes — server-side filesystem scans used by web-mode UI
+  app.use('/api/library', requireAuth, libraryRoutes);
+
+  // Command system routes — slash-command execution is guild-scoped
   serverLog.info('Mounting command routes');
-  app.use('/api/commands', initializeCommandRoutes(wsManager, botCtx.client));
+  app.use('/api/commands', requireAuth, initializeCommandRoutes(wsManager, botCtx.client));
   serverLog.info('Command routes ready');
 
   // Channel (chat) routes
   serverLog.info('Mounting channel routes');
-  app.use('/api/channels', initializeChannelRoutes(botCtx.client, wsManager));
+  app.use('/api/channels', requireAuth, initializeChannelRoutes(botCtx.client, wsManager));
   serverLog.info('Channel routes ready');
 
   // Logs routes
-  app.use('/api/logs', createLogsRouter(auditLogs, commandLogs));
+  app.use('/api/logs', requireAuth, createLogsRouter(auditLogs, commandLogs));
 
   // WebSocket management endpoints
-  app.get('/api/websocket/stats', (_req, res) => {
+  app.get('/api/websocket/stats', requireAuth, (_req, res) => {
     const stats = wsManager.getStats();
     res.json(stats);
   });
 
-  app.get('/api/websocket/clients', (_req, res) => {
+  app.get('/api/websocket/clients', requireAuth, (_req, res) => {
     const clients = wsManager.getConnectedClients();
     res.json({ clients });
   });
 
-  app.post('/api/websocket/broadcast', (req, res) => {
+  app.post('/api/websocket/broadcast', requireAuth, (req, res) => {
     const { type, payload } = req.body;
 
     try {
@@ -578,32 +680,67 @@ async function main() {
   });
 
   // Instances / State management
-  app.get('/api/state', async (_req, res) => res.json(await state.getState()));
-  app.get('/api/state/:guildId/instances', async (req, res) => res.json(await state.getGuildState(req.params.guildId)));
-  app.post('/api/state/:guildId/active', async (req, res) => {
+  app.get('/api/state', requireAuth, async (_req, res) => res.json(await state.getState()));
+  app.get('/api/state/:guildId/instances', requireAuth, requireGuildAccess, async (req, res) =>
+    res.json(await state.getGuildState(String(req.params.guildId))),
+  );
+  app.post('/api/state/:guildId/active', requireAuth, requireGuildAccess, async (req, res) => {
     const { instanceId } = req.body as { instanceId: string };
-    const g = await state.setActiveInstance(req.params.guildId, instanceId);
+    const g = await state.setActiveInstance(String(req.params.guildId), instanceId);
     res.json(g);
   });
-  app.post('/api/state/:guildId/online', async (req, res) => {
+  app.post('/api/state/:guildId/online', requireAuth, requireGuildAccess, async (req, res) => {
     const { instanceId, online } = req.body as {
       instanceId: string;
       online: boolean;
     };
-    const g = await state.setOnline(req.params.guildId, {
+    const g = await state.setOnline(String(req.params.guildId), {
       instanceId,
       online,
       isActive: false,
     });
     res.json(g);
   });
-  app.post('/api/state/ping', async (req, res) => {
+  app.post('/api/state/ping', requireAuth, async (req, res) => {
     const { targetInstanceId } = req.body as { targetInstanceId?: string };
     const nonce = await state.sendPing(targetInstanceId);
     res.json({ nonce });
   });
 
-  // Static file serving removed - dashboard is now a Tauri desktop app
+  // SPA static serving — the built desktop bundle is served same-origin so
+  // the web UI and the API share a host. Disable by setting DISABLE_SPA=1.
+  if (process.env.DISABLE_SPA !== '1') {
+    const spaDir = process.env.SPA_DIST_DIR ?? path.resolve(projectRoot, 'packages', 'desktop', 'dist');
+    try {
+      await fs.access(path.join(spaDir, 'index.html'));
+      app.use(express.static(spaDir, { index: false }));
+      // SPA history fallback — anything that isn't an API/WS route renders index.html.
+      app.get(/^\/(?!api\/|ws(\/|$)).*/, (_req, res) => {
+        res.sendFile(path.join(spaDir, 'index.html'));
+      });
+      serverLog.info({ spaDir }, 'Serving SPA assets from dist');
+    } catch {
+      serverLog.info({ spaDir }, 'No SPA build found — skipping static serving (run `pnpm build:desktop`)');
+    }
+  }
+
+  // ------------------------------
+  // E2E test-mode routes (404 unless E2E=true)
+  // Mounted after all regular routes, before the server starts listening.
+  // ------------------------------
+  if (isE2EMode()) {
+    try {
+      registerTestRoutes(app, {
+        prisma: getDatabase() as unknown as Parameters<typeof registerTestRoutes>[1]['prisma'],
+        player: botCtx.player,
+        client: botCtx.client,
+        wsManager,
+        playerStateManager: getPlayerStateManager(),
+      });
+    } catch (err) {
+      serverLog.error({ err }, 'Failed to register E2E test routes');
+    }
+  }
 
   const PORT = Number(process.env.PORT) || 3000;
   serverLog.info('Starting HTTP server');

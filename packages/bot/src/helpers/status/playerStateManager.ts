@@ -84,8 +84,10 @@ export class PlayerStateManager {
   }
 
   /**
-   * Start a 1-second interval that broadcasts the current playback position
-   * so the desktop UI can keep its progress bar in sync.
+   * Start a 1-second interval that broadcasts *only* the current playback
+   * position so the desktop UI can keep its progress bar in sync. Coarse
+   * state (track, queue, volume, loop) is emitted via `updatePlayerState`
+   * on discrete events — not on every tick.
    */
   private startPositionBroadcast(guildId: string): void {
     this.stopPositionBroadcast(guildId);
@@ -95,7 +97,17 @@ export class PlayerStateManager {
         this.stopPositionBroadcast(guildId);
         return;
       }
-      this.updatePlayerState(guildId);
+      const positionMs = queue.node.getTimestamp()?.current?.value ?? 0;
+      // Cache the latest position on our tracked state so polled reads stay fresh.
+      const state = this.guildStates.get(guildId);
+      if (state) {
+        state.position = positionMs;
+        state.lastUpdated = Date.now();
+      }
+      this.wsManager?.broadcastPlayerPosition({
+        guildId,
+        position: Math.floor(positionMs / 1000),
+      });
     }, 1000);
     this.positionIntervals.set(guildId, interval);
   }

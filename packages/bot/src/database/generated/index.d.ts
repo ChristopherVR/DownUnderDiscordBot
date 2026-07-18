@@ -168,7 +168,7 @@ export class PrismaClient<
    */
   $transaction<P extends Prisma.PrismaPromise<any>[]>(
     arg: [...P],
-    options?: { isolationLevel?: Prisma.TransactionIsolationLevel },
+    options?: { maxWait?: number; timeout?: number; isolationLevel?: Prisma.TransactionIsolationLevel },
   ): $Utils.JsPromise<runtime.Types.Utils.UnwrapTuple<P>>;
 
   $transaction<R>(
@@ -305,8 +305,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact;
 
   /**
-   * Prisma Client JS version: 7.5.0
-   * Query Engine version: 280c870be64f457428992c43c1f6d557fab6e29e
+   * Prisma Client JS version: 7.8.0
+   * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
    */
   export type PrismaVersion = {
     client: string;
@@ -6732,6 +6732,8 @@ export namespace Prisma {
     volume: number | null;
     loopMode: string | null;
     tracks: string | null;
+    voiceChannelId: string | null;
+    textChannelId: string | null;
     createdAt: Date | null;
   };
 
@@ -6743,6 +6745,8 @@ export namespace Prisma {
     volume: number | null;
     loopMode: string | null;
     tracks: string | null;
+    voiceChannelId: string | null;
+    textChannelId: string | null;
     createdAt: Date | null;
   };
 
@@ -6754,6 +6758,8 @@ export namespace Prisma {
     volume: number;
     loopMode: number;
     tracks: number;
+    voiceChannelId: number;
+    textChannelId: number;
     createdAt: number;
     _all: number;
   };
@@ -6776,6 +6782,8 @@ export namespace Prisma {
     volume?: true;
     loopMode?: true;
     tracks?: true;
+    voiceChannelId?: true;
+    textChannelId?: true;
     createdAt?: true;
   };
 
@@ -6787,6 +6795,8 @@ export namespace Prisma {
     volume?: true;
     loopMode?: true;
     tracks?: true;
+    voiceChannelId?: true;
+    textChannelId?: true;
     createdAt?: true;
   };
 
@@ -6798,6 +6808,8 @@ export namespace Prisma {
     volume?: true;
     loopMode?: true;
     tracks?: true;
+    voiceChannelId?: true;
+    textChannelId?: true;
     createdAt?: true;
     _all?: true;
   };
@@ -6893,6 +6905,8 @@ export namespace Prisma {
     volume: number;
     loopMode: string;
     tracks: string;
+    voiceChannelId: string | null;
+    textChannelId: string | null;
     createdAt: Date;
     _count: QueueSnapshotCountAggregateOutputType | null;
     _avg: QueueSnapshotAvgAggregateOutputType | null;
@@ -6923,6 +6937,8 @@ export namespace Prisma {
         volume?: boolean;
         loopMode?: boolean;
         tracks?: boolean;
+        voiceChannelId?: boolean;
+        textChannelId?: boolean;
         createdAt?: boolean;
         guild?: boolean | GuildDefaultArgs<ExtArgs>;
       },
@@ -6940,6 +6956,8 @@ export namespace Prisma {
       volume?: boolean;
       loopMode?: boolean;
       tracks?: boolean;
+      voiceChannelId?: boolean;
+      textChannelId?: boolean;
       createdAt?: boolean;
       guild?: boolean | GuildDefaultArgs<ExtArgs>;
     },
@@ -6957,6 +6975,8 @@ export namespace Prisma {
       volume?: boolean;
       loopMode?: boolean;
       tracks?: boolean;
+      voiceChannelId?: boolean;
+      textChannelId?: boolean;
       createdAt?: boolean;
       guild?: boolean | GuildDefaultArgs<ExtArgs>;
     },
@@ -6971,12 +6991,23 @@ export namespace Prisma {
     volume?: boolean;
     loopMode?: boolean;
     tracks?: boolean;
+    voiceChannelId?: boolean;
+    textChannelId?: boolean;
     createdAt?: boolean;
   };
 
   export type QueueSnapshotOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
     $Extensions.GetOmit<
-      'id' | 'guildId' | 'currentTrackUrl' | 'currentPosition' | 'volume' | 'loopMode' | 'tracks' | 'createdAt',
+      | 'id'
+      | 'guildId'
+      | 'currentTrackUrl'
+      | 'currentPosition'
+      | 'volume'
+      | 'loopMode'
+      | 'tracks'
+      | 'voiceChannelId'
+      | 'textChannelId'
+      | 'createdAt',
       ExtArgs['result']['queueSnapshot']
     >;
   export type QueueSnapshotInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7007,6 +7038,8 @@ export namespace Prisma {
         volume: number;
         loopMode: string;
         tracks: string;
+        voiceChannelId: string | null;
+        textChannelId: string | null;
         createdAt: Date;
       },
       ExtArgs['result']['queueSnapshot']
@@ -7530,6 +7563,8 @@ export namespace Prisma {
     readonly volume: FieldRef<'QueueSnapshot', 'Int'>;
     readonly loopMode: FieldRef<'QueueSnapshot', 'String'>;
     readonly tracks: FieldRef<'QueueSnapshot', 'String'>;
+    readonly voiceChannelId: FieldRef<'QueueSnapshot', 'String'>;
+    readonly textChannelId: FieldRef<'QueueSnapshot', 'String'>;
     readonly createdAt: FieldRef<'QueueSnapshot', 'DateTime'>;
   }
 
@@ -10473,6 +10508,8 @@ export namespace Prisma {
     volume: 'volume';
     loopMode: 'loopMode';
     tracks: 'tracks';
+    voiceChannelId: 'voiceChannelId';
+    textChannelId: 'textChannelId';
     createdAt: 'createdAt';
   };
 
@@ -10912,6 +10949,8 @@ export namespace Prisma {
     volume?: IntFilter<'QueueSnapshot'> | number;
     loopMode?: StringFilter<'QueueSnapshot'> | string;
     tracks?: StringFilter<'QueueSnapshot'> | string;
+    voiceChannelId?: StringNullableFilter<'QueueSnapshot'> | string | null;
+    textChannelId?: StringNullableFilter<'QueueSnapshot'> | string | null;
     createdAt?: DateTimeFilter<'QueueSnapshot'> | Date | string;
     guild?: XOR<GuildScalarRelationFilter, GuildWhereInput>;
   };
@@ -10924,6 +10963,8 @@ export namespace Prisma {
     volume?: SortOrder;
     loopMode?: SortOrder;
     tracks?: SortOrder;
+    voiceChannelId?: SortOrderInput | SortOrder;
+    textChannelId?: SortOrderInput | SortOrder;
     createdAt?: SortOrder;
     guild?: GuildOrderByWithRelationInput;
   };
@@ -10940,6 +10981,8 @@ export namespace Prisma {
       volume?: IntFilter<'QueueSnapshot'> | number;
       loopMode?: StringFilter<'QueueSnapshot'> | string;
       tracks?: StringFilter<'QueueSnapshot'> | string;
+      voiceChannelId?: StringNullableFilter<'QueueSnapshot'> | string | null;
+      textChannelId?: StringNullableFilter<'QueueSnapshot'> | string | null;
       createdAt?: DateTimeFilter<'QueueSnapshot'> | Date | string;
       guild?: XOR<GuildScalarRelationFilter, GuildWhereInput>;
     },
@@ -10954,6 +10997,8 @@ export namespace Prisma {
     volume?: SortOrder;
     loopMode?: SortOrder;
     tracks?: SortOrder;
+    voiceChannelId?: SortOrderInput | SortOrder;
+    textChannelId?: SortOrderInput | SortOrder;
     createdAt?: SortOrder;
     _count?: QueueSnapshotCountOrderByAggregateInput;
     _avg?: QueueSnapshotAvgOrderByAggregateInput;
@@ -10973,6 +11018,8 @@ export namespace Prisma {
     volume?: IntWithAggregatesFilter<'QueueSnapshot'> | number;
     loopMode?: StringWithAggregatesFilter<'QueueSnapshot'> | string;
     tracks?: StringWithAggregatesFilter<'QueueSnapshot'> | string;
+    voiceChannelId?: StringNullableWithAggregatesFilter<'QueueSnapshot'> | string | null;
+    textChannelId?: StringNullableWithAggregatesFilter<'QueueSnapshot'> | string | null;
     createdAt?: DateTimeWithAggregatesFilter<'QueueSnapshot'> | Date | string;
   };
 
@@ -11516,6 +11563,8 @@ export namespace Prisma {
     volume?: number;
     loopMode?: string;
     tracks: string;
+    voiceChannelId?: string | null;
+    textChannelId?: string | null;
     createdAt?: Date | string;
     guild: GuildCreateNestedOneWithoutQueueSnapshotsInput;
   };
@@ -11528,6 +11577,8 @@ export namespace Prisma {
     volume?: number;
     loopMode?: string;
     tracks: string;
+    voiceChannelId?: string | null;
+    textChannelId?: string | null;
     createdAt?: Date | string;
   };
 
@@ -11538,6 +11589,8 @@ export namespace Prisma {
     volume?: IntFieldUpdateOperationsInput | number;
     loopMode?: StringFieldUpdateOperationsInput | string;
     tracks?: StringFieldUpdateOperationsInput | string;
+    voiceChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
+    textChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     guild?: GuildUpdateOneRequiredWithoutQueueSnapshotsNestedInput;
   };
@@ -11550,6 +11603,8 @@ export namespace Prisma {
     volume?: IntFieldUpdateOperationsInput | number;
     loopMode?: StringFieldUpdateOperationsInput | string;
     tracks?: StringFieldUpdateOperationsInput | string;
+    voiceChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
+    textChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
   };
 
@@ -11561,6 +11616,8 @@ export namespace Prisma {
     volume?: number;
     loopMode?: string;
     tracks: string;
+    voiceChannelId?: string | null;
+    textChannelId?: string | null;
     createdAt?: Date | string;
   };
 
@@ -11571,6 +11628,8 @@ export namespace Prisma {
     volume?: IntFieldUpdateOperationsInput | number;
     loopMode?: StringFieldUpdateOperationsInput | string;
     tracks?: StringFieldUpdateOperationsInput | string;
+    voiceChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
+    textChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
   };
 
@@ -11582,6 +11641,8 @@ export namespace Prisma {
     volume?: IntFieldUpdateOperationsInput | number;
     loopMode?: StringFieldUpdateOperationsInput | string;
     tracks?: StringFieldUpdateOperationsInput | string;
+    voiceChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
+    textChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
   };
 
@@ -12168,6 +12229,8 @@ export namespace Prisma {
     volume?: SortOrder;
     loopMode?: SortOrder;
     tracks?: SortOrder;
+    voiceChannelId?: SortOrder;
+    textChannelId?: SortOrder;
     createdAt?: SortOrder;
   };
 
@@ -12184,6 +12247,8 @@ export namespace Prisma {
     volume?: SortOrder;
     loopMode?: SortOrder;
     tracks?: SortOrder;
+    voiceChannelId?: SortOrder;
+    textChannelId?: SortOrder;
     createdAt?: SortOrder;
   };
 
@@ -12195,6 +12260,8 @@ export namespace Prisma {
     volume?: SortOrder;
     loopMode?: SortOrder;
     tracks?: SortOrder;
+    voiceChannelId?: SortOrder;
+    textChannelId?: SortOrder;
     createdAt?: SortOrder;
   };
 
@@ -12985,6 +13052,8 @@ export namespace Prisma {
     volume?: number;
     loopMode?: string;
     tracks: string;
+    voiceChannelId?: string | null;
+    textChannelId?: string | null;
     createdAt?: Date | string;
   };
 
@@ -12995,6 +13064,8 @@ export namespace Prisma {
     volume?: number;
     loopMode?: string;
     tracks: string;
+    voiceChannelId?: string | null;
+    textChannelId?: string | null;
     createdAt?: Date | string;
   };
 
@@ -13124,6 +13195,8 @@ export namespace Prisma {
     volume?: IntFilter<'QueueSnapshot'> | number;
     loopMode?: StringFilter<'QueueSnapshot'> | string;
     tracks?: StringFilter<'QueueSnapshot'> | string;
+    voiceChannelId?: StringNullableFilter<'QueueSnapshot'> | string | null;
+    textChannelId?: StringNullableFilter<'QueueSnapshot'> | string | null;
     createdAt?: DateTimeFilter<'QueueSnapshot'> | Date | string;
   };
 
@@ -13605,6 +13678,8 @@ export namespace Prisma {
     volume?: number;
     loopMode?: string;
     tracks: string;
+    voiceChannelId?: string | null;
+    textChannelId?: string | null;
     createdAt?: Date | string;
   };
 
@@ -13695,6 +13770,8 @@ export namespace Prisma {
     volume?: IntFieldUpdateOperationsInput | number;
     loopMode?: StringFieldUpdateOperationsInput | string;
     tracks?: StringFieldUpdateOperationsInput | string;
+    voiceChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
+    textChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
   };
 
@@ -13705,6 +13782,8 @@ export namespace Prisma {
     volume?: IntFieldUpdateOperationsInput | number;
     loopMode?: StringFieldUpdateOperationsInput | string;
     tracks?: StringFieldUpdateOperationsInput | string;
+    voiceChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
+    textChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
   };
 
@@ -13715,6 +13794,8 @@ export namespace Prisma {
     volume?: IntFieldUpdateOperationsInput | number;
     loopMode?: StringFieldUpdateOperationsInput | string;
     tracks?: StringFieldUpdateOperationsInput | string;
+    voiceChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
+    textChannelId?: NullableStringFieldUpdateOperationsInput | string | null;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
   };
 

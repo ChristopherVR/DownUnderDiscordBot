@@ -8,6 +8,7 @@ import { createStateService } from './state/factory';
 import type { WebSocketManager } from './helpers/websocket';
 import { StateCoordinator } from './state/StateCoordinator';
 import { registerControllerInteractionHandlers } from './helpers/discord/controllerInteractionManager';
+import { isE2EMode, applyE2EStubs } from './testMode/index';
 
 const botLog = createLogger('discord-bot');
 
@@ -51,9 +52,13 @@ export async function startBot(wsManager?: WebSocketManager) {
       }
     }
   });
-  botLog.info('Logging into Discord API');
-  await client.login(process.env.CLIENT_TOKEN);
-  botLog.info('Discord login successful');
+  if (isE2EMode()) {
+    botLog.warn('E2E mode enabled — skipping Discord login');
+  } else {
+    botLog.info('Logging into Discord API');
+    await client.login(process.env.CLIENT_TOKEN);
+    botLog.info('Discord login successful');
+  }
   // initialize localization for server
   try {
     await initI18n({
@@ -68,8 +73,15 @@ export async function startBot(wsManager?: WebSocketManager) {
   // initialize music player
   const player = await initializePlayer(client, wsManager);
 
+  // In E2E mode, apply stubs (fake Discord cache, synthetic voice connect)
+  // after the player is ready so queueCreate listeners are wired before the
+  // first play call.
+  if (isE2EMode()) {
+    await applyE2EStubs({ client, player });
+  }
+
   const INSTANCE_ID = process.env.INSTANCE_ID || `${os.hostname()}-${process.pid}`;
-  const GUILD_ID = process.env.GUILD_ID || 'mock-guild';
+  const GUILD_ID = process.env.GUILD_ID || (isE2EMode() ? 'test-guild-1' : 'mock-guild');
   const STATE_CHANNEL_ID = process.env.STATE_CHANNEL_ID || 'mock-channel';
 
   const state = createStateService({
@@ -107,13 +119,16 @@ export async function startBot(wsManager?: WebSocketManager) {
     botLog.info({ guildIds }, 'Presence published for guilds on ready');
   });
 
-  // heartbeat
-  setInterval(async () => {
-    // botLog.debug('Publishing heartbeat presence update');
-    const guildIds = client.guilds.cache.size ? client.guilds.cache.map((guild) => guild.id) : [GUILD_ID];
-    await Promise.all(guildIds.map((guildId) => publishPresence(guildId)));
-    // botLog.info({ guildIds }, 'Presence published for guilds on ready');
-  }, 15_000);
+  // heartbeat — skipped in E2E mode to avoid touching the (stubbed) Discord
+  // state channel every 15 s.
+  if (!isE2EMode()) {
+    setInterval(async () => {
+      // botLog.debug('Publishing heartbeat presence update');
+      const guildIds = client.guilds.cache.size ? client.guilds.cache.map((guild) => guild.id) : [GUILD_ID];
+      await Promise.all(guildIds.map((guildId) => publishPresence(guildId)));
+      // botLog.info({ guildIds }, 'Presence published for guilds on ready');
+    }, 15_000);
+  }
 
   // Simple PING/PONG protocol in the state channel
   client.on(Events.MessageCreate, async (msg) => {

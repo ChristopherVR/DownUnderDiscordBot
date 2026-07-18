@@ -1,6 +1,6 @@
 import { ButtonInteraction, Client, EmbedBuilder, Interaction, MessageFlags, TextChannel } from 'discord.js';
 import { GuildQueue, Player, QueueRepeatMode, Track } from 'discord-player';
-import { activeController, getControllerPayload, getCompletedControllerPayload } from './playerEventManager';
+import { controllerRegistry, getControllerPayload, getCompletedControllerPayload } from './playerEventManager';
 import { enhancedLogger } from '../logger/logger';
 import { LogLevel } from '../../types/logging';
 
@@ -35,7 +35,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function refreshController(queue: GuildQueue): Promise<void> {
-  const msg = activeController.get(queue.guild.id);
+  const msg = controllerRegistry.getController(queue.guild.id);
   if (!msg) return;
   try {
     await msg.edit(getControllerPayload(queue));
@@ -188,14 +188,14 @@ async function onStop(i: ButtonInteraction, queue: GuildQueue): Promise<void> {
   }
 
   // Remove the live controller
-  const controller = activeController.get(guildId);
+  const controller = controllerRegistry.getController(guildId);
   if (controller) {
     try {
       await controller.delete();
     } catch {
       // ignore delete failure
     }
-    activeController.delete(guildId);
+    controllerRegistry.deleteController(guildId);
   }
 
   // Post a "Completed" controller shell (no buttons)

@@ -18,6 +18,7 @@
     "test:shared": "pnpm --filter discord-dashboard-shared test",
     "test:bot": "pnpm --filter discord-bot test",
     "test:desktop": "pnpm --filter discord-bot-desktop test",
+    "test:e2e": "pnpm --filter discord-bot-e2e test",
     "test:coverage": "pnpm run test:shared -- --coverage && pnpm run test:bot -- --coverage",
     "lint": "pnpm run lint:bot && pnpm run lint:shared",
     "lint:bot": "pnpm --filter discord-bot lint",

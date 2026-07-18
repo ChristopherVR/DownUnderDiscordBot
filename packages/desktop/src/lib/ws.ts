@@ -7,22 +7,49 @@ export class WebSocketService {
   private maxReconnectAttempts = 20;
   private handlers = new Map<string, Set<MessageHandler>>();
   private _connected = false;
-  private _url = '';
+  private _host = '';
+  private _port = 0;
+  private _token: string | null = null;
 
   get connected() {
     return this._connected;
   }
 
-  connect(host: string, port: number) {
-    this._url = `ws://${host}:${port}/ws`;
+  /** Set the JWT used on the next (re)connect. Does not reconnect automatically. */
+  setAuthToken(token: string | null) {
+    this._token = token;
+  }
+
+  connect(host: string, port: number, token?: string | null) {
+    this._host = host;
+    this._port = port;
+    if (token !== undefined) this._token = token;
     this.doConnect();
+  }
+
+  private buildUrl(): string {
+    // Web mode (non-Tauri): derive ws URL from page origin so HTTPS gets wss://.
+    // Tauri mode: keep explicit host/port (defaults to ws://localhost:3000).
+    let base: string;
+    if (typeof window !== 'undefined' && !('__TAURI_INTERNALS__' in window)) {
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      base = `${proto}//${window.location.host}/ws`;
+    } else {
+      base = `ws://${this._host}:${this._port}/ws`;
+    }
+    return this._token ? `${base}?token=${encodeURIComponent(this._token)}` : base;
   }
 
   private doConnect() {
     if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (!this._token) {
+      // Don't attempt a connection until we have a token — the server will
+      // reject the upgrade, and the reconnect loop would hammer it.
+      return;
+    }
 
     try {
-      this.ws = new WebSocket(this._url);
+      this.ws = new WebSocket(this.buildUrl());
 
       this.ws.onopen = () => {
         this._connected = true;
@@ -85,6 +112,21 @@ export class WebSocketService {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     }
+  }
+
+  /**
+   * Restrict the broadcasts this client receives to a specific set of
+   * guilds. Pass `null` (the default) to receive broadcasts for every guild.
+   *
+   * Guild-scoped messages (player_state, player_position, stream_status,
+   * bot_status) for guilds outside the filter are dropped server-side.
+   * Guild-less messages (logs, connection updates) are always delivered.
+   */
+  setGuildFilter(guildIds: string[] | null): void {
+    this.send({
+      type: 'set_guild_filter',
+      payload: { guildIds },
+    });
   }
 
   disconnect() {

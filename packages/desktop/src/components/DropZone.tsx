@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type DragEvent, type ReactNode } from 'react';
 import { Upload, FileAudio, FileVideo, FolderOpen } from 'lucide-react';
+import { registerDragDropHandler } from '@/platform';
 
 /** Accepted audio + video extensions */
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.flac', '.wav', '.ogg', '.m4a', '.aac', '.wma', '.opus', '.webm']);
@@ -58,54 +59,33 @@ export default function DropZone({ children, className, onDrop }: DropZoneProps)
   const [usingTauriDnd, setUsingTauriDnd] = useState(false);
 
   useEffect(() => {
-    let unlisten: (() => void) | null = null;
+    let sub: { tauri: boolean; unlisten: () => void } | null = null;
 
-    const setup = async () => {
-      try {
-        const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-        const appWindow = getCurrentWebviewWindow();
-
-        unlisten = await appWindow.onDragDropEvent(async (event) => {
-          const type = event.payload.type;
-          const payload = event.payload as { type: string; paths?: string[]; position?: { x: number; y: number } };
-
-          if (type === 'enter') {
-            // Only activate for real file drops (internal UI drags have no paths)
-            const paths = payload.paths ?? [];
-            hasFilePaths.current = paths.length > 0;
-            if (hasFilePaths.current) {
-              const pos = payload.position;
-              setIsDragOver(pos ? isInsideBounds(pos.x, pos.y) : true);
-            }
-          } else if (type === 'over') {
-            if (hasFilePaths.current) {
-              const pos = payload.position;
-              setIsDragOver(pos ? isInsideBounds(pos.x, pos.y) : true);
-            }
-          } else if (type === 'leave') {
-            hasFilePaths.current = false;
-            setIsDragOver(false);
-          } else if (type === 'drop') {
-            hasFilePaths.current = false;
-            setIsDragOver(false);
-
-            const droppedPaths: string[] = payload.paths ?? [];
-            if (droppedPaths.length > 0) {
-              onDropRef.current(droppedPaths);
-            }
+    (async () => {
+      sub = await registerDragDropHandler((payload) => {
+        if (payload.kind === 'enter') {
+          hasFilePaths.current = payload.paths.length > 0;
+          if (hasFilePaths.current) {
+            setIsDragOver(payload.position ? isInsideBounds(payload.position.x, payload.position.y) : true);
           }
-        });
-
-        setUsingTauriDnd(true);
-      } catch {
-        setUsingTauriDnd(false);
-      }
-    };
-
-    setup();
+        } else if (payload.kind === 'over') {
+          if (hasFilePaths.current) {
+            setIsDragOver(payload.position ? isInsideBounds(payload.position.x, payload.position.y) : true);
+          }
+        } else if (payload.kind === 'leave') {
+          hasFilePaths.current = false;
+          setIsDragOver(false);
+        } else if (payload.kind === 'drop') {
+          hasFilePaths.current = false;
+          setIsDragOver(false);
+          if (payload.paths.length > 0) onDropRef.current(payload.paths);
+        }
+      });
+      setUsingTauriDnd(sub.tauri);
+    })();
 
     return () => {
-      if (unlisten) unlisten();
+      sub?.unlisten();
     };
   }, [isInsideBounds]);
 

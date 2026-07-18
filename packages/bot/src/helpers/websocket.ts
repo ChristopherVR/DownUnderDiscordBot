@@ -1,8 +1,14 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import { randomUUID } from 'crypto';
-import type { WebSocketMessage, PlayerState, LogEntry, CommandExecution } from 'discord-dashboard-shared';
-import type { StreamStatusUpdate } from 'discord-dashboard-shared';
+import type {
+  WebSocketMessage,
+  PlayerState,
+  PlayerPositionUpdate,
+  LogEntry,
+  CommandExecution,
+  StreamStatusUpdate,
+} from 'discord-dashboard-shared';
 
 export interface WebSocketClient {
   id: string;
@@ -10,6 +16,21 @@ export interface WebSocketClient {
   subscriptions: Set<string>;
   lastPing: number;
   isAlive: boolean;
+  userId: string;
+  /**
+   * Optional per-client guild allow-list. When `null` (default), the client
+   * receives broadcasts for every guild. When set, only messages carrying
+   * a `guildId` in this set (plus guild-less messages) are delivered.
+   */
+  guildFilter: Set<string> | null;
+}
+
+/**
+ * An IncomingMessage that has passed JWT verification during the upgrade
+ * handshake. `auth` is attached by the upgrade handler in index.ts.
+ */
+export interface AuthedIncomingMessage extends IncomingMessage {
+  auth?: { userId: string; username?: string };
 }
 
 export interface WebSocketSubscription {
@@ -61,14 +82,17 @@ export class WebSocketManager {
    * Setup WebSocket server with connection handling
    */
   private setupWebSocketServer(): void {
-    this.wss.on('connection', (ws: WebSocket, _req: IncomingMessage) => {
+    this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
       const clientId = randomUUID();
+      const auth = (req as AuthedIncomingMessage).auth;
       const client: WebSocketClient = {
         id: clientId,
         ws,
         subscriptions: new Set(),
         lastPing: Date.now(),
         isAlive: true,
+        userId: auth?.userId ?? 'anonymous',
+        guildFilter: null,
       };
 
       this.clients.set(clientId, client);
@@ -163,9 +187,58 @@ export class WebSocketManager {
           ],
         });
         break;
+      case 'set_guild_filter': {
+        const filterClient = this.clients.get(clientId);
+        if (!filterClient) break;
+        const payload = message.payload as { guildIds?: unknown } | undefined;
+        const raw = payload?.guildIds;
+        if (raw === null || raw === undefined) {
+          filterClient.guildFilter = null;
+        } else if (Array.isArray(raw)) {
+          const ids = raw.filter((v): v is string => typeof v === 'string' && v.length > 0);
+          filterClient.guildFilter = ids.length > 0 ? new Set(ids) : null;
+        } else {
+          console.warn('Invalid set_guild_filter payload', payload);
+        }
+        break;
+      }
       default:
         console.warn(`Unknown message type: ${message.type}`);
     }
+  }
+
+  /**
+   * Return true if a client should receive a message tied to `guildId`.
+   * Messages without a guildId are always delivered.
+   */
+  private clientAcceptsGuild(client: WebSocketClient, guildId: string | undefined): boolean {
+    if (!guildId) return true;
+    if (!client.guildFilter) return true;
+    return client.guildFilter.has(guildId);
+  }
+
+  /**
+   * Like `broadcast`, but drops clients whose guild filter excludes the
+   * message's `guildId`. Use this for anything carrying a guildId so
+   * operators viewing guild A don't receive guild B traffic.
+   */
+  private broadcastWithGuildFilter(message: WebSocketMessage, guildId: string | undefined): number {
+    let sentCount = 0;
+    for (const [clientId, client] of this.clients.entries()) {
+      if (client.ws.readyState !== WebSocket.OPEN) {
+        this.clients.delete(clientId);
+        continue;
+      }
+      if (!this.clientAcceptsGuild(client, guildId)) continue;
+      try {
+        client.ws.send(JSON.stringify(message));
+        sentCount++;
+      } catch (error) {
+        console.error(`Error broadcasting to client ${clientId}:`, error);
+        this.clients.delete(clientId);
+      }
+    }
+    return sentCount;
   }
 
   /**
@@ -302,33 +375,46 @@ export class WebSocketManager {
       },
     };
 
-    // Broadcast to all clients and specific guild subscribers
-    this.broadcast(message);
+    this.broadcastWithGuildFilter(message, guildId);
     this.broadcastToSubscribers(message, { type: 'bot_status', guildId });
   }
 
   /**
    * Broadcast player state update
    */
-  public broadcastPlayerState(playerState: PlayerState): void {
+  public broadcastPlayerState(playerState: PlayerState & { guildId?: string }): void {
     const message: WebSocketMessage = {
       type: 'player_state',
       payload: playerState,
     };
 
-    this.broadcast(message);
+    this.broadcastWithGuildFilter(message, playerState.guildId);
+  }
+
+  /**
+   * Broadcast a fine-grained position tick — cheaper than a full player_state
+   * since it only carries guildId + position. Sent once per second during
+   * playback.
+   */
+  public broadcastPlayerPosition(payload: PlayerPositionUpdate): void {
+    const message: WebSocketMessage = {
+      type: 'player_position',
+      payload,
+    };
+
+    this.broadcastWithGuildFilter(message, payload.guildId);
   }
 
   /**
    * Broadcast stream status update (fallback / buffering indicators)
    */
-  public broadcastStreamStatus(status: StreamStatusUpdate): void {
+  public broadcastStreamStatus(status: StreamStatusUpdate & { guildId?: string }): void {
     const message: WebSocketMessage = {
       type: 'stream_status',
       payload: status,
     };
 
-    this.broadcast(message);
+    this.broadcastWithGuildFilter(message, status.guildId);
   }
 
   /**

@@ -22,6 +22,17 @@ export interface InstanceInfo {
 }
 
 // Player and Music Types
+export type TrackPlatform = 'youtube' | 'spotify' | 'soundcloud' | 'applemusic' | 'local' | 'unknown';
+export type TrackSource = 'online' | 'local' | 'playlist';
+export type TrackMediaType = 'audio' | 'video';
+
+/**
+ * Canonical Track shape shared between bot and desktop.
+ *
+ * The bot populates all legacy fields (id, artist, duration, url, source).
+ * The new optional fields (platform, mediaType, videoUrl, fileName, album,
+ * requestedBy) exist to cover the richer metadata the desktop renders.
+ */
 export interface Track {
   id: string;
   title: string;
@@ -29,8 +40,15 @@ export interface Track {
   duration: number;
   url: string;
   thumbnail?: string;
-  source: 'online' | 'local' | 'playlist';
-  filePath?: string; // for local files
+  source: TrackSource;
+  filePath?: string;
+  // Richer metadata — optional so existing bot-side producers stay valid.
+  platform?: TrackPlatform | string;
+  mediaType?: TrackMediaType;
+  videoUrl?: string;
+  fileName?: string;
+  album?: string;
+  requestedBy?: string;
 }
 
 export interface PlayerState {
@@ -125,9 +143,45 @@ export interface FileUploadProgress {
 }
 
 // WebSocket Message Types
+
+/**
+ * Emitted when a new track actually starts playing. The bot sends this
+ * in addition to `player_state` because `player_state` also fires on
+ * volume/loop changes — subscribers that care specifically about "track
+ * transitions" should listen for `track_started`.
+ */
+export interface TrackStartedUpdate extends Track {
+  guildId?: string;
+}
+
+/**
+ * Emitted when the queue contents change (add / remove / reorder / clear).
+ * Separate from `player_state` so we don't re-broadcast the full queue on
+ * every position tick.
+ */
+export interface QueueUpdate {
+  guildId?: string;
+  queue: Track[];
+}
+
+/**
+ * Fine-grained position tick. Emitted ~once per second while a track plays,
+ * carrying only the minimum needed to advance the progress bar. Splitting
+ * this from `player_state` avoids re-broadcasting the full track + queue
+ * on every tick.
+ */
+export interface PlayerPositionUpdate {
+  guildId: string;
+  /** Current playback position, in seconds. */
+  position: number;
+}
+
 export type WebSocketMessage =
   | { type: 'bot_status'; payload: BotStatusUpdate }
   | { type: 'player_state'; payload: PlayerState }
+  | { type: 'player_position'; payload: PlayerPositionUpdate }
+  | { type: 'queue_update'; payload: QueueUpdate }
+  | { type: 'track_started'; payload: TrackStartedUpdate }
   | { type: 'log_entry'; payload: LogEntry }
   | { type: 'command_result'; payload: CommandExecution }
   | { type: 'connection_update'; payload: ConnectionInfo[] }
@@ -216,8 +270,6 @@ export interface SearchResponse {
 }
 
 // Playlist Types
-export type TrackPlatform = 'youtube' | 'spotify' | 'soundcloud' | 'local' | 'unknown';
-
 export interface PlaylistSummary {
   id: string;
   name: string;

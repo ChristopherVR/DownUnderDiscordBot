@@ -12,6 +12,7 @@ export function createLogsRouter(auditLogs: LogMessage[], commandLogs: LogMessag
       q = '',
       level,
       category,
+      guildId,
       limit = '300',
       offset = '0',
       sortBy = 'timestamp',
@@ -21,6 +22,7 @@ export function createLogsRouter(auditLogs: LogMessage[], commandLogs: LogMessag
       q?: string;
       level?: string;
       category?: string;
+      guildId?: string;
       limit?: string;
       offset?: string;
       sortBy?: string;
@@ -42,7 +44,11 @@ export function createLogsRouter(auditLogs: LogMessage[], commandLogs: LogMessag
           (l.source && l.source.toLowerCase().includes(String(q).toLowerCase()))
         : true;
       const matchLevel = level ? l.level === level : true;
-      return matchText && matchLevel;
+      const matchGuild = guildId
+        ? l.guildId === guildId ||
+          (l.metadata && typeof l.metadata.guildId === 'string' && l.metadata.guildId === guildId)
+        : true;
+      return matchText && matchLevel && matchGuild;
     });
 
     // Apply sorting

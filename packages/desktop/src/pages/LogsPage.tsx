@@ -37,6 +37,7 @@ interface LogItem {
   message: string;
   ts: number;
   source?: string;
+  guildId?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -178,6 +179,9 @@ function LogRow({ item }: { item: LogItem }) {
 // ---------------------------------------------------------------------------
 
 function botEntryToLogItem(raw: Record<string, unknown>): LogItem {
+  const metadata = raw.metadata as Record<string, unknown> | undefined;
+  const topGuildId = typeof raw.guildId === 'string' ? (raw.guildId as string) : undefined;
+  const metaGuildId = metadata && typeof metadata.guildId === 'string' ? (metadata.guildId as string) : undefined;
   return {
     id: (raw.id as string) ?? crypto.randomUUID(),
     origin: 'bot',
@@ -186,7 +190,8 @@ function botEntryToLogItem(raw: Record<string, unknown>): LogItem {
     message: (raw.message as string) ?? '',
     ts: (raw.ts as number) ?? (raw.timestamp as number) ?? Date.now(),
     source: raw.source as string | undefined,
-    metadata: raw.metadata as Record<string, unknown> | undefined,
+    guildId: topGuildId ?? metaGuildId,
+    metadata,
   };
 }
 
@@ -209,6 +214,7 @@ function appEntryToLogItem(entry: AppLogEntry): LogItem {
 
 export default function LogsPage() {
   const connected = useBotStore((s) => s.connection.connected);
+  const guilds = useBotStore((s) => s.guilds);
 
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -221,6 +227,7 @@ export default function LogsPage() {
   const [originFilter, setOriginFilter] = useState<OriginFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [levelFilter, setLevelFilter] = useState<LogLevel>('all');
+  const [guildFilter, setGuildFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [autoRefresh, setAutoRefresh] = useState(false);
   const LIMIT = 300;
@@ -242,6 +249,7 @@ export default function LogsPage() {
     const params = new URLSearchParams();
     if (levelFilter !== 'all') params.set('level', levelFilter);
     if (searchQuery) params.set('q', searchQuery);
+    if (guildFilter !== 'all') params.set('guildId', guildFilter);
     params.set('sortBy', 'timestamp');
     params.set('sortOrder', sortOrder);
     params.set('limit', String(LIMIT));
@@ -250,7 +258,7 @@ export default function LogsPage() {
 
     const items: LogItem[] = logsRes.items.map((raw: Record<string, unknown>) => botEntryToLogItem(raw));
     return { items, total: logsRes.total, hasMore: logsRes.hasMore, stats: statsRes };
-  }, [connected, levelFilter, searchQuery, sortOrder]);
+  }, [connected, levelFilter, searchQuery, sortOrder, guildFilter]);
 
   // Merge bot + app logs into a single sorted list
   const fetchAllLogs = useCallback(async () => {
@@ -337,6 +345,7 @@ export default function LogsPage() {
       const params = new URLSearchParams();
       if (levelFilter !== 'all') params.set('level', levelFilter);
       if (searchQuery) params.set('q', searchQuery);
+      if (guildFilter !== 'all') params.set('guildId', guildFilter);
       params.set('sortBy', 'timestamp');
       params.set('sortOrder', sortOrder);
       params.set('limit', String(LIMIT));
@@ -351,7 +360,7 @@ export default function LogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [connected, hasMore, levelFilter, searchQuery, sortOrder, logs]);
+  }, [connected, hasMore, levelFilter, searchQuery, sortOrder, logs, guildFilter]);
 
   const handleClearLogs = async () => {
     try {
@@ -372,6 +381,10 @@ export default function LogsPage() {
     if (originFilter !== 'all') result = result.filter((l) => l.origin === originFilter);
     if (categoryFilter !== 'all') result = result.filter((l) => l.category === categoryFilter);
     if (levelFilter !== 'all') result = result.filter((l) => l.level === levelFilter);
+    if (guildFilter !== 'all') {
+      // Only filter bot logs by guild; app logs don't carry a guildId.
+      result = result.filter((l) => (l.origin === 'bot' ? l.guildId === guildFilter : true));
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -383,7 +396,7 @@ export default function LogsPage() {
       );
     }
     return result;
-  }, [logs, originFilter, categoryFilter, levelFilter, searchQuery]);
+  }, [logs, originFilter, categoryFilter, levelFilter, searchQuery, guildFilter]);
 
   // Derive available categories from current logs for the drill-down select
   const availableCategories = useMemo(() => {
@@ -505,6 +518,20 @@ export default function LogsPage() {
           <option value="info">Info</option>
           <option value="warn">Warn</option>
           <option value="error">Error</option>
+        </select>
+
+        {/* Guild dropdown */}
+        <select
+          value={guildFilter}
+          onChange={(e) => setGuildFilter(e.target.value)}
+          className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1.5 text-xs text-t-secondary focus:outline-none"
+        >
+          <option value="all">All guilds</option>
+          {guilds.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
+          ))}
         </select>
 
         {/* Sort order toggle */}

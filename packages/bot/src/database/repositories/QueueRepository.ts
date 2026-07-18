@@ -23,6 +23,8 @@ export class QueueRepository {
       volume?: number;
       loopMode?: string;
       tracks: QueueTrackData[];
+      voiceChannelId?: string;
+      textChannelId?: string;
     },
   ): Promise<QueueSnapshot> {
     // Delete old snapshots for this guild (keep only latest)
@@ -36,6 +38,8 @@ export class QueueRepository {
         volume: data.volume ?? 65,
         loopMode: data.loopMode ?? 'off',
         tracks: JSON.stringify(data.tracks),
+        voiceChannelId: data.voiceChannelId,
+        textChannelId: data.textChannelId,
       },
     });
   }

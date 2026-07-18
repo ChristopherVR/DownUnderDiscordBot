@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Minus, Square, X, Monitor, Radio, Wifi, WifiOff, Server, Clock, Activity } from 'lucide-react';
 import AppIcon from '@/components/AppIcon';
-import type { Window } from '@tauri-apps/api/window';
 import { useBotStore } from '@/stores/useBotStore';
+import { platform, platformWindow } from '@/platform';
 
 function formatUptime(seconds: number): string {
   const d = Math.floor(seconds / 86400);
@@ -182,24 +182,17 @@ function StatusPopover({ onClose }: { onClose: () => void }) {
 }
 
 export default function TitleBar() {
-  const [appWindow, setAppWindow] = useState<Window | null>(null);
   const [showStatus, setShowStatus] = useState(false);
   const connected = useBotStore((s) => s.connection.connected);
   const botUser = useBotStore((s) => s.botUser);
   const playbackMode = useBotStore((s) => s.playbackMode);
 
-  useEffect(() => {
-    // Only import when running inside Tauri
-    if ('__TAURI_INTERNALS__' in window) {
-      import('@tauri-apps/api/window').then((mod) => {
-        setAppWindow(mod.getCurrentWindow());
-      });
-    }
-  }, []);
+  // Browser mode renders no custom chrome; App.tsx already gates this, but
+  // keep the guard here too in case a consumer renders the component directly.
+  if (!platform.showCustomTitlebar) return null;
 
   const handleMinimize = () => {
-    // Hide the window to the system tray instead of minimizing to taskbar
-    appWindow?.hide();
+    platformWindow.hide();
   };
 
   return (
@@ -286,7 +279,7 @@ export default function TitleBar() {
           <Minus size={14} />
         </button>
         <button
-          onClick={() => appWindow?.toggleMaximize()}
+          onClick={() => platformWindow.toggleMaximize()}
           className="flex h-9 w-11 items-center justify-center text-t-tertiary transition-colors hover:text-t-primary"
           onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--nav-hover-bg)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
@@ -294,7 +287,7 @@ export default function TitleBar() {
           <Square size={11} />
         </button>
         <button
-          onClick={() => appWindow?.close()}
+          onClick={() => platformWindow.close()}
           title="Close to tray"
           className="flex h-9 w-11 items-center justify-center text-t-tertiary transition-colors hover:bg-red-500/80 hover:text-white"
         >

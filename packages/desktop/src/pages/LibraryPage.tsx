@@ -4,6 +4,7 @@ import { useBotStore, type Track } from '@/stores/useBotStore';
 import { api, type PlaylistSummary } from '@/lib/api';
 import LocalLibraryView from '@/components/LocalLibraryView';
 import DropZone from '@/components/DropZone';
+import { libraryPlatform, pickFolder } from '@/platform';
 import { Music, FolderOpen, FolderPlus, ListMusic, Play, Plus, Loader2, X, Monitor, Radio, Link2 } from 'lucide-react';
 
 type Tab = 'playlists' | 'local';
@@ -27,47 +28,30 @@ export default function LibraryPage() {
   const [newDescription, setNewDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
-  // Scan local music folders via Tauri command
+  // Scan local music folders. Tauri: native Rust scan. Web: server-side scan via /api/library.
   const scanLocalFolders = async (folders: string[]): Promise<Track[]> => {
     if (folders.length === 0) return [];
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      const allTracks: Track[] = [];
-      for (const folder of folders) {
-        try {
-          const tracks = await invoke<
-            Array<{
-              file_path: string;
-              file_name: string;
-              title: string;
-              artist: string;
-              album?: string;
-              duration?: number;
-              size: number;
-              media_type?: string;
-            }>
-          >('scan_music_folder', { path: folder });
-          for (const t of tracks) {
-            allTracks.push({
-              title: t.title,
-              artist: t.artist,
-              album: t.album ?? undefined,
-              duration: t.duration,
-              filePath: t.file_path,
-              fileName: t.file_name,
-              platform: 'local',
-              mediaType: (t.media_type as 'audio' | 'video') ?? 'audio',
-            });
-          }
-        } catch {
-          // Individual folder scan failed, continue with others
+    const allTracks: Track[] = [];
+    for (const folder of folders) {
+      try {
+        const tracks = await libraryPlatform.scanFolder(folder);
+        for (const t of tracks) {
+          allTracks.push({
+            title: t.title,
+            artist: t.artist,
+            album: t.album ?? undefined,
+            duration: t.duration,
+            filePath: t.file_path,
+            fileName: t.file_name,
+            platform: 'local',
+            mediaType: (t.media_type as 'audio' | 'video') ?? 'audio',
+          });
         }
+      } catch {
+        // Individual folder scan failed, continue with others
       }
-      return allTracks;
-    } catch {
-      // Not running in Tauri — cannot scan local files
-      return [];
     }
+    return allTracks;
   };
 
   const scanRef = useRef(scanLocalFolders);
@@ -168,82 +152,33 @@ export default function LibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localFiles.length]); // re-run only when file count changes, not every render
 
-  // File watcher: watch music folders and auto-refresh on changes
+  // File watcher: Tauri-only. Browser mode must manually rescan.
   useEffect(() => {
-    if (musicFolders.length === 0) return;
+    if (musicFolders.length === 0 || !libraryPlatform.canWatch) return;
 
-    let unlisten: (() => void) | null = null;
+    const unlisteners: Array<() => void> = [];
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const setup = async () => {
-      try {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const { listen } = await import('@tauri-apps/api/event');
-
-        // Start watching all music folders
-        for (const folder of musicFolders) {
-          try {
-            await invoke('watch_folder', { path: folder });
-          } catch {
-            // Folder may not exist or already watched
-          }
-        }
-
-        // Listen for change events with debounce
-        unlisten = await listen<{
-          kind: string;
-          path: string;
-          file_name: string;
-          folder: string;
-        }>('music-folder-changed', () => {
-          // Debounce rapid changes (e.g. bulk file copies)
+    (async () => {
+      for (const folder of musicFolders) {
+        const unlisten = await libraryPlatform.watchFolder(folder, () => {
           if (debounceTimer) clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => {
-            rescanLocal();
-          }, 500);
+          debounceTimer = setTimeout(() => rescanLocal(), 500);
         });
-      } catch {
-        // Not running in Tauri
+        if (unlisten) unlisteners.push(unlisten);
       }
-    };
-
-    setup();
+    })();
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
-      if (unlisten) unlisten();
-
-      // Unwatch all on cleanup
-      (async () => {
-        try {
-          const { invoke } = await import('@tauri-apps/api/core');
-          await invoke('unwatch_all');
-        } catch {
-          // Ignore
-        }
-      })();
+      for (const u of unlisteners) u();
+      libraryPlatform.unwatchAll();
     };
   }, [musicFolders, rescanLocal]);
 
   const handleAddFolder = async () => {
-    try {
-      // Try Tauri dialog first
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const selected = await open({
-        directory: true,
-        multiple: false,
-        title: 'Select Music Folder',
-      });
-      if (selected && typeof selected === 'string') {
-        addMusicFolder(selected);
-      }
-    } catch {
-      // Fallback: prompt for path
-      const path = window.prompt('Enter the full path to your music folder:');
-      if (path?.trim()) {
-        addMusicFolder(path.trim());
-      }
-    }
+    const selected = await pickFolder();
+    if (selected) addMusicFolder(selected);
   };
 
   const tabs: { id: Tab; label: string; icon: typeof Music }[] = [
@@ -409,7 +344,7 @@ export default function LibraryPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          api.playPlaylist(pl.id);
+                          useBotStore.getState().playPlaylistById(pl.id);
                         }}
                         className="flex h-full w-full items-center justify-center"
                       >
@@ -433,49 +368,26 @@ export default function LibraryPage() {
       {!loading && tab === 'local' && (
         <DropZone
           onDrop={async (paths) => {
-            // Separate folders from individual files
-            // Folders get added to musicFolders; individual files
-            // are resolved and merged into localFiles.
+            // Separate folders from individual files. Folders are added to
+            // musicFolders (triggers rescan); individual files are resolved
+            // and merged into localFiles.
             try {
-              const { invoke } = await import('@tauri-apps/api/core');
-
               const folders: string[] = [];
               const files: string[] = [];
 
               for (const p of paths) {
-                // Ask Rust if the path is a directory
                 try {
-                  const isDir = await invoke<boolean>('is_directory', { path: p });
-                  if (isDir) {
-                    folders.push(p);
-                  } else {
-                    files.push(p);
-                  }
+                  const isDir = await libraryPlatform.isDirectory(p);
+                  (isDir ? folders : files).push(p);
                 } catch {
                   files.push(p);
                 }
               }
 
-              // Add folders to the music folders list (triggers rescan)
-              for (const folder of folders) {
-                addMusicFolder(folder);
-              }
+              for (const folder of folders) addMusicFolder(folder);
 
-              // Resolve individual files and merge into localFiles
               if (files.length > 0) {
-                const resolved = await invoke<
-                  Array<{
-                    file_path: string;
-                    file_name: string;
-                    title: string;
-                    artist: string;
-                    album?: string;
-                    duration?: number;
-                    size: number;
-                    media_type?: string;
-                  }>
-                >('resolve_dropped_paths', { paths: files });
-
+                const resolved = await libraryPlatform.resolvePaths(files);
                 if (resolved.length > 0) {
                   const newTracks: Track[] = resolved.map((t) => ({
                     title: t.title,
@@ -488,7 +400,6 @@ export default function LibraryPage() {
                     mediaType: (t.media_type as 'audio' | 'video') ?? 'audio',
                   }));
 
-                  // Merge without duplicates
                   setLocalFiles((prev) => {
                     const existing = new Set(prev.map((f) => f.filePath));
                     const unique = newTracks.filter((t) => !existing.has(t.filePath));
@@ -497,7 +408,7 @@ export default function LibraryPage() {
                 }
               }
             } catch {
-              // Not in Tauri or invoke failed
+              // Non-fatal: scan failed
             }
           }}
         >

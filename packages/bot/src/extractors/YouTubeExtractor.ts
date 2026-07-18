@@ -4,8 +4,11 @@ import { PassThrough } from 'stream';
 import { EventEmitter } from 'events';
 import { createLogger } from '../helpers/logger.js';
 import { streamAudio as ytDlpStreamAudio } from '../helpers/ytdlp.js';
+import { TrackCacheRepository } from '../database/repositories/TrackCacheRepository.js';
 
 const log = createLogger('youtube-extractor');
+
+const CACHE_PLATFORM_YOUTUBE = 'youtube';
 
 export type StreamClient = 'ANDROID' | 'WEB' | 'yt-dlp';
 
@@ -81,6 +84,8 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
 
   /** Event emitter for stream status updates (consumed by WebSocket layer). */
   public readonly events = new EventEmitter();
+
+  private trackCache = new TrackCacheRepository();
 
   async activate(): Promise<void> {
     log.info('Activating CustomYouTubeExtractor');
@@ -184,6 +189,24 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
   /* ------------------------------------------------------------------ */
 
   private async handleVideo(yt: Innertube, videoId: string, context: ExtractorSearchContext) {
+    // Cache lookup — skip the Innertube getBasicInfo call if we've seen this videoId.
+    const cached = await this.readCache(videoId);
+    if (cached) {
+      const track = new Track(this.context.player, {
+        title: cached.title,
+        author: cached.artist ?? 'Unknown Artist',
+        url: cached.url,
+        thumbnail: cached.thumbnail ?? '',
+        duration: this.formatDuration(cached.duration),
+        requestedBy: context.requestedBy,
+        source: 'youtube',
+        queryType: 'youtubeVideo',
+      });
+      track.extractor = this;
+      log.debug({ videoId }, 'YouTube track served from cache');
+      return this.createResponse(null, [track]);
+    }
+
     try {
       const info = await yt.getBasicInfo(videoId);
       const basic = info.basic_info;
@@ -200,10 +223,69 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
       });
       track.extractor = this;
 
+      // Fire-and-forget cache write (non-fatal).
+      void this.writeCache(videoId, {
+        title: basic.title,
+        author: basic.author,
+        duration: basic.duration,
+        thumbnail: basic.thumbnail?.[0]?.url,
+      });
+
       return this.createResponse(null, [track]);
     } catch (err) {
       log.error({ err, videoId }, 'Failed to fetch video info');
       return this.createResponse(null, []);
+    }
+  }
+
+  /**
+   * Look up a YouTube video by ID in the TrackCache. DB errors are swallowed
+   * so the extractor always falls through to Innertube.
+   */
+  private async readCache(videoId: string): Promise<{
+    title: string;
+    artist: string | null;
+    url: string;
+    thumbnail: string | null;
+    duration: number;
+  } | null> {
+    try {
+      const row = await this.trackCache.get(CACHE_PLATFORM_YOUTUBE, videoId);
+      if (!row) return null;
+      return {
+        title: row.title,
+        artist: row.artist,
+        url: row.url,
+        thumbnail: row.thumbnail,
+        duration: row.duration,
+      };
+    } catch (err) {
+      log.warn({ err, videoId }, 'TrackCache lookup failed — falling back to Innertube');
+      return null;
+    }
+  }
+
+  /**
+   * Persist a YouTube video's metadata in the TrackCache. DB errors are
+   * swallowed — the extractor still succeeds with the Innertube response.
+   * Duration is stored in seconds (matching Innertube's `basic.duration`).
+   */
+  private async writeCache(
+    videoId: string,
+    data: { title?: string; author?: string; duration?: number; thumbnail?: string },
+  ): Promise<void> {
+    try {
+      await this.trackCache.set({
+        platform: CACHE_PLATFORM_YOUTUBE,
+        platformId: videoId,
+        title: data.title ?? 'Unknown Title',
+        artist: data.author,
+        duration: data.duration ?? 0,
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        thumbnail: data.thumbnail,
+      });
+    } catch (err) {
+      log.warn({ err, videoId }, 'TrackCache write failed — continuing without caching');
     }
   }
 
@@ -399,6 +481,11 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
   private async pipeDownload(yt: Innertube, videoId: string, clientLabel: string): Promise<PassThrough> {
     const iter = await yt.download(videoId, { type: 'audio', quality: 'best' });
     const passthrough = new PassThrough({ highWaterMark: 1 << 20 }); // 1 MB buffer
+
+    // Attach a safety listener so that if the download fails before the stream
+    // is returned to the caller, the 'error' event from destroy() doesn't crash
+    // the process.  The actual error is surfaced via the firstChunkPromise reject.
+    passthrough.on('error', () => {});
 
     let bytesWritten = 0;
     let firstChunkSettled = false;

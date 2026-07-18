@@ -1,9 +1,18 @@
 import { create } from 'zustand';
-import { api } from '@/lib/api';
+import { api, setAuthToken as setApiAuthToken, setAuthFailureHandler } from '@/lib/api';
 import { wsService } from '@/lib/ws';
+import { clientKind, startOAuth } from '@/platform';
+import type { TrackMediaType, TrackPlatform } from 'discord-dashboard-shared';
 
 export type PlaybackMode = 'bot' | 'local' | 'sync';
 
+/**
+ * Desktop-side Track view. Every field is optional because the desktop
+ * enriches partial track metadata from multiple sources (search, WS updates,
+ * local file scan). The shared `Track` in `discord-dashboard-shared` is the
+ * bot-producer shape with stricter required fields — use that when receiving
+ * data from the bot, convert to this shape for UI use.
+ */
 export interface Track {
   title: string;
   artist?: string;
@@ -11,12 +20,12 @@ export interface Track {
   duration?: number;
   url?: string;
   thumbnail?: string;
-  platform?: string;
+  platform?: TrackPlatform | string;
   filePath?: string;
   fileName?: string;
   requestedBy?: string;
   /** 'audio' or 'video' — indicates the source file type */
-  mediaType?: 'audio' | 'video';
+  mediaType?: TrackMediaType;
   /** Direct URL for video streaming (set when mediaType is 'video') */
   videoUrl?: string;
 }
@@ -157,7 +166,13 @@ interface BotStore {
   // Voice channel selection — when play needs a channel, this is set for UI to show modal
   pendingPlay: { query: string; platform?: string } | null;
   setPendingPlay: (p: { query: string; platform?: string } | null) => void;
+  // When play-all on a playlist needs a voice channel, this holds the playlist id.
+  pendingPlaylistPlay: string | null;
+  setPendingPlaylistPlay: (id: string | null) => void;
   playWithVoiceChannel: (voiceChannelId: string) => Promise<void>;
+
+  // Playlist actions — respects playbackMode
+  playPlaylistById: (playlistId: string) => Promise<void>;
 
   // Actions
   play: (query: string, platform?: string) => Promise<void>;
@@ -310,6 +325,8 @@ export const useBotStore = create<BotStore>((set, get) => ({
         // Manual token entry — validate it
         const userRes = await api.getUser(manualToken);
         localStorage.setItem(AUTH_TOKEN_KEY, manualToken);
+        setApiAuthToken(manualToken);
+        wsService.setAuthToken(manualToken);
         set({
           botToken: manualToken,
           botUser: userRes,
@@ -324,19 +341,22 @@ export const useBotStore = create<BotStore>((set, get) => ({
       const status = await api.getAuthStatus();
 
       if (status.oauthConfigured) {
-        // Full OAuth flow — open Discord auth URL in browser
-        const { url } = await api.getAuthUrl();
-        try {
-          const { open } = await import('@tauri-apps/plugin-shell');
-          await open(url);
-        } catch {
-          window.open(url, '_blank');
-        }
+        // Full OAuth flow.
+        //   Tauri: open the auth URL externally; the token comes back via the
+        //     deep-link listener registered in App.tsx.
+        //   Web: navigate the current tab; the token comes back via the
+        //     /auth/callback SPA route.
+        const kind = clientKind();
+        const origin = kind === 'web' ? window.location.origin : undefined;
+        const { url } = await api.getAuthUrl(kind, origin);
+        await startOAuth(url);
         set({ botConnecting: false });
       } else {
         // Quick connect — no OAuth needed, connect directly to bot
         const result = await api.quickConnect();
         localStorage.setItem(AUTH_TOKEN_KEY, result.token);
+        setApiAuthToken(result.token);
+        wsService.setAuthToken(result.token);
         set({
           botToken: result.token,
           botUser: result.bot
@@ -358,6 +378,8 @@ export const useBotStore = create<BotStore>((set, get) => ({
 
   disconnectBot: () => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
+    setApiAuthToken(null);
+    wsService.setAuthToken(null);
     get().disconnect();
     set({
       botToken: null,
@@ -371,6 +393,11 @@ export const useBotStore = create<BotStore>((set, get) => ({
   restoreBotConnection: async () => {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) return;
+
+    // Set the token on api + ws BEFORE we call any endpoints, so /api/auth/user
+    // itself is authenticated on the first call.
+    setApiAuthToken(token);
+    wsService.setAuthToken(token);
 
     try {
       const user = await api.getUser(token);
@@ -397,6 +424,8 @@ export const useBotStore = create<BotStore>((set, get) => ({
     } catch {
       // Token expired — clear it silently
       localStorage.removeItem(AUTH_TOKEN_KEY);
+      setApiAuthToken(null);
+      wsService.setAuthToken(null);
     }
   },
 
@@ -549,11 +578,16 @@ export const useBotStore = create<BotStore>((set, get) => ({
   },
 
   setPlaybackMode: (mode: PlaybackMode) => {
-    const { playbackMode: current, localAudio } = get();
+    const { playbackMode: current, localAudio, player } = get();
     if (mode === current) return;
 
-    // When switching FROM local-only to bot-only, stop local audio
+    // When switching FROM local-only to bot-only, stop local audio and
+    // hand off the current track to the bot. The voice-channel picker
+    // opens via pendingPlay so the user chooses where to resume.
     if (current === 'local' && mode === 'bot' && localAudio) {
+      const currentTrack = player.currentTrack;
+      const handoffQuery = currentTrack ? (currentTrack.filePath ?? currentTrack.url ?? currentTrack.title) : null;
+
       localAudio.pause();
       localAudio.removeAttribute('src');
       localAudio.load();
@@ -562,12 +596,13 @@ export const useBotStore = create<BotStore>((set, get) => ({
         localQueue: [],
         localHistory: [],
         player: {
-          ...get().player,
+          ...player,
           isPlaying: false,
           currentTrack: null,
           position: 0,
           queue: [],
         },
+        ...(handoffQuery ? { pendingPlay: { query: handoffQuery, platform: currentTrack?.platform } } : {}),
       });
     }
 
@@ -610,7 +645,8 @@ export const useBotStore = create<BotStore>((set, get) => ({
 
   connect: () => {
     const { host, port } = get().connection;
-    wsService.connect(host, port);
+    const token = get().botToken;
+    wsService.connect(host, port, token);
 
     wsService.on('connection', (data: unknown) => {
       const { connected } = data as { connected: boolean };
@@ -666,6 +702,29 @@ export const useBotStore = create<BotStore>((set, get) => ({
       } else {
         // Legacy: no guildId in payload, update global player directly
         set((s) => ({ player: { ...s.player, ...state } }));
+      }
+    });
+
+    wsService.on('player_position', (data: unknown) => {
+      const payload = data as { guildId?: string; position?: number };
+      const { guildId, position } = payload;
+      if (typeof position !== 'number') return;
+
+      if (guildId) {
+        set((s) => {
+          const prev = s.guildPlayers[guildId];
+          if (!prev) return {};
+          const updated = { ...prev, position };
+          const newGuildPlayers = { ...s.guildPlayers, [guildId]: updated };
+          const syncPlayer =
+            (s.playbackMode === 'bot' || s.playbackMode === 'sync') && s.activePlayerGuildId === guildId;
+          return {
+            guildPlayers: newGuildPlayers,
+            ...(syncPlayer ? { player: { ...s.player, position } } : {}),
+          };
+        });
+      } else {
+        set((s) => ({ player: { ...s.player, position } }));
       }
     });
 
@@ -760,52 +819,36 @@ export const useBotStore = create<BotStore>((set, get) => ({
   searchLocalFiles: async (query: string): Promise<Track[]> => {
     const { musicFolders } = get();
     if (musicFolders.length === 0) return [];
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      const allTracks: Track[] = [];
-      const lowerQuery = query.toLowerCase();
-      for (const folder of musicFolders) {
-        try {
-          const tracks = await invoke<
-            Array<{
-              file_path: string;
-              file_name: string;
-              title: string;
-              artist: string;
-              album?: string;
-              duration?: number;
-              size: number;
-              media_type?: string;
-            }>
-          >('scan_music_folder', { path: folder });
-          for (const t of tracks) {
-            if (
-              t.title.toLowerCase().includes(lowerQuery) ||
-              t.artist.toLowerCase().includes(lowerQuery) ||
-              (t.album ?? '').toLowerCase().includes(lowerQuery) ||
-              t.file_name.toLowerCase().includes(lowerQuery)
-            ) {
-              allTracks.push({
-                title: t.title,
-                artist: t.artist,
-                album: t.album ?? undefined,
-                duration: t.duration,
-                filePath: t.file_path,
-                fileName: t.file_name,
-                platform: 'local',
-                mediaType: (t.media_type as 'audio' | 'video') ?? 'audio',
-              });
-            }
+    const { libraryPlatform } = await import('@/platform');
+    const allTracks: Track[] = [];
+    const lowerQuery = query.toLowerCase();
+    for (const folder of musicFolders) {
+      try {
+        const tracks = await libraryPlatform.scanFolder(folder);
+        for (const t of tracks) {
+          if (
+            t.title.toLowerCase().includes(lowerQuery) ||
+            t.artist.toLowerCase().includes(lowerQuery) ||
+            (t.album ?? '').toLowerCase().includes(lowerQuery) ||
+            t.file_name.toLowerCase().includes(lowerQuery)
+          ) {
+            allTracks.push({
+              title: t.title,
+              artist: t.artist,
+              album: t.album ?? undefined,
+              duration: t.duration,
+              filePath: t.file_path,
+              fileName: t.file_name,
+              platform: 'local',
+              mediaType: (t.media_type as 'audio' | 'video') ?? 'audio',
+            });
           }
-        } catch {
-          // Individual folder scan failed
         }
+      } catch {
+        // Individual folder scan failed
       }
-      return allTracks;
-    } catch {
-      // Not running in Tauri
-      return [];
     }
+    return allTracks;
   },
 
   search: async (query, platform) => {
@@ -929,14 +972,94 @@ export const useBotStore = create<BotStore>((set, get) => ({
   pendingPlay: null,
   setPendingPlay: (p) => set({ pendingPlay: p }),
 
+  pendingPlaylistPlay: null,
+  setPendingPlaylistPlay: (id) => set({ pendingPlaylistPlay: id }),
+
   playWithVoiceChannel: async (voiceChannelId: string) => {
-    const { pendingPlay, focusedGuildId } = get();
+    const { pendingPlay, pendingPlaylistPlay, focusedGuildId } = get();
+    // Playlist takes precedence if both happen to be set.
+    if (pendingPlaylistPlay) {
+      set({ pendingPlaylistPlay: null });
+      try {
+        await api.playPlaylist(pendingPlaylistPlay, focusedGuildId ?? undefined, voiceChannelId);
+      } catch {
+        /* handled by WS updates */
+      }
+      return;
+    }
     if (!pendingPlay) return;
     set({ pendingPlay: null });
     try {
       await api.play(pendingPlay.query, pendingPlay.platform, voiceChannelId, focusedGuildId ?? undefined);
     } catch {
       /* handled by WS updates */
+    }
+  },
+
+  playPlaylistById: async (playlistId: string) => {
+    const { playbackMode, focusedGuildId } = get();
+
+    // Helper: load tracks and play first locally, queue the rest.
+    const playLocallyFromPlaylist = async () => {
+      try {
+        const detail = await api.getPlaylist(playlistId);
+        const items = detail.data?.tracks ?? [];
+        if (items.length === 0) {
+          const { toast } = await import('./useToastStore');
+          toast.error('Playlist is empty');
+          return;
+        }
+        const tracks: Track[] = items.map((t) => ({
+          title: t.title,
+          artist: t.artist ?? undefined,
+          duration: t.duration || undefined,
+          url: t.url,
+          thumbnail: t.thumbnail ?? undefined,
+          platform: t.platform,
+        }));
+        // Reset local queue and stage the rest.
+        set({ localQueue: tracks.slice(1) });
+        await get().playTrackLocally(tracks[0]);
+      } catch {
+        const { toast } = await import('./useToastStore');
+        toast.error('Failed to load playlist');
+      }
+    };
+
+    if (playbackMode === 'local') {
+      await playLocallyFromPlaylist();
+      return;
+    }
+
+    if (playbackMode === 'sync') {
+      // Fire bot first; in parallel, also play locally.
+      try {
+        const result = await api.playPlaylist(playlistId, focusedGuildId ?? undefined);
+        if (result?.requiresVoiceChannel) {
+          set({ pendingPlaylistPlay: playlistId });
+        }
+      } catch {
+        /* handled by WS */
+      }
+      await playLocallyFromPlaylist();
+      return;
+    }
+
+    // Bot mode
+    try {
+      const result = await api.playPlaylist(playlistId, focusedGuildId ?? undefined);
+      if (result?.requiresVoiceChannel) {
+        set({ pendingPlaylistPlay: playlistId });
+      } else if (result?.success) {
+        const { toast } = await import('./useToastStore');
+        toast.success(`Queued ${result.data?.tracksQueued ?? 0} tracks`);
+      } else if (result?.error) {
+        const { toast } = await import('./useToastStore');
+        toast.error(result.error);
+      }
+    } catch {
+      const { toast } = await import('./useToastStore');
+      toast.error('Failed to play playlist');
     }
   },
 
@@ -1548,3 +1671,12 @@ export const useBotStore = create<BotStore>((set, get) => ({
     }
   },
 }));
+
+// When the server rejects an API call with 401/403, the token is no longer
+// valid — tear down the session so the UI re-prompts for auth.
+setAuthFailureHandler(() => {
+  const state = useBotStore.getState();
+  if (state.botToken) {
+    state.disconnectBot();
+  }
+});

@@ -16,19 +16,54 @@ import {
 import { PlayerStateManager } from '../status/playerStateManager';
 import { WebSocketManager } from '../websocket';
 
-export const activeController = new Map<string, Message>();
-const updateIntervals = new Map<string, NodeJS.Timeout>();
+/**
+ * Guild-scoped registry for the per-guild controller Message and refresh
+ * interval. Every method takes `guildId` as its first argument, so callers
+ * cannot accidentally key on something else. Previously these were two
+ * free-standing `Map` instances — safe only by convention.
+ */
+class GuildControllerRegistry {
+  private controllers = new Map<string, Message>();
+  private intervals = new Map<string, NodeJS.Timeout>();
+
+  getController(guildId: string): Message | undefined {
+    return this.controllers.get(guildId);
+  }
+
+  setController(guildId: string, message: Message): void {
+    this.controllers.set(guildId, message);
+  }
+
+  hasController(guildId: string): boolean {
+    return this.controllers.has(guildId);
+  }
+
+  deleteController(guildId: string): void {
+    this.controllers.delete(guildId);
+  }
+
+  setInterval(guildId: string, interval: NodeJS.Timeout): void {
+    this.clearInterval(guildId);
+    this.intervals.set(guildId, interval);
+  }
+
+  clearInterval(guildId: string): void {
+    const existing = this.intervals.get(guildId);
+    if (existing) {
+      clearInterval(existing);
+      this.intervals.delete(guildId);
+    }
+  }
+}
+
+export const controllerRegistry = new GuildControllerRegistry();
 
 const stopUpdateInterval = (guildId: string) => {
-  const interval = updateIntervals.get(guildId);
-  if (interval) {
-    clearInterval(interval);
-    updateIntervals.delete(guildId);
-  }
+  controllerRegistry.clearInterval(guildId);
 };
 
 const cleanupControllerMessage = async (guildId: string) => {
-  const controller = activeController.get(guildId);
+  const controller = controllerRegistry.getController(guildId);
   if (!controller) return;
 
   let canManageMessages = true;
@@ -47,7 +82,7 @@ const cleanupControllerMessage = async (guildId: string) => {
 
   if (canManageMessages) {
     await controller.delete().catch(() => {});
-    activeController.delete(guildId);
+    controllerRegistry.deleteController(guildId);
     return;
   }
 
@@ -254,7 +289,7 @@ export class PlayerEventManager {
       this.playerStateManager?.forceUpdate(queue.guild.id);
 
       // Refresh controller immediately if it exists so Next enables
-      const controller = activeController.get(queue.guild.id);
+      const controller = controllerRegistry.getController(queue.guild.id);
       if (controller) controller.edit(getControllerPayload(queue)).catch(() => {});
     });
 
@@ -270,7 +305,7 @@ export class PlayerEventManager {
         trackCount: tracks.length,
       });
 
-      const controller = activeController.get(queue.guild.id);
+      const controller = controllerRegistry.getController(queue.guild.id);
       if (controller) controller.edit(getControllerPayload(queue)).catch(() => {});
     });
 
@@ -301,18 +336,18 @@ export class PlayerEventManager {
       if (!textChannel || !(textChannel instanceof TextChannel)) return;
 
       const payload = getControllerPayload(queue);
-      const controller = activeController.get(queue.guild.id);
+      const controller = controllerRegistry.getController(queue.guild.id);
 
       try {
         if (controller) {
           await controller.edit(payload);
         } else {
           const message = await textChannel.send(payload);
-          activeController.set(queue.guild.id, message);
+          controllerRegistry.setController(queue.guild.id, message);
         }
       } catch {
         const message = await textChannel.send(payload);
-        activeController.set(queue.guild.id, message);
+        controllerRegistry.setController(queue.guild.id, message);
       }
 
       if (track.duration !== '0:00') {
@@ -323,14 +358,14 @@ export class PlayerEventManager {
             return;
           }
           const newPayload = getControllerPayload(currentQueue);
-          const controllerMessage = activeController.get(queue.guild.id);
+          const controllerMessage = controllerRegistry.getController(queue.guild.id);
           if (controllerMessage) {
             await controllerMessage.edit(newPayload).catch(() => stopUpdateInterval(queue.guild.id));
           } else {
             stopUpdateInterval(queue.guild.id);
           }
         }, 1000);
-        updateIntervals.set(queue.guild.id, interval);
+        controllerRegistry.setInterval(queue.guild.id, interval);
       } else {
         stopUpdateInterval(queue.guild.id);
       }

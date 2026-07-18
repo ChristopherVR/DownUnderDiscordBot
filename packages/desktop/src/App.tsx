@@ -18,11 +18,15 @@ import PlaylistDetailPage from '@/pages/PlaylistDetailPage';
 import SettingsPage from '@/pages/SettingsPage';
 import CommandLogsPage from '@/pages/CommandLogsPage';
 import LogsPage from '@/pages/LogsPage';
+import AuthCallbackPage from '@/pages/AuthCallbackPage';
+import { registerDeepLinkAuth, platform } from '@/platform';
 import { MessageSquare } from 'lucide-react';
 
 export default function App() {
   const pendingPlay = useBotStore((s) => s.pendingPlay);
   const setPendingPlay = useBotStore((s) => s.setPendingPlay);
+  const pendingPlaylistPlay = useBotStore((s) => s.pendingPlaylistPlay);
+  const setPendingPlaylistPlay = useBotStore((s) => s.setPendingPlaylistPlay);
   const playWithVoiceChannel = useBotStore((s) => s.playWithVoiceChannel);
   const restoreBotConnection = useBotStore((s) => s.restoreBotConnection);
   const initSystemListener = useThemeStore((s) => s.initSystemListener);
@@ -41,35 +45,25 @@ export default function App() {
     restoreBotConnection();
   }, [restoreBotConnection]);
 
-  // Listen for deep-link auth callbacks (downunder://auth?token=...)
+  // Tauri deep-link auth listener. No-op in browser mode (web uses the
+  // `/auth/callback` route below to pick the token out of the URL).
   useEffect(() => {
-    const handleDeepLink = async () => {
-      try {
-        const { onOpenUrl } = await import('@tauri-apps/plugin-deep-link');
-        await onOpenUrl((urls: string[]) => {
-          for (const url of urls) {
-            if (url.includes('auth') && url.includes('token=')) {
-              const urlObj = new URL(url.replace('downunder://', 'http://localhost/'));
-              const token = urlObj.searchParams.get('token');
-              if (token) {
-                useBotStore.getState().connectToBot(token);
-              }
-            }
-          }
-        });
-      } catch {
-        // Not in Tauri environment — deep links won't work
-      }
+    let unlisten: (() => void) | null = null;
+    (async () => {
+      unlisten = await registerDeepLinkAuth((token) => {
+        useBotStore.getState().connectToBot(token);
+      });
+    })();
+    return () => {
+      unlisten?.();
     };
-
-    handleDeepLink();
   }, []);
 
   // App always opens directly — no login or server selection gates
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[var(--background)]">
-      <TitleBar />
-      <div className="flex flex-1 overflow-hidden pt-9">
+      {platform.showCustomTitlebar && <TitleBar />}
+      <div className={`flex flex-1 overflow-hidden ${platform.showCustomTitlebar ? 'pt-9' : 'pt-0'}`}>
         <Sidebar />
         <main
           className="flex-1 overflow-y-auto transition-all duration-300 ease-in-out"
@@ -89,6 +83,7 @@ export default function App() {
               <Route path="/command-logs" element={<CommandLogsPage />} />
               <Route path="/logs" element={<LogsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>
@@ -115,7 +110,14 @@ export default function App() {
       </div>
       <PlayerBar />
       <VideoPreview />
-      <VoiceChannelModal open={!!pendingPlay} onClose={() => setPendingPlay(null)} onSelect={playWithVoiceChannel} />
+      <VoiceChannelModal
+        open={!!pendingPlay || !!pendingPlaylistPlay}
+        onClose={() => {
+          setPendingPlay(null);
+          setPendingPlaylistPlay(null);
+        }}
+        onSelect={playWithVoiceChannel}
+      />
       <ToastContainer />
     </div>
   );

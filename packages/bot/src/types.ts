@@ -23,6 +23,7 @@ export type LogMessage = {
   message: string;
   ts: number;
   source?: string;
+  guildId?: string;
   metadata?: Record<string, unknown>;
 };
 

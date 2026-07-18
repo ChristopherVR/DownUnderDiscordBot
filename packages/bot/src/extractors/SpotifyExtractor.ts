@@ -1,8 +1,11 @@
 import { BaseExtractor, Track, Playlist, ExtractorSearchContext } from 'discord-player';
 import SpotifyWebApi from 'spotify-web-api-node';
 import { createLogger } from '../helpers/logger.js';
+import { TrackCacheRepository } from '../database/repositories/TrackCacheRepository.js';
 
 const log = createLogger('spotify-extractor');
+
+const CACHE_PLATFORM_SPOTIFY = 'spotify';
 
 // Spotify URL patterns
 const SPOTIFY_TRACK_REGEX = /^(?:https?:\/\/)?(?:open\.)?spotify\.com\/(?:intl-[a-z]+\/)?track\/([a-zA-Z0-9]+)/;
@@ -25,6 +28,7 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
 
   private spotifyApi: SpotifyWebApi | null = null;
   private tokenExpiry = 0;
+  private trackCache = new TrackCacheRepository();
 
   async activate(): Promise<void> {
     const clientId = this.options.clientId ?? process.env.SPOTIFY_CLIENT_ID;
@@ -165,13 +169,87 @@ export class SpotifyExtractor extends BaseExtractor<SpotifyExtractorOptions> {
   }
 
   private async handleTrack(trackId: string, context: ExtractorSearchContext) {
+    // Cache lookup — skip the API if we've seen this trackId before.
+    const cached = await this.readCache(trackId);
+    if (cached) {
+      const track = new Track(this.context.player, {
+        title: cached.title,
+        author: cached.artist ?? 'Unknown Artist',
+        url: cached.url,
+        thumbnail: cached.thumbnail ?? '',
+        duration: this.formatDuration(cached.duration),
+        requestedBy: context.requestedBy,
+        source: 'spotify',
+      });
+      track.extractor = this;
+      log.debug({ trackId }, 'Spotify track served from cache');
+      return this.createResponse(null, [track]);
+    }
+
     try {
       const data = await this.spotifyApi!.getTrack(trackId);
-      const track = this.spotifyTrackToTrack(data.body as unknown as Record<string, unknown>, context);
+      const body = data.body as unknown as Record<string, unknown>;
+      const track = this.spotifyTrackToTrack(body, context);
+
+      // Fire-and-forget cache write (non-fatal).
+      void this.writeCache(trackId, body);
+
       return this.createResponse(null, [track]);
     } catch (err) {
       log.error({ err, trackId }, 'Failed to fetch Spotify track');
       return this.createResponse(null, []);
+    }
+  }
+
+  /**
+   * Look up a Spotify track by ID in the TrackCache. Any DB error is swallowed
+   * so the extractor always falls through to the API.
+   */
+  private async readCache(trackId: string): Promise<{
+    title: string;
+    artist: string | null;
+    url: string;
+    thumbnail: string | null;
+    duration: number;
+  } | null> {
+    try {
+      const row = await this.trackCache.get(CACHE_PLATFORM_SPOTIFY, trackId);
+      if (!row) return null;
+      return {
+        title: row.title,
+        artist: row.artist,
+        url: row.url,
+        thumbnail: row.thumbnail,
+        duration: row.duration,
+      };
+    } catch (err) {
+      log.warn({ err, trackId }, 'TrackCache lookup failed — falling back to Spotify API');
+      return null;
+    }
+  }
+
+  /**
+   * Persist a Spotify track's metadata in the TrackCache. Any DB error is
+   * swallowed — the extractor still succeeds with the API response.
+   */
+  private async writeCache(trackId: string, body: Record<string, unknown>): Promise<void> {
+    try {
+      const album = body.album as Record<string, unknown> | undefined;
+      const images = album?.images as Array<{ url: string }> | undefined;
+      const artists = body.artists as Array<{ name: string }> | undefined;
+      const externalUrls = body.external_urls as Record<string, string> | undefined;
+
+      await this.trackCache.set({
+        platform: CACHE_PLATFORM_SPOTIFY,
+        platformId: trackId,
+        title: String(body.name ?? 'Unknown'),
+        artist: artists?.map((a) => a.name).join(', '),
+        duration: Number(body.duration_ms ?? 0),
+        url: externalUrls?.spotify ?? `https://open.spotify.com/track/${trackId}`,
+        thumbnail: images?.[0]?.url,
+      });
+    } catch (err) {
+      log.warn({ err, trackId }, 'TrackCache write failed — continuing without caching');
     }
   }
 

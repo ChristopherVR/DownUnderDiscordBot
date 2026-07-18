@@ -1,16 +1,61 @@
-let baseUrl = 'http://localhost:3000';
+function resolveDefaultBaseUrl(): string {
+  if (typeof window === 'undefined') return 'http://localhost:3000';
+  // Browser mode: same-origin. The SPA is served by the bot.
+  if (!('__TAURI_INTERNALS__' in window)) return window.location.origin;
+  // Tauri mode: explicit override, or legacy localhost default.
+  return (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:3000';
+}
+
+function resolveInitialAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    // Keep in sync with AUTH_TOKEN_KEY in stores/useBotStore.ts.
+    return window.localStorage.getItem('downunder_auth_token');
+  } catch {
+    return null;
+  }
+}
+
+let baseUrl = resolveDefaultBaseUrl();
+// Initialize synchronously from localStorage so that requests fired before
+// `restoreBotConnection` runs (e.g. a page-load fetch from LibraryPage) still
+// carry the JWT and don't 401 in a race against the auth-restore effect.
+let authToken: string | null = resolveInitialAuthToken();
+let onAuthFailure: (() => void) | null = null;
 
 export function setApiBaseUrl(host: string, port: number) {
   baseUrl = `http://${host}:${port}`;
 }
 
-function buildHeaders(guildId?: string, extra?: Record<string, string>): Record<string, string> {
+export function getApiBaseUrl(): string {
+  return baseUrl;
+}
+
+/** Set (or clear) the JWT used for every subsequent API request. */
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
+/** Register a handler invoked when the server replies with 401/403. */
+export function setAuthFailureHandler(handler: (() => void) | null) {
+  onAuthFailure = handler;
+}
+
+function buildHeaders(
+  guildId?: string,
+  extra?: Record<string, string>,
+  overrideToken?: string,
+): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...extra,
   };
   if (guildId) {
     headers['x-guild-id'] = guildId;
+  }
+  const token = overrideToken ?? authToken;
+  if (token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${token}`;
   }
   return headers;
 }
@@ -21,6 +66,9 @@ async function request<T>(path: string, options?: RequestInit & { guildId?: stri
     ...fetchOptions,
     headers: buildHeaders(guildId, fetchOptions?.headers as Record<string, string> | undefined),
   });
+  if (res.status === 401 || res.status === 403) {
+    onAuthFailure?.();
+  }
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
@@ -28,11 +76,11 @@ async function request<T>(path: string, options?: RequestInit & { guildId?: stri
 async function authedRequest<T>(path: string, token: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${baseUrl}${path}`, {
     ...options,
-    headers: buildHeaders(undefined, {
-      Authorization: `Bearer ${token}`,
-      ...(options?.headers as Record<string, string> | undefined),
-    }),
+    headers: buildHeaders(undefined, options?.headers as Record<string, string> | undefined, token),
   });
+  if (res.status === 401 || res.status === 403) {
+    onAuthFailure?.();
+  }
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
@@ -45,7 +93,11 @@ export const api = {
       bot: { id: string; username: string; avatar: string | null } | null;
     }>('/api/auth/status'),
 
-  getAuthUrl: () => request<{ url: string }>('/api/auth/discord'),
+  getAuthUrl: (client: 'tauri' | 'web' = 'tauri', origin?: string) => {
+    const params = new URLSearchParams({ client });
+    if (origin) params.set('origin', origin);
+    return request<{ url: string }>(`/api/auth/discord?${params.toString()}`);
+  },
 
   quickConnect: () =>
     request<{
@@ -108,6 +160,9 @@ export const api = {
       headers: buildHeaders(guildId),
       body: JSON.stringify({ query, platform, voiceChannelId }),
     });
+    if (res.status === 401 || res.status === 403) {
+      onAuthFailure?.();
+    }
     return res.json();
   },
   pause: (guildId?: string) => request('/api/music/pause', { method: 'POST', guildId }),
@@ -240,18 +295,82 @@ export const api = {
   // Local files
   getLocalFiles: () => request('/api/music/local-files'),
 
-  // Streaming URLs for local playback mode
-  getStreamUrl: (trackUrl: string) => `${baseUrl}/api/music/stream?url=${encodeURIComponent(trackUrl)}`,
+  // Library (web-mode equivalents of the Tauri scan_music_folder invokes)
+  scanLibraryFolder: (path: string) =>
+    request<
+      Array<{
+        file_path: string;
+        file_name: string;
+        title: string;
+        artist: string;
+        album?: string;
+        duration?: number;
+        size: number;
+        media_type?: string;
+      }>
+    >('/api/library/scan', {
+      method: 'POST',
+      body: JSON.stringify({ path }),
+    }),
 
-  getLocalStreamUrl: (filePath: string) => `${baseUrl}/api/music/stream/local?path=${encodeURIComponent(filePath)}`,
+  resolveLibraryPaths: (paths: string[]) =>
+    request<
+      Array<{
+        file_path: string;
+        file_name: string;
+        title: string;
+        artist: string;
+        album?: string;
+        duration?: number;
+        size: number;
+        media_type?: string;
+      }>
+    >('/api/library/resolve', {
+      method: 'POST',
+      body: JSON.stringify({ paths }),
+    }),
 
-  getUploadStreamUrl: (fileName: string) => `${baseUrl}/api/music/stream?filePath=${encodeURIComponent(fileName)}`,
+  libraryIsDirectory: async (path: string) => {
+    const res = await request<{ isDirectory: boolean }>('/api/library/is-directory', {
+      method: 'POST',
+      body: JSON.stringify({ path }),
+    });
+    return res.isDirectory;
+  },
+
+  // Streaming URLs for local playback mode. Token is appended as a query
+  // parameter because <audio>/<video> elements can't set Authorization headers.
+  getStreamUrl: (trackUrl: string, guildId?: string) => {
+    const params = new URLSearchParams({ url: trackUrl });
+    if (authToken) params.set('token', authToken);
+    if (guildId) params.set('guildId', guildId);
+    return `${baseUrl}/api/music/stream?${params.toString()}`;
+  },
+
+  getLocalStreamUrl: (filePath: string, guildId?: string) => {
+    const params = new URLSearchParams({ path: filePath });
+    if (authToken) params.set('token', authToken);
+    if (guildId) params.set('guildId', guildId);
+    return `${baseUrl}/api/music/stream/local?${params.toString()}`;
+  },
+
+  getUploadStreamUrl: (fileName: string, guildId?: string) => {
+    const params = new URLSearchParams({ filePath: fileName });
+    if (authToken) params.set('token', authToken);
+    if (guildId) params.set('guildId', guildId);
+    return `${baseUrl}/api/music/stream?${params.toString()}`;
+  },
 
   /**
    * Get a video stream URL for a local file (Tauri music folder).
    * Same as getLocalStreamUrl but semantically for video content.
    */
-  getVideoStreamUrl: (filePath: string) => `${baseUrl}/api/music/stream/local?path=${encodeURIComponent(filePath)}`,
+  getVideoStreamUrl: (filePath: string, guildId?: string) => {
+    const params = new URLSearchParams({ path: filePath });
+    if (authToken) params.set('token', authToken);
+    if (guildId) params.set('guildId', guildId);
+    return `${baseUrl}/api/music/stream/local?${params.toString()}`;
+  },
 
   // Playlists
   getPlaylists: () => request<{ success: boolean; data: PlaylistSummary[] }>('/api/playlists'),
@@ -303,7 +422,27 @@ export const api = {
       body: JSON.stringify({ position }),
     }),
 
-  playPlaylist: (id: string) => request(`/api/playlists/${id}/play`, { method: 'POST' }),
+  playPlaylist: async (
+    id: string,
+    guildId?: string,
+    voiceChannelId?: string,
+  ): Promise<{
+    success: boolean;
+    requiresVoiceChannel?: boolean;
+    error?: string;
+    data?: { playlistName: string; tracksQueued: number };
+  }> => {
+    // Raw fetch so we can read the 400 body when requiresVoiceChannel is true.
+    const res = await fetch(`${baseUrl}/api/playlists/${id}/play`, {
+      method: 'POST',
+      headers: buildHeaders(guildId),
+      body: JSON.stringify({ voiceChannelId }),
+    });
+    if (res.status === 401 || res.status === 403) {
+      onAuthFailure?.();
+    }
+    return res.json();
+  },
 
   // Commands (chat panel)
   getCommandRegistry: () => request<{ success: boolean; commands: CommandRegistryItem[] }>('/api/commands/registry'),
@@ -350,6 +489,7 @@ export const api = {
         message: string;
         ts: number;
         source?: string;
+        guildId?: string;
         metadata?: Record<string, unknown>;
       }>;
       total: number;

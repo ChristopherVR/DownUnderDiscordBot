@@ -27,18 +27,20 @@ export default defineConfig({
       : undefined,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:3000',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://localhost:3001',
+        target: (process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:3000').replace(/^http/, 'ws'),
         ws: true,
       },
     },
   },
   envPrefix: ['VITE_', 'TAURI_'],
   build: {
-    target: process.env.TAURI_PLATFORM === 'windows' ? 'chrome105' : 'safari13',
+    // Tauri webviews pin to Chrome 105 on Windows and Safari 13 on mac/Linux
+    // (via WKWebView/WebKitGTK). Plain web builds target evergreen browsers.
+    target: process.env.TAURI_PLATFORM === 'windows' ? 'chrome105' : process.env.TAURI_PLATFORM ? 'safari13' : 'es2020',
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!process.env.TAURI_DEBUG,
   },

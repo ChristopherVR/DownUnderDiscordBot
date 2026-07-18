@@ -8,6 +8,7 @@ import { createLogger } from '../logger';
 import { registerExtractors } from '../../extractors/index';
 import { CustomYouTubeExtractor } from '../../extractors/YouTubeExtractor';
 import type { StreamStatusEvent } from '../../extractors/YouTubeExtractor';
+import { isE2EMode, registerE2EExtractors } from '../../testMode/index';
 
 let player: Player | null = null;
 let playerEventManager: PlayerEventManager | null = null;
@@ -114,8 +115,13 @@ export const initializePlayer = async (client: Client, wsManager?: WebSocketMana
     log.debug(`Voice connection established for guild ${queue.guild.id}`);
   });
 
-  // Register all platform extractors (YouTube, Spotify bridge, SoundCloud, local)
-  await registerExtractors(player);
+  // Register platform extractors. In E2E mode, swap in the fixture extractor
+  // so no real network / platform calls happen.
+  if (isE2EMode()) {
+    await registerE2EExtractors(player);
+  } else {
+    await registerExtractors(player);
+  }
 
   // Initialize state manager with enhanced functionality
   playerStateManager = new PlayerStateManager(player);

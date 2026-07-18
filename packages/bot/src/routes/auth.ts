@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import type { Router as RouterType } from 'express';
+import type { NextFunction, Router as RouterType } from 'express';
 import jwt from 'jsonwebtoken';
 import type { Client, Guild } from 'discord.js';
 import { createLogger } from '../helpers/logger.js';
@@ -8,7 +8,22 @@ const log = createLogger('auth');
 const router: RouterType = Router();
 
 const DISCORD_API = 'https://discord.com/api/v10';
-const JWT_SECRET = process.env.JWT_SECRET || 'downunder-dev-secret-change-in-prod';
+
+const JWT_SECRET = (() => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    log.fatal('JWT_SECRET environment variable is required. Set it to a random string of at least 32 characters.');
+    process.exit(1);
+  }
+  if (secret.length < 32) {
+    log.warn(
+      { length: secret.length },
+      'JWT_SECRET is shorter than 32 characters; use a stronger secret in production',
+    );
+  }
+  return secret;
+})();
+
 const JWT_EXPIRY = '7d';
 
 // Auto-detect client ID from bot token if DISCORD_CLIENT_ID not explicitly set
@@ -27,6 +42,42 @@ const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || getClientIdFromToken(
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || '';
 const DISCORD_REDIRECT_URI =
   process.env.DISCORD_REDIRECT_URI || `http://localhost:${process.env.PORT || 3000}/api/auth/callback`;
+
+/** Trusted origin for web-mode post-auth redirects. Falls back to the origin
+ *  of the inbound request during the OAuth start (captured into the signed
+ *  state param), so single-host deployments work without configuration. */
+const PUBLIC_APP_ORIGIN = process.env.PUBLIC_APP_ORIGIN || '';
+
+type OAuthClientKind = 'tauri' | 'web';
+
+interface OAuthStatePayload {
+  client: OAuthClientKind;
+  origin?: string;
+  nonce: string;
+}
+
+function signOAuthState(payload: OAuthStatePayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '10m' });
+}
+
+function verifyOAuthState(raw: string): OAuthStatePayload | null {
+  try {
+    const decoded = jwt.verify(raw, JWT_SECRET) as OAuthStatePayload & { iat?: number; exp?: number };
+    if (decoded.client !== 'tauri' && decoded.client !== 'web') return null;
+    return { client: decoded.client, origin: decoded.origin, nonce: decoded.nonce };
+  } catch {
+    return null;
+  }
+}
+
+function resolveCallbackOrigin(req: Request, stateOrigin?: string): string {
+  if (PUBLIC_APP_ORIGIN) return PUBLIC_APP_ORIGIN;
+  if (stateOrigin) return stateOrigin;
+  // Last resort: reconstruct from request headers (proxy-aware via x-forwarded-*).
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+  const host = (req.headers['x-forwarded-host'] as string) || req.headers.host;
+  return `${proto}://${host}`;
+}
 
 interface DiscordUser {
   id: string;
@@ -53,18 +104,30 @@ interface TokenPayload {
 
 /**
  * GET /api/auth/discord
- * Returns the Discord OAuth2 authorization URL for the client to redirect to.
+ * Returns the Discord OAuth2 authorization URL. Accepts `?client=tauri|web`
+ * (default: tauri) and `?origin=<url>` (used by web clients so the server
+ * can redirect the token back to the SPA origin).
  */
-router.get('/discord', (_req: Request, res: Response) => {
+router.get('/discord', (req: Request, res: Response) => {
   if (!DISCORD_CLIENT_ID) {
     return res.status(500).json({ error: 'Discord OAuth not configured' });
   }
+
+  const client: OAuthClientKind = req.query.client === 'web' ? 'web' : 'tauri';
+  const originParam = typeof req.query.origin === 'string' ? req.query.origin : undefined;
+
+  const state = signOAuthState({
+    client,
+    origin: client === 'web' ? originParam : undefined,
+    nonce: Math.random().toString(36).slice(2),
+  });
 
   const params = new URLSearchParams({
     client_id: DISCORD_CLIENT_ID,
     redirect_uri: DISCORD_REDIRECT_URI,
     response_type: 'code',
     scope: 'identify guilds',
+    state,
   });
 
   const url = `https://discord.com/api/oauth2/authorize?${params.toString()}`;
@@ -77,11 +140,15 @@ router.get('/discord', (_req: Request, res: Response) => {
  * fetches user info, creates JWT, and redirects to the Tauri app.
  */
 router.get('/callback', async (req: Request, res: Response) => {
-  const { code } = req.query;
+  const { code, state } = req.query;
 
   if (!code || typeof code !== 'string') {
     return res.status(400).json({ error: 'Missing authorization code' });
   }
+
+  // Default to tauri for backwards compatibility with pre-state-param clients.
+  const parsedState = typeof state === 'string' ? verifyOAuthState(state) : null;
+  const clientKind: OAuthClientKind = parsedState?.client ?? 'tauri';
 
   try {
     // Exchange code for access token
@@ -132,10 +199,18 @@ router.get('/callback', async (req: Request, res: Response) => {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 
-    // Redirect to Tauri app via deep link or to a success page
-    const redirectUrl = `downunder://auth?token=${encodeURIComponent(token)}`;
+    if (clientKind === 'web') {
+      // Same-origin redirect back to the SPA. The app reads the token from the
+      // URL, stores it, and replaces the history entry to scrub the token.
+      const origin = resolveCallbackOrigin(req, parsedState?.origin);
+      const redirectTo = `${origin}/#/auth/callback?token=${encodeURIComponent(token)}`;
+      log.info({ userId: user.id, username: user.username, client: 'web' }, 'User authenticated');
+      return res.redirect(302, redirectTo);
+    }
 
-    // Also provide a web fallback page
+    // Tauri path: HTML page that tries the deep-link and shows the token as
+    // a fallback so the user can paste it manually if the deep-link fails.
+    const redirectUrl = `downunder://auth?token=${encodeURIComponent(token)}`;
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -156,8 +231,7 @@ router.get('/callback', async (req: Request, res: Response) => {
         </body>
       </html>
     `);
-
-    log.info({ userId: user.id, username: user.username }, 'User authenticated');
+    log.info({ userId: user.id, username: user.username, client: 'tauri' }, 'User authenticated');
   } catch (err) {
     log.error({ err }, 'OAuth callback failed');
     res.status(500).json({ error: 'Authentication failed' });
@@ -362,23 +436,138 @@ router.get('/quick-connect', (_req: Request, res: Response) => {
   });
 });
 
+export type AuthedRequest = Request & { auth: TokenPayload };
+
+/**
+ * Verify a JWT token and return its payload. Throws on invalid/expired token.
+ * Used by HTTP middleware and the WebSocket upgrade handshake.
+ */
+export function verifyJwtToken(token: string): TokenPayload {
+  return jwt.verify(token, JWT_SECRET) as TokenPayload;
+}
+
 /**
  * JWT verification middleware for protecting routes.
+ *
+ * Accepts the token from either `Authorization: Bearer <jwt>` or a `?token=`
+ * query parameter. The query fallback exists because HTML media elements
+ * (`<audio>`/`<video>`) cannot set request headers, so stream endpoints
+ * fetched by the browser pass the token via query string.
  */
-export function requireAuth(req: Request, res: Response, next: () => void): void {
+export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  let token: string | null = null;
+
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.slice(7);
+  } else if (typeof req.query.token === 'string' && req.query.token) {
+    token = req.query.token;
+  }
+
+  if (!token) {
     res.status(401).json({ error: 'Authentication required' });
     return;
   }
 
   try {
-    const token = authHeader.slice(7);
-    const payload = jwt.verify(token, JWT_SECRET) as TokenPayload;
-    (req as Request & { auth: TokenPayload }).auth = payload;
+    const payload = verifyJwtToken(token);
+    (req as AuthedRequest).auth = payload;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+// Cache of accessToken -> { guildIds, expiresAt } to avoid hitting Discord on every request.
+const userGuildCache = new Map<string, { guildIds: Set<string>; expiresAt: number }>();
+const USER_GUILD_TTL_MS = 5 * 60 * 1000;
+
+async function fetchUserGuildIds(accessToken: string): Promise<Set<string> | null> {
+  const cached = userGuildCache.get(accessToken);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.guildIds;
+  }
+
+  const resp = await fetch(`${DISCORD_API}/users/@me/guilds`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!resp.ok) return null;
+
+  const userGuilds = (await resp.json()) as DiscordGuild[];
+  const guildIds = new Set(userGuilds.map((g) => g.id));
+
+  userGuildCache.set(accessToken, { guildIds, expiresAt: Date.now() + USER_GUILD_TTL_MS });
+  // Periodic cleanup to cap memory — drop expired entries when cache grows.
+  if (userGuildCache.size > 500) {
+    const now = Date.now();
+    for (const [key, value] of userGuildCache.entries()) {
+      if (value.expiresAt <= now) userGuildCache.delete(key);
+    }
+  }
+  return guildIds;
+}
+
+/**
+ * Extract guildId from header / query / body. Returns null if absent.
+ */
+function extractGuildId(req: Request): string | null {
+  const header = req.headers['x-guild-id'];
+  if (typeof header === 'string' && header) return header;
+  const query = req.query.guildId;
+  if (typeof query === 'string' && query) return query;
+  const params = req.params?.guildId;
+  if (typeof params === 'string' && params) return params;
+  const body = req.body;
+  if (body && typeof body === 'object' && typeof body.guildId === 'string') return body.guildId;
+  return null;
+}
+
+/**
+ * Middleware that ensures the authenticated user has access to the targeted guild.
+ * Must run AFTER requireAuth. Requires an explicit guildId on the request.
+ *
+ * Rules:
+ *  - Quick-connect tokens (userId === 'local') — trusted, any bot guild allowed.
+ *  - Discord-OAuth tokens — user must be a member of the guild (via Discord API) AND the bot must be in it.
+ */
+export async function requireGuildAccess(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const auth = (req as AuthedRequest).auth;
+  if (!auth) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  const guildId = extractGuildId(req);
+  if (!guildId) {
+    res.status(400).json({ error: 'guildId is required' });
+    return;
+  }
+
+  if (!_botGuildIds.has(guildId)) {
+    res.status(403).json({ error: 'Bot is not a member of this guild' });
+    return;
+  }
+
+  // Quick-connect users have full access to whatever guilds the bot is in.
+  if (auth.userId === 'local' || !auth.accessToken) {
+    next();
+    return;
+  }
+
+  try {
+    const userGuildIds = await fetchUserGuildIds(auth.accessToken);
+    if (!userGuildIds) {
+      res.status(401).json({ error: 'Discord token expired' });
+      return;
+    }
+    if (!userGuildIds.has(guildId)) {
+      res.status(403).json({ error: 'You do not have access to this guild' });
+      return;
+    }
+    next();
+  } catch (err) {
+    log.warn({ err, guildId, userId: auth.userId }, 'Guild access check failed');
+    res.status(500).json({ error: 'Failed to verify guild access' });
   }
 }
 

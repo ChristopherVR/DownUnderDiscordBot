@@ -251,6 +251,7 @@ router.put('/:id/tracks/:trackId/reorder', async (req: Request, res: Response) =
 router.post('/:id/play', async (req: Request, res: Response) => {
   try {
     const guildId = getGuildId(req);
+    const { voiceChannelId } = req.body ?? {};
     const playlist = await playlistRepo.findById(String(req.params.id));
 
     if (!playlist) {
@@ -262,7 +263,8 @@ router.post('/:id/play', async (req: Request, res: Response) => {
     }
 
     // Import player and play the first track, queue the rest
-    const { useDefaultPlayer } = await import('../helpers/discord/player');
+    const { useDefaultPlayer, isConnectionHealthy, createBotAudioPlayer, waitForVoiceReady } =
+      await import('../helpers/discord/player');
     const { QueryType } = await import('discord-player');
     const player = useDefaultPlayer();
 
@@ -271,7 +273,45 @@ router.post('/:id/play', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'Guild not found' });
     }
 
-    const queue = player.nodes.get(guild) ?? player.nodes.create(guild);
+    let queue = player.nodes.get(guild) ?? player.nodes.create(guild);
+
+    // Recycle stale connections so we don't try to play through a dead pipe.
+    if (queue.connection && !isConnectionHealthy(queue)) {
+      queue.delete();
+      queue = player.nodes.create(guild);
+    }
+
+    // Bot must be in a voice channel before we can play anything. Mirror the
+    // /api/music/play contract: if not connected and no voiceChannelId was
+    // supplied, signal the client to prompt the user.
+    if (!queue.connection) {
+      if (!voiceChannelId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Bot is not in a voice channel. Provide voiceChannelId to connect.',
+          requiresVoiceChannel: true,
+        });
+      }
+      try {
+        await queue.connect(voiceChannelId, { deaf: true, audioPlayer: createBotAudioPlayer() });
+      } catch (error) {
+        return res.status(502).json({
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to join voice channel',
+        });
+      }
+    }
+
+    try {
+      await waitForVoiceReady(queue);
+    } catch {
+      queue.delete();
+      return res.status(502).json({
+        success: false,
+        error: 'Voice connection timed out. Discord voice server may be unreachable — please try again.',
+      });
+    }
+
     let queuedCount = 0;
 
     for (const t of playlist.tracks) {

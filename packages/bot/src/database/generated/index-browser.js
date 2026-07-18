@@ -22,12 +22,12 @@ exports.Prisma = Prisma;
 exports.$Enums = {};
 
 /**
- * Prisma Client JS version: 7.5.0
- * Query Engine version: 280c870be64f457428992c43c1f6d557fab6e29e
+ * Prisma Client JS version: 7.8.0
+ * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
  */
 Prisma.prismaVersion = {
-  client: '7.5.0',
-  engine: '280c870be64f457428992c43c1f6d557fab6e29e',
+  client: '7.8.0',
+  engine: '3c6e192761c0362d496ed980de936e2f3cebcd3a',
 };
 
 Prisma.PrismaClientKnownRequestError = () => {
@@ -172,6 +172,8 @@ exports.Prisma.QueueSnapshotScalarFieldEnum = {
   volume: 'volume',
   loopMode: 'loopMode',
   tracks: 'tracks',
+  voiceChannelId: 'voiceChannelId',
+  textChannelId: 'textChannelId',
   createdAt: 'createdAt',
 };
 

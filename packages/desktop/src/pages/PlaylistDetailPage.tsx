@@ -72,7 +72,7 @@ export default function PlaylistDetailPage() {
 
   const handlePlayAll = async () => {
     if (!id) return;
-    await api.playPlaylist(id);
+    await useBotStore.getState().playPlaylistById(id);
   };
 
   const handlePlayTrack = async (track: PlaylistTrackItem) => {

@@ -90,6 +90,8 @@ model QueueSnapshot {
   volume          Int      @default(65)
   loopMode        String   @default("off") // "off", "track", "queue"
   tracks          String // JSON array of track objects
+  voiceChannelId  String?
+  textChannelId   String?
   createdAt       DateTime @default(now())
 
   guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
