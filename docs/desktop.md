@@ -12,6 +12,7 @@ The desktop app (`packages/desktop/`) is a Tauri v2 application with a Rust back
 - [State Management](#state-management)
 - [Communication Layer](#communication-layer)
 - [Theming and Design](#theming-and-design)
+- [Bundled Local Bot](#bundled-local-bot)
 - [Building for Production](#building-for-production)
 - [Project Structure](#project-structure)
 
@@ -19,11 +20,15 @@ The desktop app (`packages/desktop/`) is a Tauri v2 application with a Rust back
 
 ## Overview
 
-The desktop app is a standalone native application that connects to a running bot instance. It does **not** run the bot -- it communicates with it via WebSocket (real-time state) and REST API (commands). This design means:
+The desktop app is a standalone native application that connects to a bot instance over WebSocket (real-time state) and REST API (commands) - it doesn't need to run the bot itself. This design means:
 
 - The bot can run on a server or another machine
 - Multiple users can connect to the same bot
 - The dashboard works with or without the bot running (shows disconnected state)
+
+It can also optionally run its own bundled copy of the bot as a background
+process (Settings > "Run Bot Locally", Tauri only) for a single-machine
+setup with no separate hosting - see [Bundled Local Bot](#bundled-local-bot).
 
 ---
 
@@ -133,15 +138,15 @@ Config is stored at `~/.config/discord-music-bot/config.json` (or platform equiv
 
 ### Tauri Configuration (`tauri.conf.json`)
 
-| Setting       | Value                                                  |
-| ------------- | ------------------------------------------------------ |
-| App name      | Down Under Bot                                         |
-| Version       | 2.0.0                                                  |
-| Bundle ID     | `com.downunder.discord-music-bot`                      |
-| Window size   | 1280x800 (min 900x600)                                 |
-| Decorations   | `false` (custom titlebar via `data-tauri-drag-region`) |
-| CSP           | Allows `self`, `localhost` WS/HTTP, HTTPS images       |
-| Build targets | Windows, macOS (universal), Linux                      |
+| Setting       | Value                                                    |
+| ------------- | -------------------------------------------------------- |
+| App name      | Down Under Bot                                           |
+| Version       | 2.0.0                                                    |
+| Bundle ID     | `com.downunder.discord-music-bot`                        |
+| Window size   | 1280x800 (min 900x600)                                   |
+| Decorations   | `false` (custom titlebar via `data-tauri-drag-region`)   |
+| CSP           | Allows `self`, `localhost` WS/HTTP, HTTPS images         |
+| Build targets | Windows, macOS (arm64 + x86_64, built separately), Linux |
 
 ### Rust Dependencies
 

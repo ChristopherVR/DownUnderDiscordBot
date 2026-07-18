@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A multi-platform Discord music bot with a Tauri desktop dashboard. pnpm monorepo with four workspace packages:
 
 - **`packages/bot`** - Node.js/TypeScript Discord bot (discord.js + discord-player) + Express REST/WebSocket API server. Runs standalone; SQLite via Prisma.
-- **`packages/desktop`** - Tauri v2 app (Rust shell + React 19 frontend). Connects to a running bot over HTTP/WebSocket; does **not** run the bot itself. The frontend also runs standalone in a plain browser (see "Dual-target desktop UI" below).
+- **`packages/desktop`** - Tauri v2 app (Rust shell + React 19 frontend). Connects to a bot over HTTP/WebSocket; can optionally run its own bundled copy as a background sidecar too (Settings > "Run Bot Locally", Tauri only - see `docs/desktop.md` § Bundled Local Bot). The frontend also runs standalone in a plain browser (see "Dual-target desktop UI" below).
 - **`packages/shared`** (`discord-dashboard-shared`) - Shared TypeScript types and i18next localization, built to `dist/` and consumed by both bot and desktop.
 - **`packages/e2e`** (`discord-bot-e2e`) - Playwright end-to-end suite driving the desktop web UI against a real bot running in test mode.
 

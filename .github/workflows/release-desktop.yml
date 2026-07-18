@@ -10,17 +10,30 @@ permissions:
 
 jobs:
   build-tauri:
-    name: Build Tauri (${{ matrix.platform }})
+    name: Build Tauri (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: windows-latest
+            name: windows-latest
             args: ''
           - platform: ubuntu-22.04
+            name: ubuntu-22.04
             args: ''
+          # Split from a single universal-apple-darwin build: the bundled
+          # bot sidecar's native addons (better-sqlite3, mediaplex) and the
+          # sidecar Node binary itself aren't lipo'd by Tauri the way the
+          # main Rust binary is, so each Mac arch needs its own fully-native
+          # build (and its own DMG) rather than one universal one.
           - platform: macos-latest
-            args: --target universal-apple-darwin
+            name: macos-aarch64
+            args: --target aarch64-apple-darwin
+            rust_target: aarch64-apple-darwin
+          - platform: macos-latest
+            name: macos-x86_64
+            args: --target x86_64-apple-darwin
+            rust_target: x86_64-apple-darwin
 
     runs-on: ${{ matrix.platform }}
 
@@ -39,7 +52,7 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.rust_target || '' }}
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
@@ -58,10 +71,15 @@ jobs:
       - name: Build shared package
         run: pnpm --filter discord-dashboard-shared build
 
+      - name: Build bot sidecar resources
+        run: pnpm --filter discord-bot run build:sidecar
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: packages/desktop
           tagName: ${{ github.ref_name }}

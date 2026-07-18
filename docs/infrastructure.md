@@ -240,22 +240,29 @@ For now, releases are packaged and published via the `Release Bot (npm)` and
 
 #### Job: `build-tauri` (matrix)
 
-Runs on three platforms in parallel:
+Runs across four matrix entries in parallel:
 
-| Platform | Runner           | Extra Args                        |
-| -------- | ---------------- | --------------------------------- |
-| Windows  | `windows-latest` | --                                |
-| Linux    | `ubuntu-22.04`   | --                                |
-| macOS    | `macos-latest`   | `--target universal-apple-darwin` |
+| Platform      | Runner           | Extra Args                      |
+| ------------- | ---------------- | ------------------------------- |
+| Windows       | `windows-latest` | --                              |
+| Linux         | `ubuntu-22.04`   | --                              |
+| macOS (arm64) | `macos-latest`   | `--target aarch64-apple-darwin` |
+| macOS (Intel) | `macos-latest`   | `--target x86_64-apple-darwin`  |
+
+macOS builds one native binary per architecture rather than a single
+universal one - the bundled bot sidecar's native addons and its Node.js
+binary aren't lipo'd by Tauri the way the main Rust binary is, so each
+arch needs its own fully-native build and its own DMG.
 
 Steps per platform:
 
 1. Checkout code
 2. Set up pnpm 10 and Node.js 22
-3. Install Rust stable (macOS adds aarch64 + x86_64 targets)
+3. Install Rust stable (with the matching target on macOS)
 4. Install system dependencies (Linux only: libwebkit2gtk, libappindicator3, librsvg2, patchelf)
 5. `pnpm install --frozen-lockfile`
-6. Build with `tauri-apps/tauri-action`:
+6. Build the bot sidecar resources (`pnpm --filter discord-bot run build:sidecar`)
+7. Build with `tauri-apps/tauri-action`:
    - Creates a draft GitHub Release
    - Uploads platform-specific installers
    - Release name: `Down Under Bot Desktop v2.0.0`
@@ -263,7 +270,7 @@ Steps per platform:
 **Output artifacts:**
 
 - Windows: `.msi`, `.exe`
-- macOS: `.dmg` (universal binary for Intel + Apple Silicon)
+- macOS: `.dmg` (arm64), `.dmg` (x86_64)
 - Linux: `.deb`, `.AppImage`
 
 ### Creating a Release
