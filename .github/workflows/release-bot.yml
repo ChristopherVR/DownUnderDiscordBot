@@ -1,0 +1,56 @@
+name: Release Bot (npm)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-npm:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter discord-dashboard-shared build
+
+      - name: Generate Prisma client
+        run: pnpm --filter discord-bot exec prisma generate
+
+      - name: Type-check bot
+        run: pnpm --filter discord-bot type-check
+
+      - name: Run bot tests
+        run: pnpm --filter discord-bot test
+
+      - name: Build publishable bundle
+        run: pnpm --filter discord-bot run build:bundle
+
+      - name: Set published version from tag
+        working-directory: packages/bot/publish
+        run: npm pkg set version="${GITHUB_REF_NAME#v}"
+
+      - name: Publish to npm
+        working-directory: packages/bot/publish
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
