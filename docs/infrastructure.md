@@ -218,35 +218,19 @@ The CI pipeline runs 7 parallelized jobs for fast feedback:
 
 All jobs use Node.js 22, pnpm 10, and GitHub Actions cache for faster installs.
 
-### Bot Deploy Workflow (`.github/workflows/deploy-bot.yml`)
+### Bot Deploy Workflow (removed)
 
-**Triggers:** Push to `main` when bot, shared, docker, or workflow files change
+There is no automated deploy-to-Azure workflow in CI. The project isn't
+currently hosting a production bot on Azure Container Apps, so the
+`deploy-bot.yml` workflow (which built and pushed a Docker image, then
+deployed it to Container Apps on every push to `main`) was removed rather
+than left failing on missing ACR/Azure secrets. The Bicep template and manual
+steps under [Deploying to Azure](#deploying-to-azure) below still work if you
+want to self-host there later; re-add a CD workflow calling
+`azure/container-apps-deploy-action` when that becomes a real target.
 
-**Environment:** `production`
-
-#### Job: `build-and-push`
-
-1. Checkout code
-2. Log in to Azure Container Registry (ACR)
-3. Build Docker image with two tags:
-   - `<acr>/down-under-bot:<commit-sha>` (immutable)
-   - `<acr>/down-under-bot:latest` (rolling)
-4. Push both tags to ACR
-
-#### Job: `deploy` (depends on `build-and-push`)
-
-1. Log in to Azure (service principal)
-2. Deploy to Azure Container Apps (`downunder-prod-bot`)
-
-**Required secrets:**
-
-| Secret                 | Description                                        |
-| ---------------------- | -------------------------------------------------- |
-| `ACR_LOGIN_SERVER`     | ACR hostname (e.g., `downunderprodacr.azurecr.io`) |
-| `ACR_USERNAME`         | ACR admin username                                 |
-| `ACR_PASSWORD`         | ACR admin password                                 |
-| `AZURE_CREDENTIALS`    | Service principal JSON for Azure login             |
-| `AZURE_RESOURCE_GROUP` | Resource group name                                |
+For now, releases are packaged and published via the `Release Bot (npm)` and
+`Release Desktop App` workflows below, triggered by pushing a `v*` tag.
 
 ### Desktop Release Workflow (`.github/workflows/release-desktop.yml`)
 
@@ -371,14 +355,15 @@ curl http://localhost:3001/api/health
 
 Set these in your GitHub repository under Settings > Secrets and variables > Actions:
 
-| Secret                 | Used By         | Description                                                    |
-| ---------------------- | --------------- | -------------------------------------------------------------- |
-| `ACR_LOGIN_SERVER`     | deploy-bot      | Azure Container Registry hostname                              |
-| `ACR_USERNAME`         | deploy-bot      | ACR admin username                                             |
-| `ACR_PASSWORD`         | deploy-bot      | ACR admin password                                             |
-| `AZURE_CREDENTIALS`    | deploy-bot      | Service principal JSON (`az ad sp create-for-rbac --sdk-auth`) |
-| `AZURE_RESOURCE_GROUP` | deploy-bot      | Azure resource group name                                      |
-| `GITHUB_TOKEN`         | release-desktop | Auto-provided by GitHub Actions                                |
+| Secret         | Used By         | Description                     |
+| -------------- | --------------- | ------------------------------- |
+| `NPM_TOKEN`    | release-bot     | npm publish token (provenance)  |
+| `GITHUB_TOKEN` | release-desktop | Auto-provided by GitHub Actions |
+
+The Azure secrets below (`ACR_LOGIN_SERVER`, `ACR_USERNAME`, `ACR_PASSWORD`,
+`AZURE_CREDENTIALS`, `AZURE_RESOURCE_GROUP`) are only needed if you re-add a
+CD workflow for self-hosting on Azure Container Apps; no workflow in this
+repo currently consumes them.
 
 ### Creating Azure Service Principal
 
