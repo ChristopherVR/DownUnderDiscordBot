@@ -31,6 +31,7 @@ import { ensureUploadDir } from './helpers/fileUpload';
 import { guildLockMiddleware } from './helpers/guildLock';
 import { WebSocketManager } from './helpers/websocket';
 import { tErrors, initI18n } from 'discord-dashboard-shared/localization';
+import { resolveI18nLoadPath } from './helpers/localesPath';
 
 import { LogMessage } from './types';
 import { startBot } from './bot';
@@ -43,9 +44,12 @@ import { getPlayerStateManager } from './helpers/discord/player';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const isDistBuild = __dirname.includes(`${path.sep}dist`);
-// packages/bot/src → packages/bot → packages → project root
-const projectRoot = isDistBuild ? path.resolve(__dirname, '..', '..', '..') : path.resolve(__dirname, '..', '..');
+// packages/bot/src (tsx dev) or packages/bot/dist (compiled) → packages/bot →
+// packages → project root. Both src/ and dist/ sit at the same depth under
+// packages/bot/, so this is 3 levels up either way — the previous version
+// used a different depth per case, which produced a `packages/packages/...`
+// path outside a compiled dist build (e.g. under `tsx`/e2e).
+const projectRoot = path.resolve(__dirname, '..', '..', '..');
 const localesDir = path.resolve(projectRoot, 'packages', 'shared', 'src', 'localization', 'locales');
 
 const serverLog = createLogger('server');
@@ -64,6 +68,7 @@ async function main() {
     isServer: true,
     lng: 'en',
     debug: process.env.NODE_ENV === 'development',
+    loadPath: resolveI18nLoadPath(),
   });
   serverLog.info('Localization initialized');
 

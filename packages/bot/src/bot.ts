@@ -3,6 +3,7 @@ import { initializePlayer } from './helpers/discord/player';
 import { handleChatInputInteraction } from './helpers/commands/DiscordBotIntegration';
 import { createLogger } from './helpers/logger';
 import { initI18n } from 'discord-dashboard-shared/localization';
+import { resolveI18nLoadPath } from './helpers/localesPath';
 import os from 'node:os';
 import { createStateService } from './state/factory';
 import type { WebSocketManager } from './helpers/websocket';
@@ -64,6 +65,7 @@ export async function startBot(wsManager?: WebSocketManager) {
     await initI18n({
       isServer: true,
       lng: 'en',
+      loadPath: resolveI18nLoadPath(),
     });
     botLog.debug('Server localization initialized');
   } catch (error) {
