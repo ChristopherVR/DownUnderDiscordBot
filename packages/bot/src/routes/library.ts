@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, Router } from 'express';
 import type { Router as RouterType } from 'express';
 import path from 'path';
-import { promises as fs } from 'fs';
+import { promises as fs, realpathSync } from 'fs';
 import { LocalMusicService, type LocalTrack } from '../services/LocalMusicService.js';
 import { createLogger } from '../helpers/logger.js';
 import type { AuthedRequest } from './auth.js';
@@ -22,7 +22,16 @@ const configuredRoots = (process.env.LIBRARY_ROOTS ?? '')
 if (configuredRoots.length === 0 && process.env.MUSIC_FOLDER_PATH) {
   configuredRoots.push(process.env.MUSIC_FOLDER_PATH);
 }
-const LIBRARY_ROOTS = configuredRoots.map((p) => path.resolve(p));
+// Resolve symlinks in the roots themselves too, so a symlinked root can't be
+// used to redefine the allowlist to something broader than intended.
+const LIBRARY_ROOTS = configuredRoots.flatMap((p) => {
+  try {
+    return [realpathSync(path.resolve(p))];
+  } catch (err) {
+    log.warn({ err, path: p }, 'LIBRARY_ROOTS entry does not exist on disk; ignoring it');
+    return [];
+  }
+});
 
 if (LIBRARY_ROOTS.length === 0) {
   log.warn('LIBRARY_ROOTS (and MUSIC_FOLDER_PATH) are unset; all /api/library scans will be rejected.');
@@ -50,7 +59,7 @@ function requireLibraryOperator(req: Request, res: Response, next: NextFunction)
 router.use(requireLibraryOperator);
 
 /** Resolves symlinks before comparing so a symlink inside an allowed root
- *  can't be used to escape it. Returns null (disallowed) if the path doesn't
+ *  can't be used to escape it. Returns false (disallowed) if the path doesn't
  *  exist yet or can't be resolved. */
 async function pathIsAllowed(targetPath: string): Promise<boolean> {
   if (LIBRARY_ROOTS.length === 0) return false;
@@ -85,7 +94,7 @@ router.post('/scan', async (req: Request, res: Response) => {
   if (!folderPath || typeof folderPath !== 'string') {
     return res.status(400).json({ error: 'path is required' });
   }
-  if (!pathIsAllowed(folderPath)) {
+  if (!(await pathIsAllowed(folderPath))) {
     return res.status(403).json({ error: 'Path is not inside LIBRARY_ROOTS' });
   }
   try {
@@ -107,7 +116,7 @@ router.post('/resolve', async (req: Request, res: Response) => {
 
   const tracks: LocalTrack[] = [];
   for (const p of paths) {
-    if (typeof p !== 'string' || !pathIsAllowed(p)) continue;
+    if (typeof p !== 'string' || !(await pathIsAllowed(p))) continue;
     try {
       const stat = await fs.stat(p);
       if (stat.isDirectory()) {
@@ -132,7 +141,7 @@ router.post('/is-directory', async (req: Request, res: Response) => {
   if (!p || typeof p !== 'string') {
     return res.status(400).json({ error: 'path is required' });
   }
-  if (!pathIsAllowed(p)) {
+  if (!(await pathIsAllowed(p))) {
     return res.status(403).json({ error: 'Path is not inside LIBRARY_ROOTS' });
   }
   try {
