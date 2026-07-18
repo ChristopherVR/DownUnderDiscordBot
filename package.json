@@ -32,7 +32,7 @@
     "db:studio": "pnpm --filter discord-bot db:studio",
     "clean": "rm -rf packages/bot/dist packages/shared/dist packages/desktop/dist",
     "clean:windows": "if exist packages\\bot\\dist rmdir /s /q packages\\bot\\dist && if exist packages\\shared\\dist rmdir /s /q packages\\shared\\dist",
-    "health-check": "curl -f http://localhost:3001/health || exit 1",
+    "health-check": "curl -f http://localhost:3000/api/health || exit 1",
     "precommit": "pnpm run lint && pnpm run format:check && pnpm run test",
     "postinstall": "pnpm run build:shared && pnpm --filter discord-bot db:generate",
     "prepare": "husky"
