@@ -16,6 +16,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/space-grotesk": "^5.2.10",
     "@radix-ui/react-dialog": "^1.1.19",
     "@radix-ui/react-progress": "^1.1.12",
     "@radix-ui/react-scroll-area": "^1.2.14",

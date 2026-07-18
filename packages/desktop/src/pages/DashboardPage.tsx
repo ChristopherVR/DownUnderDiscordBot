@@ -411,16 +411,24 @@ function SetupStep({
         done
           ? 'border-spotify-green/20 bg-spotify-green/[0.03]'
           : active
-            ? 'border-purple-500/20 bg-purple-500/[0.03]'
+            ? ''
             : 'border-white/[0.04] bg-white/[0.01] opacity-40'
       }`}
+      style={
+        active && !done
+          ? {
+              borderColor: 'color-mix(in srgb, var(--accent) 30%, transparent)',
+              background: 'color-mix(in srgb, var(--accent) 5%, transparent)',
+            }
+          : undefined
+      }
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5">
           {done ? (
             <CheckCircle2 size={18} className="text-spotify-green" />
           ) : active ? (
-            <Circle size={18} className="text-purple-400" />
+            <Circle size={18} style={{ color: 'var(--accent)' }} />
           ) : (
             <Circle size={18} className="text-t-ghost" />
           )}
@@ -515,10 +523,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ---- Setup Steps Card ---- */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] via-transparent to-purple-500/[0.02] p-6 backdrop-blur-md">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-purple-500/[0.05] blur-[80px]" />
-          <div className="pointer-events-none absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-spotify-green/[0.04] blur-[60px]" />
-
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-md">
           <div className="relative">
             {/* Progress bar */}
             <div className="mb-6 flex items-center gap-3">
@@ -581,7 +586,8 @@ export default function DashboardPage() {
                         connectToBot();
                       }}
                       disabled={botConnecting}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-violet-500 px-5 py-2.5 text-[13px] font-semibold text-white shadow-lg shadow-purple-500/20 transition-all hover:shadow-purple-500/30 disabled:opacity-50"
+                      className="flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[13px] font-semibold shadow-lg transition-all disabled:opacity-50"
+                      style={{ background: 'var(--gradient-accent)', color: 'var(--btn-primary-fg)' }}
                     >
                       {botConnecting ? <Loader2 size={15} className="animate-spin" /> : <LogIn size={15} />}
                       {botConnecting ? 'Connecting...' : 'Connect to Bot'}
@@ -652,7 +658,10 @@ export default function DashboardPage() {
   if (!dashboard && dashboardLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/10 border-t-spotify-green" />
+        <div
+          className="h-6 w-6 animate-spin rounded-full border-2 border-white/10"
+          style={{ borderTopColor: 'var(--accent)' }}
+        />
       </div>
     );
   }
@@ -685,8 +694,7 @@ export default function DashboardPage() {
 
       {/* ---- Active Session Context ---- */}
       {botUser && (
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-r from-purple-500/[0.04] via-white/[0.02] to-transparent p-4 backdrop-blur-md">
-          <div className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full bg-purple-500/[0.06] blur-[60px]" />
+        <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 backdrop-blur-md">
           <div className="relative flex flex-wrap items-center gap-x-6 gap-y-2">
             {/* Bot user */}
             <div className="flex items-center gap-2.5">
@@ -761,8 +769,7 @@ export default function DashboardPage() {
       )}
 
       {/* ---- Bot Status Banner ---- */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-r from-white/[0.03] to-transparent p-5 backdrop-blur-md">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-spotify-green/[0.06] blur-[80px]" />
+      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 backdrop-blur-md">
         <div className="relative flex items-center gap-4">
           {bot?.avatar ? (
             <img
@@ -865,7 +872,6 @@ export default function DashboardPage() {
       {/* ---- Now Playing (from local WS player state) ---- */}
       {player.currentTrack && (
         <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 backdrop-blur-md">
-          <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-spotify-green/[0.06] blur-[80px]" />
           <div className="relative">
             <div className="mb-3 flex items-center gap-2">
               <Activity size={14} className="text-spotify-green" />

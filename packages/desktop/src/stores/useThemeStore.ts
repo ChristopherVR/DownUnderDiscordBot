@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
-export type AccentColor = 'green' | 'purple' | 'blue' | 'rose' | 'orange' | 'cyan';
+export type AccentColor = 'copper' | 'green' | 'purple' | 'blue' | 'rose' | 'orange' | 'cyan';
 
 export interface ThemeDefinition {
   id: AccentColor;
@@ -12,6 +12,7 @@ export interface ThemeDefinition {
 }
 
 export const ACCENT_THEMES: ThemeDefinition[] = [
+  { id: 'copper', label: 'Copper', color: '#E2914A', colorHover: '#EFA868', colorLight: '#F4C493' },
   { id: 'green', label: 'Emerald', color: '#1DB954', colorHover: '#1ED760', colorLight: '#34d399' },
   { id: 'purple', label: 'Violet', color: '#8B5CF6', colorHover: '#A78BFA', colorLight: '#C4B5FD' },
   { id: 'blue', label: 'Ocean', color: '#3B82F6', colorHover: '#60A5FA', colorLight: '#93C5FD' },
@@ -49,13 +50,13 @@ function loadFromStorage(): { mode: ThemeMode; accent: AccentColor } {
       const parsed = JSON.parse(raw);
       return {
         mode: parsed.mode ?? 'dark',
-        accent: parsed.accent ?? 'green',
+        accent: parsed.accent ?? 'copper',
       };
     }
   } catch {
     // ignore
   }
-  return { mode: 'dark', accent: 'green' };
+  return { mode: 'dark', accent: 'copper' };
 }
 
 function saveToStorage(mode: ThemeMode, accent: AccentColor) {

@@ -114,7 +114,7 @@ describe('useThemeStore', () => {
     });
 
     it('accepts all valid accent colors', () => {
-      const accents = ['green', 'purple', 'blue', 'rose', 'orange', 'cyan'] as const;
+      const accents = ['copper', 'green', 'purple', 'blue', 'rose', 'orange', 'cyan'] as const;
       for (const accent of accents) {
         useThemeStore.getState().setAccent(accent);
         expect(useThemeStore.getState().accent).toBe(accent);
@@ -138,8 +138,8 @@ describe('useThemeStore', () => {
   });
 
   describe('ACCENT_THEMES', () => {
-    it('has exactly 6 theme definitions', () => {
-      expect(ACCENT_THEMES).toHaveLength(6);
+    it('has exactly 7 theme definitions', () => {
+      expect(ACCENT_THEMES).toHaveLength(7);
     });
 
     it('each theme has id, label, color, colorHover, colorLight', () => {
@@ -154,7 +154,7 @@ describe('useThemeStore', () => {
 
     it('theme ids match AccentColor type values', () => {
       const ids = ACCENT_THEMES.map((t) => t.id);
-      expect(ids).toEqual(['green', 'purple', 'blue', 'rose', 'orange', 'cyan']);
+      expect(ids).toEqual(['copper', 'green', 'purple', 'blue', 'rose', 'orange', 'cyan']);
     });
   });
 });

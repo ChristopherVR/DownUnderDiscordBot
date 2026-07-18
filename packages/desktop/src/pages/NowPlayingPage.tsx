@@ -2,6 +2,7 @@ import { useBotStore } from '@/stores/useBotStore';
 import { formatTime } from '@/lib/utils';
 import { Music, Play, Pause, SkipForward, Heart, Monitor, Radio, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import EqBars from '@/components/EqBars';
 
 export default function NowPlayingPage() {
   const player = useBotStore((s) => s.player);
@@ -17,10 +18,7 @@ export default function NowPlayingPage() {
   if (!isAvailable) {
     return (
       <div className="flex h-[calc(100vh-10rem)] flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="absolute inset-0 animate-pulse rounded-full bg-red-500/10 blur-2xl" />
-          <Music size={56} className="relative text-t-ghost" />
-        </div>
+        <Music size={56} className="text-t-ghost" />
         <p className="text-base font-medium text-t-tertiary">Not connected to bot</p>
         <p className="text-sm text-t-faint">Go to Settings to configure the connection</p>
       </div>
@@ -30,10 +28,7 @@ export default function NowPlayingPage() {
   if (!player.currentTrack) {
     return (
       <div className="flex h-[calc(100vh-10rem)] flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="absolute inset-0 animate-float rounded-full bg-spotify-green/5 blur-3xl" />
-          <Music size={56} className="relative text-t-ghost" />
-        </div>
+        <Music size={56} className="text-t-ghost" />
         <p className="text-base font-medium text-t-tertiary">Nothing playing</p>
         <p className="text-sm text-t-faint">Search for a track or use a slash command</p>
       </div>
@@ -45,11 +40,15 @@ export default function NowPlayingPage() {
 
   return (
     <div className="relative flex h-[calc(100vh-10rem)] flex-col items-center justify-center overflow-hidden">
-      {/* Ambient background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 -top-32 h-72 w-72 animate-float rounded-full bg-spotify-green/[0.08] blur-[100px]" />
-        <div className="absolute -bottom-32 -right-32 h-80 w-80 animate-float-delayed rounded-full bg-purple-500/[0.06] blur-[120px]" />
-        <div className="absolute left-1/2 top-1/3 h-48 w-48 animate-pulse-slow rounded-full bg-cyan-500/[0.04] blur-[80px]" />
+      {/* Ambient backdrop: an oversized, near-invisible level meter behind the
+          album art — the page's signature motif at rest, not a generic
+          gradient blob. */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.05]">
+        <div className="flex items-end gap-6">
+          {[120, 220, 160, 260, 140, 200].map((h, i) => (
+            <span key={i} className="w-6 rounded-full" style={{ height: h, background: 'var(--accent)' }} />
+          ))}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -85,7 +84,10 @@ export default function NowPlayingPage() {
 
           {/* Track info */}
           <div className="text-center">
-            <h1 className="max-w-lg truncate text-2xl font-bold text-t-primary lg:text-3xl">{track.title}</h1>
+            <h1 className="flex max-w-lg items-center justify-center gap-3 truncate text-2xl font-bold text-t-primary lg:text-3xl">
+              {player.isPlaying && <EqBars playing size="md" />}
+              <span className="truncate">{track.title}</span>
+            </h1>
             <p className="mt-2 text-base text-t-tertiary">{track.artist ?? 'Unknown Artist'}</p>
             {/* Playback mode badge */}
             <div
@@ -134,9 +136,14 @@ export default function NowPlayingPage() {
             </button>
             <button
               onClick={() => (player.isPlaying ? pause() : resume())}
-              className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-spotify-green to-emerald-400 text-black shadow-glow-green-lg transition-all hover:scale-105 active:scale-95"
+              className="flex h-16 w-16 items-center justify-center rounded-full shadow-glow-green-lg transition-all hover:scale-105 active:scale-95"
+              style={{ background: 'var(--gradient-accent)', color: 'var(--btn-primary-fg)' }}
             >
-              {player.isPlaying ? <Pause size={26} fill="black" /> : <Play size={26} fill="black" className="ml-1" />}
+              {player.isPlaying ? (
+                <Pause size={26} fill="currentColor" />
+              ) : (
+                <Play size={26} fill="currentColor" className="ml-1" />
+              )}
             </button>
             <button onClick={skip} className="text-t-faint transition-all hover:scale-110 hover:text-t-secondary">
               <SkipForward size={22} />

@@ -18,6 +18,8 @@
 
   /* Font family */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
 
   /* Backdrop blur */
   --backdrop-blur-3xl: 64px;
@@ -77,66 +79,71 @@
     }
   }
 
-  /* Box shadows */
-  --shadow-glow-green: 0 0 25px var(--accent-glow);
-  --shadow-glow-green-lg: 0 0 40px var(--accent-glow), 0 0 80px color-mix(in srgb, var(--accent-glow) 40%, transparent);
-  --shadow-glow-accent: 0 0 25px var(--accent-glow);
-  --shadow-glow-accent-lg:
-    0 0 40px var(--accent-glow), 0 0 80px color-mix(in srgb, var(--accent-glow) 40%, transparent);
+  /* Box shadows — a soft matte ring rather than a bright neon halo */
+  --shadow-glow-green: 0 2px 10px var(--accent-glow);
+  --shadow-glow-green-lg: 0 4px 18px var(--accent-glow);
+  --shadow-glow-accent: 0 2px 10px var(--accent-glow);
+  --shadow-glow-accent-lg: 0 4px 18px var(--accent-glow);
 }
 
 /* ─── Dark mode ─── */
 @layer base {
   :root,
   [data-mode='dark'] {
-    --background: #08080c;
-    --foreground: #f0f0f5;
-    --surface: #0f0f14;
-    --surface-hover: rgba(255, 255, 255, 0.07);
-    --card: rgba(255, 255, 255, 0.03);
-    --card-hover: rgba(255, 255, 255, 0.07);
-    --border: rgba(255, 255, 255, 0.07);
-    --muted: rgba(255, 255, 255, 0.06);
-    --muted-foreground: #7a7a8e;
+    /* Warm charcoal, not the blue-black "AI dark mode" default */
+    --background: #15120e;
+    --foreground: #f2ede4;
+    --surface: #1d1812;
+    --surface-hover: rgba(255, 250, 240, 0.07);
+    --card: rgba(255, 250, 240, 0.03);
+    --card-hover: rgba(255, 250, 240, 0.07);
+    --border: rgba(255, 250, 240, 0.07);
+    --muted: rgba(255, 250, 240, 0.06);
+    --muted-foreground: #8a8074;
+
+    /* A fixed "live" signal color, independent of the user's accent choice —
+       used for streaming/sync status, distinct from the primary accent. */
+    --signal: #3fcfb4;
+    --signal-glow: rgba(63, 207, 180, 0.25);
 
     /* Semantic text */
-    --text-primary: rgba(255, 255, 255, 0.9);
-    --text-secondary: rgba(255, 255, 255, 0.6);
-    --text-tertiary: rgba(255, 255, 255, 0.4);
-    --text-faint: rgba(255, 255, 255, 0.25);
-    --text-ghost: rgba(255, 255, 255, 0.15);
+    --text-primary: rgba(255, 250, 240, 0.9);
+    --text-secondary: rgba(255, 250, 240, 0.6);
+    --text-tertiary: rgba(255, 250, 240, 0.4);
+    --text-faint: rgba(255, 250, 240, 0.25);
+    --text-ghost: rgba(255, 250, 240, 0.15);
 
     /* Glass */
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.06);
-    --glass-bg-md: rgba(255, 255, 255, 0.05);
-    --glass-border-md: rgba(255, 255, 255, 0.08);
-    --glass-bg-heavy: rgba(255, 255, 255, 0.08);
-    --glass-border-heavy: rgba(255, 255, 255, 0.1);
-    --glass-hover-bg: rgba(255, 255, 255, 0.06);
-    --glass-hover-border: rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(255, 250, 240, 0.03);
+    --glass-border: rgba(255, 250, 240, 0.06);
+    --glass-bg-md: rgba(255, 250, 240, 0.05);
+    --glass-border-md: rgba(255, 250, 240, 0.08);
+    --glass-bg-heavy: rgba(255, 250, 240, 0.08);
+    --glass-border-heavy: rgba(255, 250, 240, 0.1);
+    --glass-hover-bg: rgba(255, 250, 240, 0.06);
+    --glass-hover-border: rgba(255, 250, 240, 0.1);
 
     /* Inputs */
-    --input-bg: rgba(255, 255, 255, 0.04);
-    --input-border: rgba(255, 255, 255, 0.08);
-    --input-focus-bg: rgba(255, 255, 255, 0.06);
+    --input-bg: rgba(255, 250, 240, 0.04);
+    --input-border: rgba(255, 250, 240, 0.08);
+    --input-focus-bg: rgba(255, 250, 240, 0.06);
 
     /* Scrollbar */
-    --scrollbar-thumb: rgba(255, 255, 255, 0.1);
-    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+    --scrollbar-thumb: rgba(255, 250, 240, 0.1);
+    --scrollbar-thumb-hover: rgba(255, 250, 240, 0.2);
 
     /* Layout chrome */
-    --sidebar-bg: rgba(10, 10, 15, 0.95);
-    --titlebar-bg: rgba(8, 8, 12, 0.9);
-    --playerbar-bg: rgba(8, 8, 12, 0.95);
-    --playerbar-border: rgba(255, 255, 255, 0.04);
+    --sidebar-bg: rgba(18, 15, 11, 0.95);
+    --titlebar-bg: rgba(15, 13, 9, 0.9);
+    --playerbar-bg: rgba(15, 13, 9, 0.95);
+    --playerbar-border: rgba(255, 250, 240, 0.04);
 
     /* Button */
-    --btn-glass-border: rgba(255, 255, 255, 0.1);
-    --btn-glass-bg: rgba(255, 255, 255, 0.05);
-    --btn-glass-fg: rgba(255, 255, 255, 0.8);
-    --btn-glass-hover-bg: rgba(255, 255, 255, 0.1);
-    --btn-primary-fg: #000000;
+    --btn-glass-border: rgba(255, 250, 240, 0.1);
+    --btn-glass-bg: rgba(255, 250, 240, 0.05);
+    --btn-glass-fg: rgba(255, 250, 240, 0.8);
+    --btn-glass-hover-bg: rgba(255, 250, 240, 0.1);
+    --btn-primary-fg: #17130d;
 
     /* Shadows */
     --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -151,8 +158,8 @@
 
   /* ─── Light mode ─── */
   [data-mode='light'] {
-    --background: #f5f5f9;
-    --foreground: #1a1a2e;
+    --background: #f7f4ee;
+    --foreground: #1c1712;
     --surface: #ffffff;
     --surface-hover: rgba(0, 0, 0, 0.04);
     --card: rgba(0, 0, 0, 0.025);
@@ -203,8 +210,21 @@
     color-scheme: light;
   }
 
-  /* ─── Accent: Green (default) ─── */
+  /* ─── Accent: Copper (default) — a warm analog VU-meter amber ─── */
   :root,
+  [data-accent='copper'] {
+    --accent: #e2914a;
+    --accent-hover: #efa868;
+    --accent-light: #f4c493;
+    --accent-glow: rgba(226, 145, 74, 0.25);
+    --accent-glow-sm: rgba(226, 145, 74, 0.2);
+    --accent-shadow: rgba(226, 145, 74, 0.2);
+    --accent-shadow-hover: rgba(226, 145, 74, 0.3);
+    --accent-focus-ring: rgba(226, 145, 74, 0.15);
+    --gradient-accent: linear-gradient(135deg, #e2914a 0%, #efa868 100%);
+    --gradient-accent-text: linear-gradient(135deg, #e2914a, #efa868, #f4c493);
+  }
+
   [data-accent='green'] {
     --accent: #1db954;
     --accent-hover: #1ed760;
@@ -291,12 +311,24 @@
     @apply antialiased;
     background: var(--background);
     color: var(--foreground);
-    font-family:
-      'Inter',
-      system-ui,
-      -apple-system,
-      sans-serif;
+    font-family: var(--font-sans);
     overflow: hidden;
+  }
+
+  /* Display face carries the app's personality — headings only, used with
+     restraint (never body copy). */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+
+  /* Route every tabular-nums readout (timers, counters, stats) through the
+     mono face — ties the "control room" identity to the exact spots that
+     already read as data rather than prose, with no per-component changes. */
+  .tabular-nums {
+    font-family: var(--font-mono);
   }
 
   /* Custom scrollbar */

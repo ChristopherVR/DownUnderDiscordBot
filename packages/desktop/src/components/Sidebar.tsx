@@ -94,8 +94,8 @@ function DraggableNavItem({ item, collapsed }: { item: NavItem; collapsed: boole
             <>
               {isActive && (
                 <div
-                  className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full"
-                  style={{ background: 'var(--gradient-accent)' }}
+                  className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full"
+                  style={{ background: 'var(--accent)' }}
                 />
               )}
               <item.icon size={18} style={isActive ? { color: 'var(--accent)' } : undefined} />
