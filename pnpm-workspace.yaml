@@ -1,4 +1,4 @@
 packages:
   - packages/*
 
-onlyBuiltDependencies: '["@prisma/client","@prisma/engines","esbuild","prisma"]'
+onlyBuiltDependencies: '["@prisma/client","@prisma/engines","better-sqlite3","esbuild","prisma","mediaplex"]'
