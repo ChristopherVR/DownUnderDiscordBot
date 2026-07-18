@@ -15,7 +15,11 @@ import './styles/globals.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    {/* BASE_URL is "/" for local dev and the Tauri build, and whatever
+        --base was set to for the GitHub Pages web build (e.g.
+        "/DownUnderDiscordBot/dashboard/") -- keeps routing correct
+        under a subpath without touching the default case at all. */}
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <App />
     </BrowserRouter>
   </React.StrictMode>,

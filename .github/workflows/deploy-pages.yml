@@ -1,0 +1,76 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'docs/assets/**'
+      - 'packages/desktop/**'
+      - 'packages/shared/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site + dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter discord-dashboard-shared build
+
+      - name: Build dashboard (browser mode, served from /dashboard/)
+        # No bot, no secrets, no server-side rendering here -- this is the
+        # exact same static frontend the desktop app ships, built for a
+        # plain browser tab instead of a Tauri window. It connects to
+        # whatever bot host/port the visitor enters at runtime.
+        run: pnpm --filter discord-bot-desktop exec vite build --base=/DownUnderDiscordBot/dashboard/
+        working-directory: packages/desktop
+
+      - name: Assemble Pages site
+        run: |
+          mkdir -p _site
+          cp -r site/. _site/
+          mkdir -p _site/assets
+          cp -r docs/assets/. _site/assets/
+          mkdir -p _site/dashboard
+          cp -r packages/desktop/dist/. _site/dashboard/
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

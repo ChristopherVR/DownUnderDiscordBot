@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Down Under Music — a Discord music bot with its own dashboard</title>
+    <meta
+      name="description"
+      content="A self-hosted Discord music bot with a dashboard you can run as a desktop app or in any browser. YouTube, Spotify, SoundCloud, and local files."
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23e2914a'/%3E%3Cg fill='%2317130d'%3E%3Crect x='28' y='55' width='8' height='20' rx='4'/%3E%3Crect x='42' y='40' width='8' height='35' rx='4'/%3E%3Crect x='56' y='48' width='8' height='27' rx='4'/%3E%3Crect x='70' y='32' width='8' height='43' rx='4'/%3E%3C/g%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #15120e;
+        --panel: #1d1812;
+        --panel-line: rgba(255, 250, 240, 0.08);
+        --paper: #f2ede4;
+        --paper-dim: rgba(255, 250, 240, 0.62);
+        --paper-faint: rgba(255, 250, 240, 0.4);
+        --copper: #e2914a;
+        --copper-hi: #efa868;
+        --signal: #3fcfb4;
+        --radius: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--ink);
+        color: var(--paper);
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: 'Space Grotesk', 'Inter', sans-serif;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+
+      code,
+      .mono {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* ---- Nav ---- */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(21, 18, 14, 0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--panel-line);
+      }
+      nav .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .brand-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: linear-gradient(135deg, var(--copper), var(--copper-hi));
+        display: flex;
+        align-items: end;
+        justify-content: center;
+        gap: 3px;
+        padding-bottom: 6px;
+      }
+      .brand-mark span {
+        width: 3px;
+        background: #17130d;
+        border-radius: 2px;
+        animation: bar 1.6s ease-in-out infinite;
+      }
+      .brand-mark span:nth-child(1) {
+        height: 6px;
+        animation-delay: 0s;
+      }
+      .brand-mark span:nth-child(2) {
+        height: 12px;
+        animation-delay: 0.2s;
+      }
+      .brand-mark span:nth-child(3) {
+        height: 9px;
+        animation-delay: 0.4s;
+      }
+      @keyframes bar {
+        0%,
+        100% {
+          transform: scaleY(0.6);
+        }
+        50% {
+          transform: scaleY(1);
+        }
+      }
+      .nav-links {
+        display: flex;
+        gap: 28px;
+        font-size: 13px;
+        color: var(--paper-dim);
+      }
+      .nav-links a:hover {
+        color: var(--paper);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 999px;
+        padding: 10px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition:
+          transform 0.15s,
+          filter 0.15s;
+      }
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--copper), var(--copper-hi));
+        color: #17130d;
+        box-shadow: 0 4px 18px rgba(226, 145, 74, 0.25);
+      }
+      .btn-primary:hover {
+        filter: brightness(1.06);
+      }
+      .btn-ghost {
+        background: rgba(255, 250, 240, 0.05);
+        border: 1px solid var(--panel-line);
+        color: var(--paper);
+      }
+      .btn-ghost:hover {
+        background: rgba(255, 250, 240, 0.08);
+      }
+
+      /* ---- Hero ---- */
+      header.hero {
+        padding: 96px 0 72px;
+        position: relative;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--copper);
+        margin-bottom: 20px;
+      }
+      .eyebrow-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--signal);
+        box-shadow: 0 0 0 3px rgba(63, 207, 180, 0.2);
+      }
+      h1.headline {
+        font-size: clamp(2.2rem, 5vw, 3.6rem);
+        font-weight: 700;
+        max-width: 720px;
+      }
+      .headline .accent {
+        color: var(--copper);
+      }
+      p.lede {
+        max-width: 620px;
+        font-size: 17px;
+        color: var(--paper-dim);
+        margin-top: 20px;
+      }
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 32px;
+      }
+
+      /* Level-meter hero visual, the app's own signature element, not a stock illustration */
+      .meter {
+        margin-top: 56px;
+        display: flex;
+        align-items: end;
+        gap: 8px;
+        height: 90px;
+        opacity: 0.9;
+      }
+      .meter span {
+        width: 10px;
+        border-radius: 6px;
+        background: linear-gradient(180deg, var(--copper-hi), var(--copper));
+        animation: meter 2.2s ease-in-out infinite;
+      }
+      .meter span:nth-child(odd) {
+        background: linear-gradient(180deg, var(--signal), #2a9c88);
+      }
+      @keyframes meter {
+        0%,
+        100% {
+          transform: scaleY(0.25);
+        }
+        50% {
+          transform: scaleY(1);
+        }
+      }
+
+      /* ---- Sections ---- */
+      section {
+        padding: 64px 0;
+        border-top: 1px solid var(--panel-line);
+      }
+      .section-head {
+        max-width: 560px;
+        margin-bottom: 40px;
+      }
+      .section-head .kicker {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--paper-faint);
+        margin-bottom: 10px;
+      }
+      .section-head h2 {
+        font-size: 1.7rem;
+      }
+      .section-head p {
+        color: var(--paper-dim);
+        margin-top: 12px;
+        font-size: 15px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-radius: var(--radius);
+        padding: 22px;
+      }
+      .card h3 {
+        font-size: 15px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .card p {
+        font-size: 13.5px;
+        color: var(--paper-dim);
+        margin: 0;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--copper);
+        flex-shrink: 0;
+      }
+      .dot.signal {
+        background: var(--signal);
+      }
+
+      /* ---- Steps ---- */
+      .steps {
+        counter-reset: step;
+        display: grid;
+        gap: 14px;
+      }
+      .step {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+      }
+      .step-num {
+        counter-increment: step;
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: rgba(226, 145, 74, 0.12);
+        color: var(--copper);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .step-num::before {
+        content: counter(step);
+      }
+      .step h3 {
+        font-size: 14.5px;
+        margin-bottom: 4px;
+      }
+      .step p {
+        font-size: 13.5px;
+        color: var(--paper-dim);
+        margin: 0;
+      }
+      .step code {
+        display: inline-block;
+        margin-top: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--panel-line);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12.5px;
+        color: var(--paper);
+      }
+
+      /* ---- Screenshot tour ---- */
+      .shot {
+        background: var(--panel);
+        border: 1px solid var(--panel-line);
+        border-radius: var(--radius);
+        padding: 10px 10px 14px;
+        margin: 0;
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 250, 240, 0.06);
+      }
+      .shot figcaption {
+        font-size: 12.5px;
+        color: var(--paper-dim);
+        padding: 10px 6px 0;
+      }
+      .shot-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      @media (max-width: 760px) {
+        .shot-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ---- Privacy note ---- */
+      .privacy {
+        background: linear-gradient(135deg, rgba(63, 207, 180, 0.08), transparent);
+        border: 1px solid rgba(63, 207, 180, 0.25);
+        border-radius: var(--radius);
+        padding: 24px 28px;
+        display: flex;
+        gap: 18px;
+        align-items: flex-start;
+      }
+      .privacy .dot.signal {
+        margin-top: 6px;
+        width: 10px;
+        height: 10px;
+      }
+      .privacy h3 {
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+      .privacy p {
+        font-size: 13.5px;
+        color: var(--paper-dim);
+        margin: 0;
+      }
+
+      footer {
+        border-top: 1px solid var(--panel-line);
+        padding: 32px 0 48px;
+        font-size: 13px;
+        color: var(--paper-faint);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        justify-content: space-between;
+      }
+      footer a:hover {
+        color: var(--paper);
+      }
+      footer .links {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 640px) {
+        .nav-links {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="wrap">
+        <div class="brand">
+          <div class="brand-mark"><span></span><span></span><span></span></div>
+          Down Under Music
+        </div>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#tour">Tour</a>
+          <a href="#start">Quick start</a>
+          <a href="#privacy">Privacy</a>
+        </div>
+        <a class="btn btn-primary" href="./dashboard/">Open Dashboard</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="wrap">
+        <div class="eyebrow"><span class="eyebrow-dot"></span>Self-hosted &middot; open source &middot; no account required</div>
+        <h1 class="headline">A Discord music bot with <span class="accent">a real dashboard</span>, not just slash commands.</h1>
+        <p class="lede">
+          Down Under Music plays YouTube, Spotify, SoundCloud, and local files in your server, and gives you a proper
+          control surface for it &mdash; queue, playlists, search, live status &mdash; as a desktop app or a plain
+          browser tab, running against a bot you host yourself.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="./dashboard/">Open the Dashboard</a>
+          <a class="btn btn-ghost" href="https://github.com/ChristopherVR/DownUnderDiscordBot">View on GitHub</a>
+        </div>
+        <div class="meter" aria-hidden="true">
+          <span style="height: 100%; animation-delay: 0s"></span>
+          <span style="height: 100%; animation-delay: 0.15s"></span>
+          <span style="height: 100%; animation-delay: 0.3s"></span>
+          <span style="height: 100%; animation-delay: 0.45s"></span>
+          <span style="height: 100%; animation-delay: 0.6s"></span>
+          <span style="height: 100%; animation-delay: 0.75s"></span>
+          <span style="height: 100%; animation-delay: 0.9s"></span>
+          <span style="height: 100%; animation-delay: 1.05s"></span>
+        </div>
+      </div>
+    </header>
+
+    <section id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">What it does</div>
+          <h2>One bot, three ways to listen</h2>
+          <p>Local, Bot, and Sync playback modes cover solo listening, server playback, and both at once.</p>
+        </div>
+        <div class="grid">
+          <div class="card">
+            <h3><span class="dot"></span>Multi-platform playback</h3>
+            <p>YouTube, Spotify (bridged to a matching YouTube stream), SoundCloud, and your own local files.</p>
+          </div>
+          <div class="card">
+            <h3><span class="dot"></span>26 slash commands</h3>
+            <p>Full playback control, playlists, search, history, and queue management, right in Discord.</p>
+          </div>
+          <div class="card">
+            <h3><span class="dot signal"></span>Real-time dashboard</h3>
+            <p>WebSocket-backed UI stays in sync with the bot &mdash; now playing, queue, server status, command log.</p>
+          </div>
+          <div class="card">
+            <h3><span class="dot"></span>Local / Bot / Sync modes</h3>
+            <p>Play through your own speakers, through the bot's Discord voice connection, or both simultaneously.</p>
+          </div>
+          <div class="card">
+            <h3><span class="dot signal"></span>Desktop or browser</h3>
+            <p>The same dashboard runs as a native Tauri app or a plain page &mdash; like the one you're about to open.</p>
+          </div>
+          <div class="card">
+            <h3><span class="dot"></span>Your data, your server</h3>
+            <p>SQLite-backed playlists, history, and command log, stored on infrastructure you control.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tour">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Tour</div>
+          <h2>See it in action</h2>
+          <p>
+            Captured from the real dashboard driving the bot's test harness &mdash; the same UI you get in the desktop
+            app or the browser.
+          </p>
+        </div>
+        <figure class="shot">
+          <img
+            src="./assets/search-and-play.gif"
+            alt="Animated demo: queueing tracks, searching for Down Under, and playing it from the search results"
+            loading="lazy"
+          />
+          <figcaption>Search across platforms, queue tracks, and hit play &mdash; the player bar and queue update live.</figcaption>
+        </figure>
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="./assets/dashboard.png" alt="Dashboard page showing bot status, server stats, and now playing" loading="lazy" />
+            <figcaption>Real-time overview: bot status, servers, instances, and what's playing.</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="./assets/queue.png" alt="Queue page with a now-playing track and five tracks up next" loading="lazy" />
+            <figcaption>Full queue management &mdash; reorder, shuffle, remove, clear.</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="./assets/library.png" alt="Library page showing playlists and local files tabs" loading="lazy" />
+            <figcaption>Playlists and local files in one library.</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="./assets/settings.png" alt="Settings page with theme, accent color, and bot integration options" loading="lazy" />
+            <figcaption>Themes, accent colors, and bot integration settings.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="start">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Quick start</div>
+          <h2>Bring your own bot</h2>
+          <p>This page is only the dashboard's UI. You need a running bot instance to actually connect to.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num"></div>
+            <div>
+              <h3>Run the bot</h3>
+              <p>Clone the repo, install dependencies, and start it &mdash; locally or on a server you control.</p>
+              <code>git clone https://github.com/ChristopherVR/DownUnderDiscordBot.git &amp;&amp; pnpm install &amp;&amp; pnpm db:push &amp;&amp; pnpm dev</code>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num"></div>
+            <div>
+              <h3>Open the dashboard</h3>
+              <p>
+                Use the <a href="./dashboard/">hosted dashboard</a> above, or run it locally with
+                <code style="margin: 0">pnpm dev:desktop</code>.
+              </p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num"></div>
+            <div>
+              <h3>Point it at your bot</h3>
+              <p>Enter your bot's host and port when asked. That's it &mdash; everything else happens in your browser.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <div class="wrap">
+        <div class="privacy">
+          <span class="dot signal"></span>
+          <div>
+            <h3>Nothing is hosted for you, and nothing is stored here</h3>
+            <p>
+              This page contains no bot, no database, and no credentials of any kind &mdash; it's a static build of the
+              dashboard's UI, the same one described in
+              <a href="https://github.com/ChristopherVR/DownUnderDiscordBot/blob/main/docs/desktop.md">docs/desktop.md</a>.
+              It talks directly from your browser to whatever bot host/port you enter, and nobody else can see that
+              connection. If your bot only listens on <code>localhost</code>, a browser may block the request from
+              this HTTPS page to plain HTTP &mdash; in that case, run the dashboard locally instead
+              (<code>pnpm dev:desktop</code> or <code>pnpm --filter discord-bot-desktop dev:web</code>).
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap" style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; width: 100%">
+        <span>Down Under Music &mdash; MIT licensed</span>
+        <div class="links">
+          <a href="https://github.com/ChristopherVR/DownUnderDiscordBot">GitHub</a>
+          <a href="https://github.com/ChristopherVR/DownUnderDiscordBot/blob/main/docs/bot.md">Bot docs</a>
+          <a href="https://github.com/ChristopherVR/DownUnderDiscordBot/blob/main/docs/desktop.md">Dashboard docs</a>
+          <a href="./dashboard/">Open dashboard</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
