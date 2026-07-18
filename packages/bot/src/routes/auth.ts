@@ -48,6 +48,29 @@ const DISCORD_REDIRECT_URI =
  *  state param), so single-host deployments work without configuration. */
 const PUBLIC_APP_ORIGIN = process.env.PUBLIC_APP_ORIGIN || '';
 
+/** Additional web origins allowed to receive the post-auth token redirect,
+ *  beyond PUBLIC_APP_ORIGIN (which is always implicitly trusted). Required
+ *  for multi-origin web deployments; an attacker-supplied `?origin=` that
+ *  isn't in this set is dropped rather than trusted, since trusting it
+ *  verbatim would let anyone redirect a freshly-minted JWT to their own
+ *  site. */
+const ALLOWED_WEB_ORIGINS = new Set(
+  (process.env.ALLOWED_WEB_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
+
+/** Only trust `x-forwarded-*` headers when explicitly running behind a
+ *  reverse proxy that overwrites them; otherwise a client could set them
+ *  directly and redirect the post-auth token to an arbitrary host. */
+const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
+
+function isAllowedWebOrigin(origin: string): boolean {
+  if (origin === PUBLIC_APP_ORIGIN) return true;
+  return ALLOWED_WEB_ORIGINS.has(origin);
+}
+
 type OAuthClientKind = 'tauri' | 'web';
 
 interface OAuthStatePayload {
@@ -73,9 +96,11 @@ function verifyOAuthState(raw: string): OAuthStatePayload | null {
 function resolveCallbackOrigin(req: Request, stateOrigin?: string): string {
   if (PUBLIC_APP_ORIGIN) return PUBLIC_APP_ORIGIN;
   if (stateOrigin) return stateOrigin;
-  // Last resort: reconstruct from request headers (proxy-aware via x-forwarded-*).
-  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
-  const host = (req.headers['x-forwarded-host'] as string) || req.headers.host;
+  // Last resort: reconstruct from request headers. x-forwarded-* is only
+  // honored when TRUST_PROXY is set, since otherwise a client can set those
+  // headers itself and redirect the post-auth token to a host of its choosing.
+  const proto = (TRUST_PROXY && (req.headers['x-forwarded-proto'] as string)) || req.protocol;
+  const host = (TRUST_PROXY && (req.headers['x-forwarded-host'] as string)) || req.headers.host;
   return `${proto}://${host}`;
 }
 
@@ -115,10 +140,11 @@ router.get('/discord', (req: Request, res: Response) => {
 
   const client: OAuthClientKind = req.query.client === 'web' ? 'web' : 'tauri';
   const originParam = typeof req.query.origin === 'string' ? req.query.origin : undefined;
+  const trustedOrigin = originParam && isAllowedWebOrigin(originParam) ? originParam : undefined;
 
   const state = signOAuthState({
     client,
-    origin: client === 'web' ? originParam : undefined,
+    origin: client === 'web' ? trustedOrigin : undefined,
     nonce: Math.random().toString(36).slice(2),
   });
 
