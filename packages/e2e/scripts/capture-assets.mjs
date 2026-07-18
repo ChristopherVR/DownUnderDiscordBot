@@ -139,7 +139,7 @@ async function shots() {
   await arrangeViaUi(page);
 
   // Discover every sidebar destination present in the DOM. (Playwright's
-  // $$eval runs this fixed callback in the page — it is not JS eval().)
+  // $$eval runs this fixed callback in the page - it is not JS eval().)
   const items = await page.$$eval('[data-testid^="sidebar-nav-"]', (els) =>
     els.map((el) => el.getAttribute('data-testid').replace('sidebar-nav-', '')),
   );

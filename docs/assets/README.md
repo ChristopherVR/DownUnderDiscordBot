@@ -1,7 +1,7 @@
 # README / Pages assets
 
 The screenshots and GIF in the root README and on the GitHub Pages site are
-captured from the **real dashboard UI** driving the bot's E2E test harness —
+captured from the **real dashboard UI** driving the bot's E2E test harness -
 no mockups. They are checked in so the README and Pages site work without a
 build step; regenerate them when the UI changes meaningfully.
 
@@ -10,18 +10,18 @@ build step; regenerate them when the UI changes meaningfully.
 1. Start the same two processes the Playwright suite uses:
 
    ```bash
-   # Terminal 1 — bot in E2E mode on port 3001
+   # Terminal 1 - bot in E2E mode on port 3001
    E2E=true NODE_ENV=test JWT_SECRET=test-jwt-secret-at-least-32-chars-long-for-e2e \
    DATABASE_URL=file:./prisma/e2e.db STATE_BACKEND=memory \
    CLIENT_TOKEN=not-used-in-e2e-mode PORT=3001 pnpm --filter discord-bot dev
 
-   # Terminal 2 — desktop web UI on port 15173
+   # Terminal 2 - desktop web UI on port 15173
    VITE_DEV_PROXY_TARGET=http://localhost:3001 VITE_DEV_PORT=15173 \
    pnpm --filter discord-bot-desktop dev:web
    ```
 
 2. (Recommended) Temporarily prettify the fixture data so captures don't show
-   "Test Song 1 / Test Guild". Edit — **without committing** —
+   "Test Song 1 / Test Guild". Edit - **without committing** -
    `packages/bot/src/testMode/fixtures.ts` (track titles/artists/durations,
    guild name, playlist name, SVG data-URI thumbnails) and
    `packages/bot/src/testMode/discordStub.ts` (bot username). Optionally let

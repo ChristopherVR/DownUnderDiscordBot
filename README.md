@@ -1,6 +1,6 @@
 # Down Under Discord Bot
 
-A multi-platform Discord music bot with a real dashboard — run it as a Tauri desktop app or a plain browser tab, backed by SQLite persistence and GitHub Actions CI/CD.
+A multi-platform Discord music bot with a real dashboard - run it as a Tauri desktop app or a plain browser tab, backed by SQLite persistence and GitHub Actions CI/CD.
 
 [![CI](https://github.com/ChristopherVR/DownUnderDiscordBot/actions/workflows/ci.yml/badge.svg)](https://github.com/ChristopherVR/DownUnderDiscordBot/actions/workflows/ci.yml)
 [![Deploy GitHub Pages](https://github.com/ChristopherVR/DownUnderDiscordBot/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/ChristopherVR/DownUnderDiscordBot/actions/workflows/deploy-pages.yml)
@@ -8,36 +8,36 @@ A multi-platform Discord music bot with a real dashboard — run it as a Tauri d
 [![Node 22+](https://img.shields.io/badge/Node.js-22%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-10%2B-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 
-**[Project site](https://christophervr.github.io/DownUnderDiscordBot/)** · **[Try the dashboard online](https://christophervr.github.io/DownUnderDiscordBot/dashboard/)** — connects to a bot instance you run yourself (nothing is hosted for you; see [Hosted Dashboard](#hosted-dashboard) below).
+**[Project site](https://christophervr.github.io/DownUnderDiscordBot/)** · **[Try the dashboard online](https://christophervr.github.io/DownUnderDiscordBot/dashboard/)** - connects to a bot instance you run yourself (nothing is hosted for you; see [Hosted Dashboard](#hosted-dashboard) below).
 
-![Dashboard overview — bot status, servers, and now playing](docs/assets/dashboard.png)
+![Dashboard overview - bot status, servers, and now playing](docs/assets/dashboard.png)
 
 ## See it in action
 
-Search across platforms, queue tracks, and hit play — the player bar and queue update in real time:
+Search across platforms, queue tracks, and hit play - the player bar and queue update in real time:
 
 ![Animated demo: queueing tracks, searching, and playing from search results](docs/assets/search-and-play.gif)
 
 |                                                                         |                                                                            |
 | :---------------------------------------------------------------------: | :------------------------------------------------------------------------: |
 |    ![Queue page with now playing and up next](docs/assets/queue.png)    |         ![Search results across platforms](docs/assets/search.png)         |
-|            _Full queue management — reorder, shuffle, clear_            |                 _One search box across every music source_                 |
+|            _Full queue management - reorder, shuffle, clear_            |                 _One search box across every music source_                 |
 | ![Library page with playlists and local files](docs/assets/library.png) | ![Settings page with themes and bot integration](docs/assets/settings.png) |
 |               _Playlists and local files in one library_                |                _Themes, accent colors, and bot integration_                |
 
-> Screenshots and GIF are captured from the real UI driving the bot's E2E test harness — regenerate them any time with [`packages/e2e/scripts/capture-assets.mjs`](packages/e2e/scripts/capture-assets.mjs) (see [docs/assets/README.md](docs/assets/README.md)).
+> Screenshots and GIF are captured from the real UI driving the bot's E2E test harness - regenerate them any time with [`packages/e2e/scripts/capture-assets.mjs`](packages/e2e/scripts/capture-assets.mjs) (see [docs/assets/README.md](docs/assets/README.md)).
 
 ## Features
 
-- **Multi-platform music** — YouTube, Spotify (via YouTube bridge), SoundCloud, and local files
-- **26 slash commands** — Full playback control, playlists, search, history, queue management
-- **Dashboard, two ways** — a Tauri desktop app, or the same React frontend running standalone in any browser
-- **Local / Bot / Sync playback modes** — play through your own speakers, through the bot's Discord voice connection, or both at once
-- **Real-time sync** — WebSocket connection keeps the dashboard in sync with bot state
-- **SQLite database** — Playlists, play history, queue snapshots, user preferences, track cache, command history
-- **REST API** — 50+ endpoints for player control, queue, playlists, search, file uploads, auth, dashboard
-- **E2E tested** — Playwright suite drives the real dashboard against a real bot in test mode
-- **Local music** — Scan folders, parse ID3 tags, search by title/artist
+- **Multi-platform music** - YouTube, Spotify (via YouTube bridge), SoundCloud, and local files
+- **26 slash commands** - Full playback control, playlists, search, history, queue management
+- **Dashboard, two ways** - a Tauri desktop app, or the same React frontend running standalone in any browser
+- **Local / Bot / Sync playback modes** - play through your own speakers, through the bot's Discord voice connection, or both at once
+- **Real-time sync** - WebSocket connection keeps the dashboard in sync with bot state
+- **SQLite database** - Playlists, play history, queue snapshots, user preferences, track cache, command history
+- **REST API** - 50+ endpoints for player control, queue, playlists, search, file uploads, auth, dashboard
+- **E2E tested** - Playwright suite drives the real dashboard against a real bot in test mode
+- **Local music** - Scan folders, parse ID3 tags, search by title/artist
 
 ## Architecture
 
@@ -47,7 +47,7 @@ flowchart LR
         D[Discord API / Voice]
     end
 
-    subgraph Bot["packages/bot — Node.js"]
+    subgraph Bot["packages/bot - Node.js"]
         P[discord-player + custom extractors]
         API[Express REST API]
         WS[WebSocket server]
@@ -57,7 +57,7 @@ flowchart LR
         API --- DB
     end
 
-    subgraph Dashboard["packages/desktop — React 19"]
+    subgraph Dashboard["packages/desktop - React 19"]
         T[Tauri desktop app]
         B[Browser tab / GitHub Pages]
     end
@@ -82,7 +82,7 @@ DownUnderDiscordBot/
 └── .github/workflows/  # CI, bot deploy/publish, desktop releases, GitHub Pages
 ```
 
-The **bot** runs as a standalone Node.js process that connects to Discord and exposes a REST + WebSocket API (port `3000` by default). The **dashboard** connects to that API over HTTP/WebSocket — it doesn't run the bot itself, and it doesn't need to be a native app either: `packages/desktop`'s React frontend runs identically inside the Tauri shell or as a plain page in any browser (see [docs/desktop.md](docs/desktop.md#dual-target-desktop-ui)). This means you can run the bot on a server and control it from any machine, with or without installing anything.
+The **bot** runs as a standalone Node.js process that connects to Discord and exposes a REST + WebSocket API (port `3000` by default). The **dashboard** connects to that API over HTTP/WebSocket - it doesn't run the bot itself, and it doesn't need to be a native app either: `packages/desktop`'s React frontend runs identically inside the Tauri shell or as a plain page in any browser (see [docs/desktop.md](docs/desktop.md#dual-target-desktop-ui)). This means you can run the bot on a server and control it from any machine, with or without installing anything.
 
 ## How it works
 
@@ -109,7 +109,7 @@ export const PauseCommand = (): CommandHandler => ({
 
 ### REST API
 
-Everything the dashboard does goes through the bot's HTTP API — you can drive it yourself:
+Everything the dashboard does goes through the bot's HTTP API - you can drive it yourself:
 
 ```bash
 # Grab a token (localhost quick-connect, no OAuth needed)
@@ -144,7 +144,7 @@ See [docs/bot.md](docs/bot.md#websocket-protocol) for the full event catalog (`b
 
 ## Hosted Dashboard
 
-The **[hosted dashboard](https://christophervr.github.io/DownUnderDiscordBot/dashboard/)** is a static build of the same browser-mode frontend described above, published via GitHub Pages. It contains no bot, no credentials, and no data of any kind — it's just the UI shell. On first load it asks for the host/port of a bot you're already running (see [Quick Start](#quick-start) below), then talks to it directly from your browser exactly like the desktop app does. Nobody but you can see your bot's data through it, and closing the tab disconnects it.
+The **[hosted dashboard](https://christophervr.github.io/DownUnderDiscordBot/dashboard/)** is a static build of the same browser-mode frontend described above, published via GitHub Pages. It contains no bot, no credentials, and no data of any kind - it's just the UI shell. On first load it asks for the host/port of a bot you're already running (see [Quick Start](#quick-start) below), then talks to it directly from your browser exactly like the desktop app does. Nobody but you can see your bot's data through it, and closing the tab disconnects it.
 
 If your bot isn't reachable over plain HTTP from a public HTTPS page (e.g. it's on `localhost` and your browser blocks the mixed-content request), run the dashboard locally instead with `pnpm dev:desktop` or `pnpm --filter discord-bot-desktop dev:web`.
 
@@ -256,7 +256,7 @@ pnpm --filter discord-bot-desktop dev:web
 | Music sources   | youtubei.js, yt-dlp fallback, spotify-web-api-node, soundcloud.ts, music-metadata |
 | API server      | Express.js, WebSocket (ws)                                                        |
 | Database        | SQLite via Prisma ORM (driver adapter)                                            |
-| Dashboard shell | Tauri v2 (Rust), or a plain browser tab — same React frontend                     |
+| Dashboard shell | Tauri v2 (Rust), or a plain browser tab - same React frontend                     |
 | Dashboard UI    | React 19, Tailwind CSS, Zustand, Framer Motion, Radix UI                          |
 | Testing         | Vitest (unit), Playwright (E2E)                                                   |
 | Infrastructure  | Docker, Azure Container Apps, Azure Bicep, GitHub Pages                           |
