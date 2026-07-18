@@ -464,7 +464,7 @@ var Pi = Ve((nt) => {
         ((r >>>= 0), (t >>>= 0), r <= t))
     )
       return '';
-    for (e || (e = 'utf8'); ; )
+    for (e || (e = 'utf8'); ;)
       switch (e) {
         case 'hex':
           return ja(this, t, r);
@@ -702,7 +702,7 @@ var Pi = Ve((nt) => {
     r = Math.min(e.length, r);
     let n = [],
       i = t;
-    for (; i < r; ) {
+    for (; i < r;) {
       let o = e[i],
         s = null,
         a = o > 239 ? 4 : o > 223 ? 3 : o > 191 ? 2 : 1;
@@ -747,7 +747,7 @@ var Pi = Ve((nt) => {
     if (t <= si) return String.fromCharCode.apply(String, e);
     let r = '',
       n = 0;
-    for (; n < t; ) r += String.fromCharCode.apply(String, e.slice(n, (n += si)));
+    for (; n < t;) r += String.fromCharCode.apply(String, e.slice(n, (n += si)));
     return r;
   }
   function qa(e, t, r) {
@@ -794,14 +794,14 @@ var Pi = Ve((nt) => {
     let n = this[e],
       i = 1,
       o = 0;
-    for (; ++o < t && (i *= 256); ) n += this[e + o] * i;
+    for (; ++o < t && (i *= 256);) n += this[e + o] * i;
     return n;
   };
   A.prototype.readUintBE = A.prototype.readUIntBE = function (e, t, r) {
     ((e = e >>> 0), (t = t >>> 0), r || K(e, t, this.length));
     let n = this[e + --t],
       i = 1;
-    for (; t > 0 && (i *= 256); ) n += this[e + --t] * i;
+    for (; t > 0 && (i *= 256);) n += this[e + --t] * i;
     return n;
   };
   A.prototype.readUint8 = A.prototype.readUInt8 = function (e, t) {
@@ -850,7 +850,7 @@ var Pi = Ve((nt) => {
     let n = this[e],
       i = 1,
       o = 0;
-    for (; ++o < t && (i *= 256); ) n += this[e + o] * i;
+    for (; ++o < t && (i *= 256);) n += this[e + o] * i;
     return ((i *= 128), n >= i && (n -= Math.pow(2, 8 * t)), n);
   };
   A.prototype.readIntBE = function (e, t, r) {
@@ -858,7 +858,7 @@ var Pi = Ve((nt) => {
     let n = t,
       i = 1,
       o = this[e + --n];
-    for (; n > 0 && (i *= 256); ) o += this[e + --n] * i;
+    for (; n > 0 && (i *= 256);) o += this[e + --n] * i;
     return ((i *= 128), o >= i && (o -= Math.pow(2, 8 * t)), o);
   };
   A.prototype.readInt8 = function (e, t) {
@@ -924,7 +924,7 @@ var Pi = Ve((nt) => {
     }
     let i = 1,
       o = 0;
-    for (this[t] = e & 255; ++o < r && (i *= 256); ) this[t + o] = (e / i) & 255;
+    for (this[t] = e & 255; ++o < r && (i *= 256);) this[t + o] = (e / i) & 255;
     return t + r;
   };
   A.prototype.writeUintBE = A.prototype.writeUIntBE = function (e, t, r, n) {
@@ -934,7 +934,7 @@ var Pi = Ve((nt) => {
     }
     let i = r - 1,
       o = 1;
-    for (this[t + i] = e & 255; --i >= 0 && (o *= 256); ) this[t + i] = (e / o) & 255;
+    for (this[t + i] = e & 255; --i >= 0 && (o *= 256);) this[t + i] = (e / o) & 255;
     return t + r;
   };
   A.prototype.writeUint8 = A.prototype.writeUInt8 = function (e, t, r) {
@@ -1004,7 +1004,7 @@ var Pi = Ve((nt) => {
     let i = 0,
       o = 1,
       s = 0;
-    for (this[t] = e & 255; ++i < r && (o *= 256); )
+    for (this[t] = e & 255; ++i < r && (o *= 256);)
       (e < 0 && s === 0 && this[t + i - 1] !== 0 && (s = 1), (this[t + i] = (((e / o) >> 0) - s) & 255));
     return t + r;
   };
@@ -1016,7 +1016,7 @@ var Pi = Ve((nt) => {
     let i = r - 1,
       o = 1,
       s = 0;
-    for (this[t + i] = e & 255; --i >= 0 && (o *= 256); )
+    for (this[t + i] = e & 255; --i >= 0 && (o *= 256);)
       (e < 0 && s === 0 && this[t + i + 1] !== 0 && (s = 1), (this[t + i] = (((e / o) >> 0) - s) & 255));
     return t + r;
   };
@@ -1252,7 +1252,7 @@ var Pi = Ve((nt) => {
   var Va = /[^+/0-9A-Za-z-_]/g;
   function Qa(e) {
     if (((e = e.split('=')[0]), (e = e.trim().replace(Va, '')), e.length < 2)) return '';
-    for (; e.length % 4 !== 0; ) e = e + '=';
+    for (; e.length % 4 !== 0;) e = e + '=';
     return e;
   }
   function tn(e, t) {
@@ -1650,8 +1650,8 @@ var In = Ve((o0, wo) => {
         var n = t;
         ((t = r), (r = n));
       }
-      for (var i = t.length, o = r.length; i > 0 && t.charCodeAt(i - 1) === r.charCodeAt(o - 1); ) (i--, o--);
-      for (var s = 0; s < i && t.charCodeAt(s) === r.charCodeAt(s); ) s++;
+      for (var i = t.length, o = r.length; i > 0 && t.charCodeAt(i - 1) === r.charCodeAt(o - 1);) (i--, o--);
+      for (var s = 0; s < i && t.charCodeAt(s) === r.charCodeAt(s);) s++;
       if (((i -= s), (o -= s), i === 0 || o < 3)) return o;
       var a = 0,
         l,
@@ -1668,7 +1668,7 @@ var In = Ve((o0, wo) => {
         k,
         q = [];
       for (l = 0; l < i; l++) (q.push(l + 1), q.push(t.charCodeAt(s + l)));
-      for (var Y = q.length - 1; a < o - 3; )
+      for (var Y = q.length - 1; a < o - 3;)
         for (
           F = r.charCodeAt(s + (u = a)),
             _ = r.charCodeAt(s + (g = a + 1)),
@@ -1690,7 +1690,7 @@ var In = Ve((o0, wo) => {
             (h = g),
             (g = u),
             (u = C));
-      for (; a < o; )
+      for (; a < o;)
         for (F = r.charCodeAt(s + (u = a)), O = ++a, l = 0; l < Y; l += 2)
           ((C = q[l]), (q[l] = O = e(C, u, O, F, q[l + 1])), (u = C));
       return O;
@@ -2122,7 +2122,7 @@ var Bi = z('driver-adapter-utils'),
     }
     registerNewError(t) {
       let r = 0;
-      for (; this.registeredErrors[r] !== void 0; ) r++;
+      for (; this.registeredErrors[r] !== void 0;) r++;
       return ((this.registeredErrors[r] = { error: t }), r);
     }
   };
@@ -2686,7 +2686,7 @@ R.hyperbolicCosine = R.cosh = function () {
       ? ((e = Math.ceil(i / 3)), (t = (1 / xr(4, e)).toString()))
       : ((e = 16), (t = '2.3283064365386962890625e-10')),
     (o = lt(s, 1, o.times(t), new s(1), !0)));
-  for (var l, u = e, g = new s(8); u--; ) ((l = o.times(o)), (o = a.minus(l.times(g.minus(l.times(g))))));
+  for (var l, u = e, g = new s(8); u--;) ((l = o.times(o)), (o = a.minus(l.times(g.minus(l.times(g))))));
   return I(o, (s.precision = r), (s.rounding = n), !0);
 };
 R.hyperbolicSine = R.sinh = function () {
@@ -2708,7 +2708,7 @@ R.hyperbolicSine = R.sinh = function () {
     i = lt(o, 2, i, i, !0);
   else {
     ((e = 1.4 * Math.sqrt(n)), (e = e > 16 ? 16 : e | 0), (i = i.times(1 / xr(5, e))), (i = lt(o, 2, i, i, !0)));
-    for (var s, a = new o(5), l = new o(16), u = new o(20); e--; )
+    for (var s, a = new o(5), l = new o(16), u = new o(20); e--;)
       ((s = i.times(i)), (i = i.times(a.plus(s.times(l.times(s).plus(u))))));
   }
   return ((o.precision = t), (o.rounding = r), I(i, t, r, !0));
@@ -2858,7 +2858,7 @@ R.inverseTangent = R.atan = function () {
   }
   for (g.precision = a = h + 10, g.rounding = 1, r = Math.min(28, (a / M + 2) | 0), e = r; e; --e)
     u = u.div(u.times(u).plus(1).sqrt().plus(1));
-  for (D = !1, t = Math.ceil(a / M), n = 1, l = u.times(u), s = new g(u), i = u; e !== -1; )
+  for (D = !1, t = Math.ceil(a / M), n = 1, l = u.times(u), s = new g(u), i = u; e !== -1;)
     if (
       ((i = i.times(l)),
       (o = s.minus(i.div((n += 2)))),
@@ -2866,7 +2866,7 @@ R.inverseTangent = R.atan = function () {
       (s = o.plus(i.div((n += 2)))),
       s.d[t] !== void 0)
     )
-      for (e = t; s.d[e] === o.d[e] && e--; );
+      for (e = t; s.d[e] === o.d[e] && e--;);
   return (r && (s = s.times(2 << (r - 1))), (D = !0), I(s, (g.precision = h), (g.rounding = T), !0));
 };
 R.isFinite = function () {
@@ -2917,7 +2917,7 @@ R.logarithm = R.log = function (e) {
   if (t)
     if (r.length > 1) o = !0;
     else {
-      for (i = r[0]; i % 10 === 0; ) i /= 10;
+      for (i = r[0]; i % 10 === 0;) i /= 10;
       o = i !== 1;
     }
   if (
@@ -2981,14 +2981,14 @@ R.minus = R.sub = function (e) {
     o = 0;
   }
   for (h && ((t = u), (u = T), (T = t), (e.s = -e.s)), s = u.length, n = T.length - s; n > 0; --n) u[s++] = 0;
-  for (n = T.length; n > o; ) {
+  for (n = T.length; n > o;) {
     if (u[--n] < T[n]) {
-      for (i = n; i && u[--i] === 0; ) u[i] = fe - 1;
+      for (i = n; i && u[--i] === 0;) u[i] = fe - 1;
       (--u[i], (u[n] += fe));
     }
     u[n] -= T[n];
   }
-  for (; u[--s] === 0; ) u.pop();
+  for (; u[--s] === 0;) u.pop();
   for (; u[0] === 0; u.shift()) --r;
   return u[0] ? ((e.d = u), (e.e = br(u, r)), D ? I(e, a, l) : e) : new C(l === 3 ? -0 : 0);
 };
@@ -3049,9 +3049,9 @@ R.plus = R.add = function (e) {
       r.push(0);
     r.reverse();
   }
-  for (s = u.length, i = g.length, s - i < 0 && ((i = s), (r = g), (g = u), (u = r)), t = 0; i; )
+  for (s = u.length, i = g.length, s - i < 0 && ((i = s), (r = g), (g = u), (u = r)), t = 0; i;)
     ((t = ((u[--i] = u[i] + g[i] + t) / fe) | 0), (u[i] %= fe));
-  for (t && (u.unshift(t), ++n), s = u.length; u[--s] == 0; ) u.pop();
+  for (t && (u.unshift(t), ++n), s = u.length; u[--s] == 0;) u.pop();
   return ((e.d = u), (e.e = br(u, n)), D ? I(e, a, l) : e);
 };
 R.precision = R.sd = function (e) {
@@ -3170,11 +3170,11 @@ R.times = R.mul = function (e) {
     n--;
   )
     o.push(0);
-  for (n = u; --n >= 0; ) {
-    for (t = 0, i = l + n; i > n; ) ((a = o[i] + O[n] * T[i - n - 1] + t), (o[i--] = (a % fe) | 0), (t = (a / fe) | 0));
+  for (n = u; --n >= 0;) {
+    for (t = 0, i = l + n; i > n;) ((a = o[i] + O[n] * T[i - n - 1] + t), (o[i--] = (a % fe) | 0), (t = (a / fe) | 0));
     o[i] = ((o[i] + t) % fe) | 0;
   }
-  for (; !o[--s]; ) o.pop();
+  for (; !o[--s];) o.pop();
   return (t ? ++r : o.shift(), (e.d = o), (e.e = br(o, r)), D ? I(e, h.precision, h.rounding) : e);
 };
 R.toBinary = function (e, t) {
@@ -3381,7 +3381,7 @@ function Z(e) {
     for (o += s, t = 1; t < i; t++) ((n = e[t] + ''), (r = M - n.length), r && (o += Le(r)), (o += n));
     ((s = e[t]), (n = s + ''), (r = M - n.length), r && (o += Le(r)));
   } else if (s === 0) return '0';
-  for (; s % 10 === 0; ) s /= 10;
+  for (; s % 10 === 0;) s /= 10;
   return o + s;
 }
 function ae(e, t, r) {
@@ -3411,8 +3411,8 @@ function qt(e, t, r, n) {
   );
 }
 function fr(e, t, r) {
-  for (var n, i = [0], o, s = 0, a = e.length; s < a; ) {
-    for (o = i.length; o--; ) i[o] *= t;
+  for (var n, i = [0], o, s = 0, a = e.length; s < a;) {
+    for (o = i.length; o--;) i[o] *= t;
     for (i[0] += Cn.indexOf(e.charAt(s++)), n = 0; n < i.length; n++)
       i[n] > r - 1 && (i[n + 1] === void 0 && (i[n + 1] = 0), (i[n + 1] += (i[n] / r) | 0), (i[n] %= r));
   }
@@ -3427,7 +3427,7 @@ function nu(e, t) {
       : ((r = 16), (i = '2.3283064365386962890625e-10')),
     (e.precision += r),
     (t = lt(e, 1, t.times(i), new e(1))));
-  for (var o = r; o--; ) {
+  for (var o = r; o--;) {
     var s = t.times(t);
     t = s.times(s).minus(s).times(8).plus(1);
   }
@@ -3438,7 +3438,7 @@ var $ = (function () {
     var s,
       a = 0,
       l = n.length;
-    for (n = n.slice(); l--; ) ((s = n[l] * i + a), (n[l] = (s % o) | 0), (a = (s / o) | 0));
+    for (n = n.slice(); l--;) ((s = n[l] * i + a), (n[l] = (s % o) | 0), (a = (s / o) | 0));
     return (a && n.unshift(a), n);
   }
   function t(n, i, o, s) {
@@ -3453,8 +3453,8 @@ var $ = (function () {
     return l;
   }
   function r(n, i, o, s) {
-    for (var a = 0; o--; ) ((n[o] -= a), (a = n[o] < i[o] ? 1 : 0), (n[o] = a * s + n[o] - i[o]));
-    for (; !n[0] && n.length > 1; ) n.shift();
+    for (var a = 0; o--;) ((n[o] -= a), (a = n[o] < i[o] ? 1 : 0), (n[o] = a * s + n[o] - i[o]));
+    for (; !n[0] && n.length > 1;) n.shift();
   }
   return function (n, i, o, s, a, l) {
     var u,
@@ -3568,7 +3568,7 @@ function I(e, t, r, n) {
     if (((o = t - i), o < 0)) ((o += M), (s = t), (g = h[(T = 0)]), (l = ((g / W(10, i - s - 1)) % 10) | 0));
     else if (((T = Math.ceil((o + 1) / M)), (a = h.length), T >= a))
       if (n) {
-        for (; a++ <= T; ) h.push(0);
+        for (; a++ <= T;) h.push(0);
         ((g = l = 0), (i = 1), (o %= M), (s = o - M + 1));
       } else break e;
     else {
@@ -3607,7 +3607,7 @@ function I(e, t, r, n) {
           if (((h[T] += a), h[T] != fe)) break;
           ((h[T--] = 0), (a = 1));
         }
-    for (o = h.length; h[--o] === 0; ) h.pop();
+    for (o = h.length; h[--o] === 0;) h.pop();
   }
   return (D && (e.e > O.maxE ? ((e.d = null), (e.e = NaN)) : e.e < O.minE && ((e.e = 0), (e.d = [0]))), e);
 }
@@ -3655,14 +3655,14 @@ function ao(e) {
   return r;
 }
 function Le(e) {
-  for (var t = ''; e--; ) t += '0';
+  for (var t = ''; e--;) t += '0';
   return t;
 }
 function lo(e, t, r, n) {
   var i,
     o = new e(1),
     s = Math.ceil(n / M + 4);
-  for (D = !1; ; ) {
+  for (D = !1; ;) {
     if ((r % 2 && ((o = o.times(t)), eo(o.d, s) && (i = !0)), (r = re(r / 2)), r === 0)) {
       ((r = o.d.length - 1), i && o.d[r] === 0 && ++o.d[r]);
       break;
@@ -3675,7 +3675,7 @@ function Xi(e) {
   return e.d[e.d.length - 1] & 1;
 }
 function uo(e, t, r) {
-  for (var n, i, o = new e(t[0]), s = 0; ++s < t.length; ) {
+  for (var n, i, o = new e(t[0]), s = 0; ++s < t.length;) {
     if (((i = new e(t[s])), !i.s)) {
       o = i;
       break;
@@ -3700,15 +3700,15 @@ function On(e, t) {
     C = T.precision;
   if (!e.d || !e.d[0] || e.e > 17)
     return new T(e.d ? (e.d[0] ? (e.s < 0 ? 0 : 1 / 0) : 1) : e.s ? (e.s < 0 ? 0 : e) : NaN);
-  for (t == null ? ((D = !1), (l = C)) : (l = t), a = new T(0.03125); e.e > -2; ) ((e = e.times(a)), (h += 5));
-  for (n = ((Math.log(W(2, h)) / Math.LN10) * 2 + 5) | 0, l += n, r = o = s = new T(1), T.precision = l; ; ) {
+  for (t == null ? ((D = !1), (l = C)) : (l = t), a = new T(0.03125); e.e > -2;) ((e = e.times(a)), (h += 5));
+  for (n = ((Math.log(W(2, h)) / Math.LN10) * 2 + 5) | 0, l += n, r = o = s = new T(1), T.precision = l; ;) {
     if (
       ((o = I(o.times(e), l, 1)),
       (r = r.times(++g)),
       (a = s.plus($(o, r, l, 1))),
       Z(a.d).slice(0, l) === Z(s.d).slice(0, l))
     ) {
-      for (i = h; i--; ) s = I(s.times(s), l, 1);
+      for (i = h; i--;) s = I(s.times(s), l, 1);
       if (t == null)
         if (u < 3 && qt(s.d, l - n, O, u)) ((T.precision = l += 10), (r = o = a = new T(1)), (g = 0), u++);
         else return I(s, (T.precision = C), O, (D = !0));
@@ -3745,7 +3745,7 @@ function Ne(e, t) {
     (n = r.charAt(0)),
     Math.abs((o = S.e)) < 15e14)
   ) {
-    for (; (n < 7 && n != 1) || (n == 1 && r.charAt(1) > 3); ) ((S = S.times(e)), (r = Z(S.d)), (n = r.charAt(0)), O++);
+    for (; (n < 7 && n != 1) || (n == 1 && r.charAt(1) > 3);) ((S = S.times(e)), (r = Z(S.d)), (n = r.charAt(0)), O++);
     ((o = S.e), n > 1 ? ((S = new _('0.' + r)), o++) : (S = new _(n + '.' + r.slice(1))));
   } else
     return (
@@ -3754,7 +3754,7 @@ function Ne(e, t) {
       (_.precision = k),
       t == null ? I(S, k, L, (D = !0)) : S
     );
-  for (h = S, l = s = S = $(S.minus(1), S.plus(1), g, 1), T = I(S.times(S), g, 1), i = 3; ; ) {
+  for (h = S, l = s = S = $(S.minus(1), S.plus(1), g, 1), T = I(S.times(S), g, 1), i = 3; ;) {
     if (((s = I(s.times(T), g, 1)), (u = l.plus($(s, new _(i), g, 1))), Z(u.d).slice(0, g) === Z(l.d).slice(0, g)))
       if (
         ((l = l.times(2)),
@@ -3789,10 +3789,10 @@ function mr(e, t) {
   for (i = t.length; t.charCodeAt(i - 1) === 48; --i);
   if (((t = t.slice(n, i)), t)) {
     if (((i -= n), (e.e = r = r - n - 1), (e.d = []), (n = (r + 1) % M), r < 0 && (n += M), n < i)) {
-      for (n && e.d.push(+t.slice(0, n)), i -= M; n < i; ) e.d.push(+t.slice(n, (n += M)));
+      for (n && e.d.push(+t.slice(0, n)), i -= M; n < i;) e.d.push(+t.slice(n, (n += M)));
       ((t = t.slice(n)), (n = M - t.length));
     } else n -= i;
-    for (; n--; ) t += '0';
+    for (; n--;) t += '0';
     (e.d.push(+t),
       D &&
         (e.e > e.constructor.maxE
@@ -3839,7 +3839,7 @@ function ou(e, t) {
     n = t.d.length;
   if (n < 3) return t.isZero() ? t : lt(e, 2, t, t);
   ((r = 1.4 * Math.sqrt(n)), (r = r > 16 ? 16 : r | 0), (t = t.times(1 / xr(5, r))), (t = lt(e, 2, t, t)));
-  for (var i, o = new e(5), s = new e(16), a = new e(20); r--; )
+  for (var i, o = new e(5), s = new e(16), a = new e(20); r--;)
     ((i = t.times(t)), (t = t.times(o.plus(i.times(s.times(i).minus(a))))));
   return t;
 }
@@ -3851,7 +3851,7 @@ function lt(e, t, r, n, i) {
     u = 1,
     g = e.precision,
     h = Math.ceil(g / M);
-  for (D = !1, l = r.times(r), a = new e(n); ; ) {
+  for (D = !1, l = r.times(r), a = new e(n); ;) {
     if (
       ((s = $(a.times(l), new e(t++ * t++), g, 1)),
       (a = i ? n.plus(s) : n.minus(s)),
@@ -3859,7 +3859,7 @@ function lt(e, t, r, n, i) {
       (s = a.plus(n)),
       s.d[h] !== void 0)
     ) {
-      for (o = h; s.d[o] === a.d[o] && o--; );
+      for (o = h; s.d[o] === a.d[o] && o--;);
       if (o == -1) break;
     }
     ((o = a), (a = n), (n = s), (s = o), u++);
@@ -3867,7 +3867,7 @@ function lt(e, t, r, n, i) {
   return ((D = !0), (s.d.length = h + 1), s);
 }
 function xr(e, t) {
-  for (var r = e; --t; ) r *= e;
+  for (var r = e; --t;) r *= e;
   return r;
 }
 function po(e, t) {
@@ -3932,7 +3932,7 @@ function kn(e, t, r, n) {
         (h.length = r),
         u)
       )
-        for (; ++h[--r] > i - 1; ) ((h[r] = 0), r || (++o, h.unshift(1)));
+        for (; ++h[--r] > i - 1;) ((h[r] = 0), r || (++o, h.unshift(1)));
       for (l = h.length; !h[l - 1]; --l);
       for (s = 0, g = ''; s < l; s++) g += Cn.charAt(h[s]);
       if (C) {
@@ -3944,9 +3944,9 @@ function kn(e, t, r, n) {
           } else g = g.charAt(0) + '.' + g.slice(1);
         g = g + (o < 0 ? 'p' : 'p+') + o;
       } else if (o < 0) {
-        for (; ++o; ) g = '0' + g;
+        for (; ++o;) g = '0' + g;
         g = '0.' + g;
-      } else if (++o > l) for (o -= l; o--; ) g += '0';
+      } else if (++o > l) for (o -= l; o--;) g += '0';
       else o < l && (g = g.slice(0, o) + '.' + g.slice(o));
     }
     g = (t == 16 ? '0x' : t == 2 ? '0b' : t == 8 ? '0o' : '') + g;
@@ -4189,7 +4189,7 @@ function Tu() {
   var e,
     t,
     r = new this(0);
-  for (D = !1, e = 0; e < arguments.length; )
+  for (D = !1, e = 0; e < arguments.length;)
     if (((t = new this(arguments[e++])), t.d)) r.d && (r = r.plus(t.times(t)));
     else {
       if (t.s) return ((D = !0), new this(1 / 0));
@@ -4237,15 +4237,15 @@ function _u(e) {
     a = [];
   if ((e === void 0 ? (e = this.precision) : ae(e, 1, Be), (n = Math.ceil(e / M)), this.crypto))
     if (crypto.getRandomValues)
-      for (t = crypto.getRandomValues(new Uint32Array(n)); o < n; )
+      for (t = crypto.getRandomValues(new Uint32Array(n)); o < n;)
         ((i = t[o]), i >= 429e7 ? (t[o] = crypto.getRandomValues(new Uint32Array(1))[0]) : (a[o++] = i % 1e7));
     else if (crypto.randomBytes) {
-      for (t = crypto.randomBytes((n *= 4)); o < n; )
+      for (t = crypto.randomBytes((n *= 4)); o < n;)
         ((i = t[o] + (t[o + 1] << 8) + (t[o + 2] << 16) + ((t[o + 3] & 127) << 24)),
           i >= 214e7 ? crypto.randomBytes(4).copy(t, o) : (a.push(i % 1e7), (o += 4)));
       o = n / 4;
     } else throw Error(io);
-  else for (; o < n; ) a[o++] = (Math.random() * 1e7) | 0;
+  else for (; o < n;) a[o++] = (Math.random() * 1e7) | 0;
   for (n = a[--o], e %= M, n && e && ((i = W(10, M - e)), (a[o] = ((n / i) | 0) * i)); a[o] === 0; o--) a.pop();
   if (o < 0) ((r = 0), (a = [0]));
   else {
@@ -4277,7 +4277,7 @@ function $u() {
   var e = 0,
     t = arguments,
     r = new this(t[e]);
-  for (D = !1; r.s && ++e < t.length; ) r = r.plus(t[e]);
+  for (D = !1; r.s && ++e < t.length;) r = r.plus(t[e]);
   return ((D = !0), I(r, this.precision, this.rounding));
 }
 function Uu(e) {
@@ -4573,7 +4573,7 @@ var Gu = (e) => e,
       },
       run: function (e, t) {
         let r = N.hooks.all[e];
-        if (!(!r || !r.length)) for (var n = 0, i; (i = r[n++]); ) i(t);
+        if (!(!r || !r.length)) for (var n = 0, i; (i = r[n++]);) i(t);
       },
     },
     Token: me,
@@ -6410,13 +6410,13 @@ var le = class e {
     ((this.values = new Array(n)), (this.strings = new Array(n + 1)), (this.strings[0] = t[0]));
     let i = 0,
       o = 0;
-    for (; i < r.length; ) {
+    for (; i < r.length;) {
       let s = r[i++],
         a = t[i];
       if (s instanceof e) {
         this.strings[o] += s.strings[0];
         let l = 0;
-        for (; l < s.values.length; ) ((this.values[o++] = s.values[l++]), (this.strings[o] = s.strings[l]));
+        for (; l < s.values.length;) ((this.values[o++] = s.values[l++]), (this.strings[o] = s.strings[l]));
         this.strings[o] += a;
       } else ((this.values[o++] = s), (this.strings[o] = a));
     }
@@ -6425,21 +6425,21 @@ var le = class e {
     let t = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < t; ) n += `?${this.strings[r++]}`;
+    for (; r < t;) n += `?${this.strings[r++]}`;
     return n;
   }
   get statement() {
     let t = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < t; ) n += `:${r}${this.strings[r++]}`;
+    for (; r < t;) n += `:${r}${this.strings[r++]}`;
     return n;
   }
   get text() {
     let t = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < t; ) n += `$${r}${this.strings[r++]}`;
+    for (; r < t;) n += `$${r}${this.strings[r++]}`;
     return n;
   }
   inspect() {
@@ -7148,7 +7148,7 @@ function Xt(e) {
   if (Array.isArray(e)) {
     let t = e.length,
       r;
-    for (r = Array(t); t--; ) r[t] = Xt(e[t]);
+    for (r = Array(t); t--;) r[t] = Xt(e[t]);
     return r;
   }
   if (typeof e == 'object') {

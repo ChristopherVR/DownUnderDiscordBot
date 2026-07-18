@@ -27,7 +27,9 @@ async function getAvailablePort(preferred = 5173) {
 
 function cleanup() {
   if (existsSync(tmpConfig)) {
-    try { unlinkSync(tmpConfig); } catch {}
+    try {
+      unlinkSync(tmpConfig);
+    } catch {}
   }
 }
 
@@ -38,11 +40,18 @@ if (port !== 5173) {
 }
 
 // Write a temp Tauri config override file (avoids shell escaping issues)
-writeFileSync(tmpConfig, JSON.stringify({
-  build: {
-    devUrl: `http://localhost:${port}`,
-  },
-}, null, 2));
+writeFileSync(
+  tmpConfig,
+  JSON.stringify(
+    {
+      build: {
+        devUrl: `http://localhost:${port}`,
+      },
+    },
+    null,
+    2,
+  ),
+);
 
 const tauri = spawn('pnpm', ['tauri', 'dev', '--config', tmpConfig], {
   stdio: 'inherit',
@@ -50,8 +59,14 @@ const tauri = spawn('pnpm', ['tauri', 'dev', '--config', tmpConfig], {
   env: { ...process.env, VITE_DEV_PORT: String(port) },
 });
 
-process.on('SIGINT', () => { cleanup(); process.exit(); });
-process.on('SIGTERM', () => { cleanup(); process.exit(); });
+process.on('SIGINT', () => {
+  cleanup();
+  process.exit();
+});
+process.on('SIGTERM', () => {
+  cleanup();
+  process.exit();
+});
 
 tauri.on('exit', (code) => {
   cleanup();

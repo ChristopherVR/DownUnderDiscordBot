@@ -294,7 +294,7 @@ var y,
       copy(e, r = 0, n = 0, i = this.length) {
         (K(r, 'targetStart'), K(n, 'sourceStart', this.length), K(i, 'sourceEnd'), (r >>>= 0), (n >>>= 0), (i >>>= 0));
         let o = 0;
-        for (; n < i && !(this[n] === void 0 || e[r] === void 0); ) ((e[r] = this[n]), o++, n++, r++);
+        for (; n < i && !(this[n] === void 0 || e[r] === void 0);) ((e[r] = this[n]), o++, n++, r++);
         return o;
       }
       write(e, r, n, i = 'utf8') {
@@ -490,9 +490,9 @@ function ti(t, e) {
       n.push(0);
     n.reverse();
   }
-  for (a = f.length, o = v.length, a - o < 0 && ((o = a), (n = v), (v = f), (f = n)), r = 0; o; )
+  for (a = f.length, o = v.length, a - o < 0 && ((o = a), (n = v), (v = f), (f = n)), r = 0; o;)
     ((r = ((f[--o] = f[o] + v[o] + r) / H) | 0), (f[o] %= H));
-  for (r && (f.unshift(r), ++i), a = f.length; f[--a] == 0; ) f.pop();
+  for (r && (f.unshift(r), ++i), a = f.length; f[--a] == 0;) f.pop();
   return ((e.d = f), (e.e = i), $ ? N(e, A) : e);
 }
 function de(t, e, r) {
@@ -509,7 +509,7 @@ function me(t) {
     for (o += s, e = 1; e < i; e++) ((n = t[e] + ''), (r = B - n.length), r && (o += Ae(r)), (o += n));
     ((s = t[e]), (n = s + ''), (r = B - n.length), r && (o += Ae(r)));
   } else if (s === 0) return '0';
-  for (; s % 10 === 0; ) s /= 10;
+  for (; s % 10 === 0;) s /= 10;
   return o + s;
 }
 function ri(t, e) {
@@ -525,15 +525,15 @@ function ri(t, e) {
     A = R.precision;
   if (W(t) > 16) throw Error(Yr + W(t));
   if (!t.s) return new R(oe);
-  for (e == null ? (($ = !1), (a = A)) : (a = e), s = new R(0.03125); t.abs().gte(0.1); ) ((t = t.times(s)), (v += 5));
-  for (n = ((Math.log(ke(2, v)) / Math.LN10) * 2 + 5) | 0, a += n, r = i = o = new R(oe), R.precision = a; ; ) {
+  for (e == null ? (($ = !1), (a = A)) : (a = e), s = new R(0.03125); t.abs().gte(0.1);) ((t = t.times(s)), (v += 5));
+  for (n = ((Math.log(ke(2, v)) / Math.LN10) * 2 + 5) | 0, a += n, r = i = o = new R(oe), R.precision = a; ;) {
     if (
       ((i = N(i.times(t), a)),
       (r = r.times(++f)),
       (s = o.plus(we(i, r, a))),
       me(s.d).slice(0, a) === me(o.d).slice(0, a))
     ) {
-      for (; v--; ) o = N(o.times(o), a);
+      for (; v--;) o = N(o.times(o), a);
       return ((R.precision = A), e == null ? (($ = !0), N(o, A)) : o);
     }
     o = s;
@@ -548,7 +548,7 @@ function zr(t, e, r) {
   return N(new t(t.LN10), e);
 }
 function Ae(t) {
-  for (var e = ''; t--; ) e += '0';
+  for (var e = ''; t--;) e += '0';
   return e;
 }
 function Et(t, e) {
@@ -571,8 +571,7 @@ function Et(t, e) {
   if (C.eq(oe)) return new D(0);
   if ((e == null ? (($ = !1), (v = k)) : (v = e), C.eq(10))) return (e == null && ($ = !0), zr(D, v));
   if (((v += I), (D.precision = v), (r = me(L)), (n = r.charAt(0)), (o = W(C)), Math.abs(o) < 15e14)) {
-    for (; (n < 7 && n != 1) || (n == 1 && r.charAt(1) > 3); )
-      ((C = C.times(t)), (r = me(C.d)), (n = r.charAt(0)), A++);
+    for (; (n < 7 && n != 1) || (n == 1 && r.charAt(1) > 3);) ((C = C.times(t)), (r = me(C.d)), (n = r.charAt(0)), A++);
     ((o = W(C)), n > 1 ? ((C = new D('0.' + r)), o++) : (C = new D(n + '.' + r.slice(1))));
   } else
     return (
@@ -581,7 +580,7 @@ function Et(t, e) {
       (D.precision = k),
       e == null ? (($ = !0), N(C, k)) : C
     );
-  for (a = s = C = we(C.minus(oe), C.plus(oe), v), R = N(C.times(C), v), i = 3; ; ) {
+  for (a = s = C = we(C.minus(oe), C.plus(oe), v), R = N(C.times(C), v), i = 3; ;) {
     if (((s = N(s.times(R), v)), (f = a.plus(we(s, new D(i), v))), me(f.d).slice(0, v) === me(a.d).slice(0, v)))
       return (
         (a = a.times(2)),
@@ -604,13 +603,13 @@ function Xn(t, e) {
     e.charCodeAt(n) === 48;
   )
     ++n;
-  for (i = e.length; e.charCodeAt(i - 1) === 48; ) --i;
+  for (i = e.length; e.charCodeAt(i - 1) === 48;) --i;
   if (((e = e.slice(n, i)), e)) {
     if (((i -= n), (r = r - n - 1), (t.e = Qe(r / B)), (t.d = []), (n = (r + 1) % B), r < 0 && (n += B), n < i)) {
-      for (n && t.d.push(+e.slice(0, n)), i -= B; n < i; ) t.d.push(+e.slice(n, (n += B)));
+      for (n && t.d.push(+e.slice(0, n)), i -= B; n < i;) t.d.push(+e.slice(n, (n += B)));
       ((e = e.slice(n)), (n = B - e.length));
     } else n -= i;
-    for (; n--; ) e += '0';
+    for (; n--;) e += '0';
     if ((t.d.push(+e), $ && (t.e > or || t.e < -or))) throw Error(Yr + r);
   } else ((t.s = 0), (t.e = 0), (t.d = [0]));
   return t;
@@ -668,7 +667,7 @@ function N(t, e, r) {
         if (((A[R] += o), A[R] != H)) break;
         ((A[R--] = 0), (o = 1));
       }
-  for (n = A.length; A[--n] === 0; ) A.pop();
+  for (n = A.length; A[--n] === 0;) A.pop();
   if ($ && (t.e > or || t.e < -or)) throw Error(Yr + W(t));
   return t;
 }
@@ -707,14 +706,14 @@ function ni(t, e) {
     s = 0;
   }
   for (R && ((r = f), (f = A), (A = r), (e.s = -e.s)), a = f.length, i = A.length - a; i > 0; --i) f[a++] = 0;
-  for (i = A.length; i > s; ) {
+  for (i = A.length; i > s;) {
     if (f[--i] < A[i]) {
-      for (o = i; o && f[--o] === 0; ) f[o] = H - 1;
+      for (o = i; o && f[--o] === 0;) f[o] = H - 1;
       (--f[o], (f[i] += H));
     }
     f[i] -= A[i];
   }
-  for (; f[--a] === 0; ) f.pop();
+  for (; f[--a] === 0;) f.pop();
   for (; f[0] === 0; f.shift()) --n;
   return f[0] ? ((e.d = f), (e.e = n), $ ? N(e, C) : e) : new I(0);
 }
@@ -783,7 +782,7 @@ function ii(t) {
     t === void 0 && (t = {}),
     t)
   )
-    for (n = ['precision', 'rounding', 'toExpNeg', 'toExpPos', 'LN10'], e = 0; e < n.length; )
+    for (n = ['precision', 'rounding', 'toExpNeg', 'toExpPos', 'LN10'], e = 0; e < n.length;)
       t.hasOwnProperty((r = n[e++])) || (t[r] = this[r]);
   return (i.config(t), i);
 }
@@ -1027,12 +1026,12 @@ var je,
         n--;
       )
         o.push(0);
-      for (n = v; --n >= 0; ) {
-        for (e = 0, i = f + n; i > n; )
+      for (n = v; --n >= 0;) {
+        for (e = 0, i = f + n; i > n;)
           ((a = o[i] + C[n] * I[i - n - 1] + e), (o[i--] = (a % H) | 0), (e = (a / H) | 0));
         o[i] = ((o[i] + e) % H) | 0;
       }
-      for (; !o[--s]; ) o.pop();
+      for (; !o[--s];) o.pop();
       return (e ? ++r : o.shift(), (t.d = o), (t.e = r), $ ? N(t, A.precision) : t);
     };
     S.toDecimalPlaces = S.todp = function (t, e) {
@@ -1159,7 +1158,7 @@ var je,
         var o,
           s = 0,
           a = n.length;
-        for (n = n.slice(); a--; ) ((o = n[a] * i + s), (n[a] = (o % H) | 0), (s = (o / H) | 0));
+        for (n = n.slice(); a--;) ((o = n[a] * i + s), (n[a] = (o % H) | 0), (s = (o / H) | 0));
         return (s && n.unshift(s), n);
       }
       function e(n, i, o, s) {
@@ -1174,8 +1173,8 @@ var je,
         return f;
       }
       function r(n, i, o) {
-        for (var s = 0; o--; ) ((n[o] -= s), (s = n[o] < i[o] ? 1 : 0), (n[o] = s * H + n[o] - i[o]));
-        for (; !n[0] && n.length > 1; ) n.shift();
+        for (var s = 0; o--;) ((n[o] -= s), (s = n[o] < i[o] ? 1 : 0), (n[o] = s * H + n[o] - i[o]));
+        for (; !n[0] && n.length > 1;) n.shift();
       }
       return function (n, i, o, s) {
         var a,
@@ -1202,7 +1201,7 @@ var je,
           G = i.d;
         if (!n.s) return new rr(n);
         if (!i.s) throw Error(le + 'Division by zero');
-        for (f = n.e - i.e, ue = G.length, Oe = pe.length, C = new rr(qs), L = C.d = [], v = 0; G[v] == (pe[v] || 0); )
+        for (f = n.e - i.e, ue = G.length, Oe = pe.length, C = new rr(qs), L = C.d = [], v = 0; G[v] == (pe[v] || 0);)
           ++v;
         if (
           (G[v] > (pe[v] || 0) && --f,
@@ -1571,8 +1570,8 @@ var hn = yt((eb, qi) => {
         var n = e;
         ((e = r), (r = n));
       }
-      for (var i = e.length, o = r.length; i > 0 && e.charCodeAt(i - 1) === r.charCodeAt(o - 1); ) (i--, o--);
-      for (var s = 0; s < i && e.charCodeAt(s) === r.charCodeAt(s); ) s++;
+      for (var i = e.length, o = r.length; i > 0 && e.charCodeAt(i - 1) === r.charCodeAt(o - 1);) (i--, o--);
+      for (var s = 0; s < i && e.charCodeAt(s) === r.charCodeAt(s);) s++;
       if (((i -= s), (o -= s), i === 0 || o < 3)) return o;
       var a = 0,
         f,
@@ -1589,7 +1588,7 @@ var hn = yt((eb, qi) => {
         U,
         te = [];
       for (f = 0; f < i; f++) (te.push(f + 1), te.push(e.charCodeAt(s + f)));
-      for (var Oe = te.length - 1; a < o - 3; )
+      for (var Oe = te.length - 1; a < o - 3;)
         for (
           k = r.charCodeAt(s + (v = a)),
             Ee = r.charCodeAt(s + (R = a + 1)),
@@ -1611,7 +1610,7 @@ var hn = yt((eb, qi) => {
             (A = R),
             (R = v),
             (v = L));
-      for (; a < o; )
+      for (; a < o;)
         for (k = r.charCodeAt(s + (v = a)), C = ++a, f = 0; f < Oe; f += 2)
           ((L = te[f]), (te[f] = C = t(L, v, C, k, te[f + 1])), (v = L));
       return C;
@@ -2011,7 +2010,7 @@ var Ii = j('driver-adapter-utils'),
     }
     registerNewError(e) {
       let r = 0;
-      for (; this.registeredErrors[r] !== void 0; ) r++;
+      for (; this.registeredErrors[r] !== void 0;) r++;
       return ((this.registeredErrors[r] = { error: e }), r);
     }
   };
@@ -4108,13 +4107,13 @@ var ne = class t {
     ((this.values = new Array(n)), (this.strings = new Array(n + 1)), (this.strings[0] = e[0]));
     let i = 0,
       o = 0;
-    for (; i < r.length; ) {
+    for (; i < r.length;) {
       let s = r[i++],
         a = e[i];
       if (s instanceof t) {
         this.strings[o] += s.strings[0];
         let f = 0;
-        for (; f < s.values.length; ) ((this.values[o++] = s.values[f++]), (this.strings[o] = s.strings[f]));
+        for (; f < s.values.length;) ((this.values[o++] = s.values[f++]), (this.strings[o] = s.strings[f]));
         this.strings[o] += a;
       } else ((this.values[o++] = s), (this.strings[o] = a));
     }
@@ -4123,21 +4122,21 @@ var ne = class t {
     let e = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < e; ) n += `?${this.strings[r++]}`;
+    for (; r < e;) n += `?${this.strings[r++]}`;
     return n;
   }
   get statement() {
     let e = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < e; ) n += `:${r}${this.strings[r++]}`;
+    for (; r < e;) n += `:${r}${this.strings[r++]}`;
     return n;
   }
   get text() {
     let e = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < e; ) n += `$${r}${this.strings[r++]}`;
+    for (; r < e;) n += `$${r}${this.strings[r++]}`;
     return n;
   }
   inspect() {
@@ -4774,7 +4773,7 @@ function qt(t) {
   if (Array.isArray(t)) {
     let e = t.length,
       r;
-    for (r = Array(e); e--; ) r[e] = qt(t[e]);
+    for (r = Array(e); e--;) r[e] = qt(t[e]);
     return r;
   }
   if (typeof t == 'object') {

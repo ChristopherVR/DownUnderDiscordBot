@@ -454,7 +454,7 @@ var Ii = Je((ze) => {
         ((r >>>= 0), (t >>>= 0), r <= t))
     )
       return '';
-    for (e || (e = 'utf8'); ; )
+    for (e || (e = 'utf8'); ;)
       switch (e) {
         case 'hex':
           return Ga(this, t, r);
@@ -692,7 +692,7 @@ var Ii = Je((ze) => {
     r = Math.min(e.length, r);
     let n = [],
       i = t;
-    for (; i < r; ) {
+    for (; i < r;) {
       let o = e[i],
         s = null,
         a = o > 239 ? 4 : o > 223 ? 3 : o > 191 ? 2 : 1;
@@ -737,7 +737,7 @@ var Ii = Je((ze) => {
     if (t <= fi) return String.fromCharCode.apply(String, e);
     let r = '',
       n = 0;
-    for (; n < t; ) r += String.fromCharCode.apply(String, e.slice(n, (n += fi)));
+    for (; n < t;) r += String.fromCharCode.apply(String, e.slice(n, (n += fi)));
     return r;
   }
   function $a(e, t, r) {
@@ -784,14 +784,14 @@ var Ii = Je((ze) => {
     let n = this[e],
       i = 1,
       o = 0;
-    for (; ++o < t && (i *= 256); ) n += this[e + o] * i;
+    for (; ++o < t && (i *= 256);) n += this[e + o] * i;
     return n;
   };
   A.prototype.readUintBE = A.prototype.readUIntBE = function (e, t, r) {
     ((e = e >>> 0), (t = t >>> 0), r || W(e, t, this.length));
     let n = this[e + --t],
       i = 1;
-    for (; t > 0 && (i *= 256); ) n += this[e + --t] * i;
+    for (; t > 0 && (i *= 256);) n += this[e + --t] * i;
     return n;
   };
   A.prototype.readUint8 = A.prototype.readUInt8 = function (e, t) {
@@ -840,7 +840,7 @@ var Ii = Je((ze) => {
     let n = this[e],
       i = 1,
       o = 0;
-    for (; ++o < t && (i *= 256); ) n += this[e + o] * i;
+    for (; ++o < t && (i *= 256);) n += this[e + o] * i;
     return ((i *= 128), n >= i && (n -= Math.pow(2, 8 * t)), n);
   };
   A.prototype.readIntBE = function (e, t, r) {
@@ -848,7 +848,7 @@ var Ii = Je((ze) => {
     let n = t,
       i = 1,
       o = this[e + --n];
-    for (; n > 0 && (i *= 256); ) o += this[e + --n] * i;
+    for (; n > 0 && (i *= 256);) o += this[e + --n] * i;
     return ((i *= 128), o >= i && (o -= Math.pow(2, 8 * t)), o);
   };
   A.prototype.readInt8 = function (e, t) {
@@ -914,7 +914,7 @@ var Ii = Je((ze) => {
     }
     let i = 1,
       o = 0;
-    for (this[t] = e & 255; ++o < r && (i *= 256); ) this[t + o] = (e / i) & 255;
+    for (this[t] = e & 255; ++o < r && (i *= 256);) this[t + o] = (e / i) & 255;
     return t + r;
   };
   A.prototype.writeUintBE = A.prototype.writeUIntBE = function (e, t, r, n) {
@@ -924,7 +924,7 @@ var Ii = Je((ze) => {
     }
     let i = r - 1,
       o = 1;
-    for (this[t + i] = e & 255; --i >= 0 && (o *= 256); ) this[t + i] = (e / o) & 255;
+    for (this[t + i] = e & 255; --i >= 0 && (o *= 256);) this[t + i] = (e / o) & 255;
     return t + r;
   };
   A.prototype.writeUint8 = A.prototype.writeUInt8 = function (e, t, r) {
@@ -994,7 +994,7 @@ var Ii = Je((ze) => {
     let i = 0,
       o = 1,
       s = 0;
-    for (this[t] = e & 255; ++i < r && (o *= 256); )
+    for (this[t] = e & 255; ++i < r && (o *= 256);)
       (e < 0 && s === 0 && this[t + i - 1] !== 0 && (s = 1), (this[t + i] = (((e / o) >> 0) - s) & 255));
     return t + r;
   };
@@ -1006,7 +1006,7 @@ var Ii = Je((ze) => {
     let i = r - 1,
       o = 1,
       s = 0;
-    for (this[t + i] = e & 255; --i >= 0 && (o *= 256); )
+    for (this[t + i] = e & 255; --i >= 0 && (o *= 256);)
       (e < 0 && s === 0 && this[t + i + 1] !== 0 && (s = 1), (this[t + i] = (((e / o) >> 0) - s) & 255));
     return t + r;
   };
@@ -1242,7 +1242,7 @@ var Ii = Je((ze) => {
   var Ka = /[^+/0-9A-Za-z-_]/g;
   function Wa(e) {
     if (((e = e.split('=')[0]), (e = e.trim().replace(Ka, '')), e.length < 2)) return '';
-    for (; e.length % 4 !== 0; ) e = e + '=';
+    for (; e.length % 4 !== 0;) e = e + '=';
     return e;
   }
   function pn(e, t) {
@@ -1630,8 +1630,8 @@ var Nn = Je((Jy, vo) => {
         var n = t;
         ((t = r), (r = n));
       }
-      for (var i = t.length, o = r.length; i > 0 && t.charCodeAt(i - 1) === r.charCodeAt(o - 1); ) (i--, o--);
-      for (var s = 0; s < i && t.charCodeAt(s) === r.charCodeAt(s); ) s++;
+      for (var i = t.length, o = r.length; i > 0 && t.charCodeAt(i - 1) === r.charCodeAt(o - 1);) (i--, o--);
+      for (var s = 0; s < i && t.charCodeAt(s) === r.charCodeAt(s);) s++;
       if (((i -= s), (o -= s), i === 0 || o < 3)) return o;
       var a = 0,
         l,
@@ -1648,7 +1648,7 @@ var Nn = Je((Jy, vo) => {
         O,
         L = [];
       for (l = 0; l < i; l++) (L.push(l + 1), L.push(t.charCodeAt(s + l)));
-      for (var le = L.length - 1; a < o - 3; )
+      for (var le = L.length - 1; a < o - 3;)
         for (
           M = r.charCodeAt(s + (d = a)),
             F = r.charCodeAt(s + (g = a + 1)),
@@ -1670,7 +1670,7 @@ var Nn = Je((Jy, vo) => {
             (h = g),
             (g = d),
             (d = S));
-      for (; a < o; )
+      for (; a < o;)
         for (M = r.charCodeAt(s + (d = a)), I = ++a, l = 0; l < le; l += 2)
           ((S = L[l]), (L[l] = I = e(S, d, I, M, L[l + 1])), (d = S));
       return I;
@@ -2440,7 +2440,7 @@ R.hyperbolicCosine = R.cosh = function () {
       ? ((e = Math.ceil(i / 3)), (t = (1 / Cr(4, e)).toString()))
       : ((e = 16), (t = '2.3283064365386962890625e-10')),
     (o = tt(s, 1, o.times(t), new s(1), !0)));
-  for (var l, d = e, g = new s(8); d--; ) ((l = o.times(o)), (o = a.minus(l.times(g.minus(l.times(g))))));
+  for (var l, d = e, g = new s(8); d--;) ((l = o.times(o)), (o = a.minus(l.times(g.minus(l.times(g))))));
   return k(o, (s.precision = r), (s.rounding = n), !0);
 };
 R.hyperbolicSine = R.sinh = function () {
@@ -2462,7 +2462,7 @@ R.hyperbolicSine = R.sinh = function () {
     i = tt(o, 2, i, i, !0);
   else {
     ((e = 1.4 * Math.sqrt(n)), (e = e > 16 ? 16 : e | 0), (i = i.times(1 / Cr(5, e))), (i = tt(o, 2, i, i, !0)));
-    for (var s, a = new o(5), l = new o(16), d = new o(20); e--; )
+    for (var s, a = new o(5), l = new o(16), d = new o(20); e--;)
       ((s = i.times(i)), (i = i.times(a.plus(s.times(l.times(s).plus(d))))));
   }
   return ((o.precision = t), (o.rounding = r), k(i, t, r, !0));
@@ -2612,7 +2612,7 @@ R.inverseTangent = R.atan = function () {
   }
   for (g.precision = a = h + 10, g.rounding = 1, r = Math.min(28, (a / D + 2) | 0), e = r; e; --e)
     d = d.div(d.times(d).plus(1).sqrt().plus(1));
-  for (_ = !1, t = Math.ceil(a / D), n = 1, l = d.times(d), s = new g(d), i = d; e !== -1; )
+  for (_ = !1, t = Math.ceil(a / D), n = 1, l = d.times(d), s = new g(d), i = d; e !== -1;)
     if (
       ((i = i.times(l)),
       (o = s.minus(i.div((n += 2)))),
@@ -2620,7 +2620,7 @@ R.inverseTangent = R.atan = function () {
       (s = o.plus(i.div((n += 2)))),
       s.d[t] !== void 0)
     )
-      for (e = t; s.d[e] === o.d[e] && e--; );
+      for (e = t; s.d[e] === o.d[e] && e--;);
   return (r && (s = s.times(2 << (r - 1))), (_ = !0), k(s, (g.precision = h), (g.rounding = T), !0));
 };
 R.isFinite = function () {
@@ -2671,7 +2671,7 @@ R.logarithm = R.log = function (e) {
   if (t)
     if (r.length > 1) o = !0;
     else {
-      for (i = r[0]; i % 10 === 0; ) i /= 10;
+      for (i = r[0]; i % 10 === 0;) i /= 10;
       o = i !== 1;
     }
   if (
@@ -2735,14 +2735,14 @@ R.minus = R.sub = function (e) {
     o = 0;
   }
   for (h && ((t = d), (d = T), (T = t), (e.s = -e.s)), s = d.length, n = T.length - s; n > 0; --n) d[s++] = 0;
-  for (n = T.length; n > o; ) {
+  for (n = T.length; n > o;) {
     if (d[--n] < T[n]) {
-      for (i = n; i && d[--i] === 0; ) d[i] = pe - 1;
+      for (i = n; i && d[--i] === 0;) d[i] = pe - 1;
       (--d[i], (d[n] += pe));
     }
     d[n] -= T[n];
   }
-  for (; d[--s] === 0; ) d.pop();
+  for (; d[--s] === 0;) d.pop();
   for (; d[0] === 0; d.shift()) --r;
   return d[0] ? ((e.d = d), (e.e = Rr(d, r)), _ ? k(e, a, l) : e) : new S(l === 3 ? -0 : 0);
 };
@@ -2803,9 +2803,9 @@ R.plus = R.add = function (e) {
       r.push(0);
     r.reverse();
   }
-  for (s = d.length, i = g.length, s - i < 0 && ((i = s), (r = g), (g = d), (d = r)), t = 0; i; )
+  for (s = d.length, i = g.length, s - i < 0 && ((i = s), (r = g), (g = d), (d = r)), t = 0; i;)
     ((t = ((d[--i] = d[i] + g[i] + t) / pe) | 0), (d[i] %= pe));
-  for (t && (d.unshift(t), ++n), s = d.length; d[--s] == 0; ) d.pop();
+  for (t && (d.unshift(t), ++n), s = d.length; d[--s] == 0;) d.pop();
   return ((e.d = d), (e.e = Rr(d, n)), _ ? k(e, a, l) : e);
 };
 R.precision = R.sd = function (e) {
@@ -2924,11 +2924,11 @@ R.times = R.mul = function (e) {
     n--;
   )
     o.push(0);
-  for (n = d; --n >= 0; ) {
-    for (t = 0, i = l + n; i > n; ) ((a = o[i] + I[n] * T[i - n - 1] + t), (o[i--] = (a % pe) | 0), (t = (a / pe) | 0));
+  for (n = d; --n >= 0;) {
+    for (t = 0, i = l + n; i > n;) ((a = o[i] + I[n] * T[i - n - 1] + t), (o[i--] = (a % pe) | 0), (t = (a / pe) | 0));
     o[i] = ((o[i] + t) % pe) | 0;
   }
-  for (; !o[--s]; ) o.pop();
+  for (; !o[--s];) o.pop();
   return (t ? ++r : o.shift(), (e.d = o), (e.e = Rr(o, r)), _ ? k(e, h.precision, h.rounding) : e);
 };
 R.toBinary = function (e, t) {
@@ -3135,7 +3135,7 @@ function Y(e) {
     for (o += s, t = 1; t < i; t++) ((n = e[t] + ''), (r = D - n.length), r && (o += Oe(r)), (o += n));
     ((s = e[t]), (n = s + ''), (r = D - n.length), r && (o += Oe(r)));
   } else if (s === 0) return '0';
-  for (; s % 10 === 0; ) s /= 10;
+  for (; s % 10 === 0;) s /= 10;
   return o + s;
 }
 function oe(e, t, r) {
@@ -3165,8 +3165,8 @@ function Ot(e, t, r, n) {
   );
 }
 function br(e, t, r) {
-  for (var n, i = [0], o, s = 0, a = e.length; s < a; ) {
-    for (o = i.length; o--; ) i[o] *= t;
+  for (var n, i = [0], o, s = 0, a = e.length; s < a;) {
+    for (o = i.length; o--;) i[o] *= t;
     for (i[0] += On.indexOf(e.charAt(s++)), n = 0; n < i.length; n++)
       i[n] > r - 1 && (i[n + 1] === void 0 && (i[n + 1] = 0), (i[n + 1] += (i[n] / r) | 0), (i[n] %= r));
   }
@@ -3181,7 +3181,7 @@ function Gl(e, t) {
       : ((r = 16), (i = '2.3283064365386962890625e-10')),
     (e.precision += r),
     (t = tt(e, 1, t.times(i), new e(1))));
-  for (var o = r; o--; ) {
+  for (var o = r; o--;) {
     var s = t.times(t);
     t = s.times(s).minus(s).times(8).plus(1);
   }
@@ -3192,7 +3192,7 @@ var V = (function () {
     var s,
       a = 0,
       l = n.length;
-    for (n = n.slice(); l--; ) ((s = n[l] * i + a), (n[l] = (s % o) | 0), (a = (s / o) | 0));
+    for (n = n.slice(); l--;) ((s = n[l] * i + a), (n[l] = (s % o) | 0), (a = (s / o) | 0));
     return (a && n.unshift(a), n);
   }
   function t(n, i, o, s) {
@@ -3207,8 +3207,8 @@ var V = (function () {
     return l;
   }
   function r(n, i, o, s) {
-    for (var a = 0; o--; ) ((n[o] -= a), (a = n[o] < i[o] ? 1 : 0), (n[o] = a * s + n[o] - i[o]));
-    for (; !n[0] && n.length > 1; ) n.shift();
+    for (var a = 0; o--;) ((n[o] -= a), (a = n[o] < i[o] ? 1 : 0), (n[o] = a * s + n[o] - i[o]));
+    for (; !n[0] && n.length > 1;) n.shift();
   }
   return function (n, i, o, s, a, l) {
     var d,
@@ -3322,7 +3322,7 @@ function k(e, t, r, n) {
     if (((o = t - i), o < 0)) ((o += D), (s = t), (g = h[(T = 0)]), (l = ((g / K(10, i - s - 1)) % 10) | 0));
     else if (((T = Math.ceil((o + 1) / D)), (a = h.length), T >= a))
       if (n) {
-        for (; a++ <= T; ) h.push(0);
+        for (; a++ <= T;) h.push(0);
         ((g = l = 0), (i = 1), (o %= D), (s = o - D + 1));
       } else break e;
     else {
@@ -3361,7 +3361,7 @@ function k(e, t, r, n) {
           if (((h[T] += a), h[T] != pe)) break;
           ((h[T--] = 0), (a = 1));
         }
-    for (o = h.length; h[--o] === 0; ) h.pop();
+    for (o = h.length; h[--o] === 0;) h.pop();
   }
   return (_ && (e.e > I.maxE ? ((e.d = null), (e.e = NaN)) : e.e < I.minE && ((e.e = 0), (e.d = [0]))), e);
 }
@@ -3409,14 +3409,14 @@ function yo(e) {
   return r;
 }
 function Oe(e) {
-  for (var t = ''; e--; ) t += '0';
+  for (var t = ''; e--;) t += '0';
   return t;
 }
 function wo(e, t, r, n) {
   var i,
     o = new e(1),
     s = Math.ceil(n / D + 4);
-  for (_ = !1; ; ) {
+  for (_ = !1; ;) {
     if ((r % 2 && ((o = o.times(t)), uo(o.d, s) && (i = !0)), (r = ee(r / 2)), r === 0)) {
       ((r = o.d.length - 1), i && o.d[r] === 0 && ++o.d[r]);
       break;
@@ -3429,7 +3429,7 @@ function lo(e) {
   return e.d[e.d.length - 1] & 1;
 }
 function Eo(e, t, r) {
-  for (var n, i, o = new e(t[0]), s = 0; ++s < t.length; ) {
+  for (var n, i, o = new e(t[0]), s = 0; ++s < t.length;) {
     if (((i = new e(t[s])), !i.s)) {
       o = i;
       break;
@@ -3454,15 +3454,15 @@ function Mn(e, t) {
     S = T.precision;
   if (!e.d || !e.d[0] || e.e > 17)
     return new T(e.d ? (e.d[0] ? (e.s < 0 ? 0 : 1 / 0) : 1) : e.s ? (e.s < 0 ? 0 : e) : NaN);
-  for (t == null ? ((_ = !1), (l = S)) : (l = t), a = new T(0.03125); e.e > -2; ) ((e = e.times(a)), (h += 5));
-  for (n = ((Math.log(K(2, h)) / Math.LN10) * 2 + 5) | 0, l += n, r = o = s = new T(1), T.precision = l; ; ) {
+  for (t == null ? ((_ = !1), (l = S)) : (l = t), a = new T(0.03125); e.e > -2;) ((e = e.times(a)), (h += 5));
+  for (n = ((Math.log(K(2, h)) / Math.LN10) * 2 + 5) | 0, l += n, r = o = s = new T(1), T.precision = l; ;) {
     if (
       ((o = k(o.times(e), l, 1)),
       (r = r.times(++g)),
       (a = s.plus(V(o, r, l, 1))),
       Y(a.d).slice(0, l) === Y(s.d).slice(0, l))
     ) {
-      for (i = h; i--; ) s = k(s.times(s), l, 1);
+      for (i = h; i--;) s = k(s.times(s), l, 1);
       if (t == null)
         if (d < 3 && Ot(s.d, l - n, I, d)) ((T.precision = l += 10), (r = o = a = new T(1)), (g = 0), d++);
         else return k(s, (T.precision = S), I, (_ = !0));
@@ -3499,7 +3499,7 @@ function ke(e, t) {
     (n = r.charAt(0)),
     Math.abs((o = C.e)) < 15e14)
   ) {
-    for (; (n < 7 && n != 1) || (n == 1 && r.charAt(1) > 3); ) ((C = C.times(e)), (r = Y(C.d)), (n = r.charAt(0)), I++);
+    for (; (n < 7 && n != 1) || (n == 1 && r.charAt(1) > 3);) ((C = C.times(e)), (r = Y(C.d)), (n = r.charAt(0)), I++);
     ((o = C.e), n > 1 ? ((C = new F('0.' + r)), o++) : (C = new F(n + '.' + r.slice(1))));
   } else
     return (
@@ -3508,7 +3508,7 @@ function ke(e, t) {
       (F.precision = O),
       t == null ? k(C, O, B, (_ = !0)) : C
     );
-  for (h = C, l = s = C = V(C.minus(1), C.plus(1), g, 1), T = k(C.times(C), g, 1), i = 3; ; ) {
+  for (h = C, l = s = C = V(C.minus(1), C.plus(1), g, 1), T = k(C.times(C), g, 1), i = 3; ;) {
     if (((s = k(s.times(T), g, 1)), (d = l.plus(V(s, new F(i), g, 1))), Y(d.d).slice(0, g) === Y(l.d).slice(0, g)))
       if (
         ((l = l.times(2)),
@@ -3543,10 +3543,10 @@ function xr(e, t) {
   for (i = t.length; t.charCodeAt(i - 1) === 48; --i);
   if (((t = t.slice(n, i)), t)) {
     if (((i -= n), (e.e = r = r - n - 1), (e.d = []), (n = (r + 1) % D), r < 0 && (n += D), n < i)) {
-      for (n && e.d.push(+t.slice(0, n)), i -= D; n < i; ) e.d.push(+t.slice(n, (n += D)));
+      for (n && e.d.push(+t.slice(0, n)), i -= D; n < i;) e.d.push(+t.slice(n, (n += D)));
       ((t = t.slice(n)), (n = D - t.length));
     } else n -= i;
-    for (; n--; ) t += '0';
+    for (; n--;) t += '0';
     (e.d.push(+t),
       _ &&
         (e.e > e.constructor.maxE
@@ -3593,7 +3593,7 @@ function Ql(e, t) {
     n = t.d.length;
   if (n < 3) return t.isZero() ? t : tt(e, 2, t, t);
   ((r = 1.4 * Math.sqrt(n)), (r = r > 16 ? 16 : r | 0), (t = t.times(1 / Cr(5, r))), (t = tt(e, 2, t, t)));
-  for (var i, o = new e(5), s = new e(16), a = new e(20); r--; )
+  for (var i, o = new e(5), s = new e(16), a = new e(20); r--;)
     ((i = t.times(t)), (t = t.times(o.plus(i.times(s.times(i).minus(a))))));
   return t;
 }
@@ -3605,7 +3605,7 @@ function tt(e, t, r, n, i) {
     d = 1,
     g = e.precision,
     h = Math.ceil(g / D);
-  for (_ = !1, l = r.times(r), a = new e(n); ; ) {
+  for (_ = !1, l = r.times(r), a = new e(n); ;) {
     if (
       ((s = V(a.times(l), new e(t++ * t++), g, 1)),
       (a = i ? n.plus(s) : n.minus(s)),
@@ -3613,7 +3613,7 @@ function tt(e, t, r, n, i) {
       (s = a.plus(n)),
       s.d[h] !== void 0)
     ) {
-      for (o = h; s.d[o] === a.d[o] && o--; );
+      for (o = h; s.d[o] === a.d[o] && o--;);
       if (o == -1) break;
     }
     ((o = a), (a = n), (n = s), (s = o), d++);
@@ -3621,7 +3621,7 @@ function tt(e, t, r, n, i) {
   return ((_ = !0), (s.d.length = h + 1), s);
 }
 function Cr(e, t) {
-  for (var r = e; --t; ) r *= e;
+  for (var r = e; --t;) r *= e;
   return r;
 }
 function xo(e, t) {
@@ -3686,7 +3686,7 @@ function _n(e, t, r, n) {
         (h.length = r),
         d)
       )
-        for (; ++h[--r] > i - 1; ) ((h[r] = 0), r || (++o, h.unshift(1)));
+        for (; ++h[--r] > i - 1;) ((h[r] = 0), r || (++o, h.unshift(1)));
       for (l = h.length; !h[l - 1]; --l);
       for (s = 0, g = ''; s < l; s++) g += On.charAt(h[s]);
       if (S) {
@@ -3698,9 +3698,9 @@ function _n(e, t, r, n) {
           } else g = g.charAt(0) + '.' + g.slice(1);
         g = g + (o < 0 ? 'p' : 'p+') + o;
       } else if (o < 0) {
-        for (; ++o; ) g = '0' + g;
+        for (; ++o;) g = '0' + g;
         g = '0.' + g;
-      } else if (++o > l) for (o -= l; o--; ) g += '0';
+      } else if (++o > l) for (o -= l; o--;) g += '0';
       else o < l && (g = g.slice(0, o) + '.' + g.slice(o));
     }
     g = (t == 16 ? '0x' : t == 2 ? '0b' : t == 8 ? '0o' : '') + g;
@@ -3943,7 +3943,7 @@ function pu() {
   var e,
     t,
     r = new this(0);
-  for (_ = !1, e = 0; e < arguments.length; )
+  for (_ = !1, e = 0; e < arguments.length;)
     if (((t = new this(arguments[e++])), t.d)) r.d && (r = r.plus(t.times(t)));
     else {
       if (t.s) return ((_ = !0), new this(1 / 0));
@@ -3991,15 +3991,15 @@ function xu(e) {
     a = [];
   if ((e === void 0 ? (e = this.precision) : oe(e, 1, Me), (n = Math.ceil(e / D)), this.crypto))
     if (crypto.getRandomValues)
-      for (t = crypto.getRandomValues(new Uint32Array(n)); o < n; )
+      for (t = crypto.getRandomValues(new Uint32Array(n)); o < n;)
         ((i = t[o]), i >= 429e7 ? (t[o] = crypto.getRandomValues(new Uint32Array(1))[0]) : (a[o++] = i % 1e7));
     else if (crypto.randomBytes) {
-      for (t = crypto.randomBytes((n *= 4)); o < n; )
+      for (t = crypto.randomBytes((n *= 4)); o < n;)
         ((i = t[o] + (t[o + 1] << 8) + (t[o + 2] << 16) + ((t[o + 3] & 127) << 24)),
           i >= 214e7 ? crypto.randomBytes(4).copy(t, o) : (a.push(i % 1e7), (o += 4)));
       o = n / 4;
     } else throw Error(fo);
-  else for (; o < n; ) a[o++] = (Math.random() * 1e7) | 0;
+  else for (; o < n;) a[o++] = (Math.random() * 1e7) | 0;
   for (n = a[--o], e %= D, n && e && ((i = K(10, D - e)), (a[o] = ((n / i) | 0) * i)); a[o] === 0; o--) a.pop();
   if (o < 0) ((r = 0), (a = [0]));
   else {
@@ -4031,7 +4031,7 @@ function Su() {
   var e = 0,
     t = arguments,
     r = new this(t[e]);
-  for (_ = !1; r.s && ++e < t.length; ) r = r.plus(t[e]);
+  for (_ = !1; r.s && ++e < t.length;) r = r.plus(t[e]);
   return ((_ = !0), k(r, this.precision, this.rounding));
 }
 function Iu(e) {
@@ -5723,13 +5723,13 @@ var se = class e {
     ((this.values = new Array(n)), (this.strings = new Array(n + 1)), (this.strings[0] = t[0]));
     let i = 0,
       o = 0;
-    for (; i < r.length; ) {
+    for (; i < r.length;) {
       let s = r[i++],
         a = t[i];
       if (s instanceof e) {
         this.strings[o] += s.strings[0];
         let l = 0;
-        for (; l < s.values.length; ) ((this.values[o++] = s.values[l++]), (this.strings[o] = s.strings[l]));
+        for (; l < s.values.length;) ((this.values[o++] = s.values[l++]), (this.strings[o] = s.strings[l]));
         this.strings[o] += a;
       } else ((this.values[o++] = s), (this.strings[o] = a));
     }
@@ -5738,21 +5738,21 @@ var se = class e {
     let t = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < t; ) n += `?${this.strings[r++]}`;
+    for (; r < t;) n += `?${this.strings[r++]}`;
     return n;
   }
   get statement() {
     let t = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < t; ) n += `:${r}${this.strings[r++]}`;
+    for (; r < t;) n += `:${r}${this.strings[r++]}`;
     return n;
   }
   get text() {
     let t = this.strings.length,
       r = 1,
       n = this.strings[0];
-    for (; r < t; ) n += `$${r}${this.strings[r++]}`;
+    for (; r < t;) n += `$${r}${this.strings[r++]}`;
     return n;
   }
   inspect() {
@@ -6358,7 +6358,7 @@ function Jt(e) {
   if (Array.isArray(e)) {
     let t = e.length,
       r;
-    for (r = Array(t); t--; ) r[t] = Jt(e[t]);
+    for (r = Array(t); t--;) r[t] = Jt(e[t]);
     return r;
   }
   if (typeof e == 'object') {

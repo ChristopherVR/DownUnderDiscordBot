@@ -18,8 +18,10 @@
     "typescript/no-explicit-any": "warn",
     "typescript/no-empty-object-type": "off",
     "react/react-in-jsx-scope": "off",
+    "react/no-unstable-nested-components": "off",
     "import/no-unassigned-import": "off",
-    "import/no-named-as-default-member": "off"
+    "import/no-named-as-default-member": "off",
+    "no-underscore-dangle": "off"
   },
   "ignorePatterns": ["dist/**", "node_modules/**", "build/**", "coverage/**", "packages/bot/src/database/generated/**"]
 }

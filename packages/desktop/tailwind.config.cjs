@@ -33,7 +33,7 @@ module.exports = {
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'spin-slow': 'spin 8s linear infinite',
-        'float': 'float 6s ease-in-out infinite',
+        float: 'float 6s ease-in-out infinite',
         'float-delayed': 'float 8s ease-in-out 2s infinite',
         'gradient-shift': 'gradientShift 10s ease infinite',
         'glow-pulse': 'glowPulse 3s ease-in-out infinite alternate',
@@ -59,9 +59,11 @@ module.exports = {
       },
       boxShadow: {
         'glow-green': '0 0 25px var(--accent-glow)',
-        'glow-green-lg': '0 0 40px var(--accent-glow), 0 0 80px color-mix(in srgb, var(--accent-glow) 40%, transparent)',
+        'glow-green-lg':
+          '0 0 40px var(--accent-glow), 0 0 80px color-mix(in srgb, var(--accent-glow) 40%, transparent)',
         'glow-accent': '0 0 25px var(--accent-glow)',
-        'glow-accent-lg': '0 0 40px var(--accent-glow), 0 0 80px color-mix(in srgb, var(--accent-glow) 40%, transparent)',
+        'glow-accent-lg':
+          '0 0 40px var(--accent-glow), 0 0 80px color-mix(in srgb, var(--accent-glow) 40%, transparent)',
       },
     },
   },
