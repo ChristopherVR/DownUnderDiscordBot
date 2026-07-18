@@ -42,7 +42,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div>
+    <div data-testid="settings-page">
       <h1 className="mb-6 text-2xl font-bold text-t-primary">Settings</h1>
 
       {/* Appearance / Theme */}
@@ -201,7 +201,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="mt-3 flex gap-3">
-                <button onClick={handleSaveConnection} className="btn-primary text-xs">
+                <button data-testid="settings-save" onClick={handleSaveConnection} className="btn-primary text-xs">
                   <Save size={12} /> Save & Reconnect
                 </button>
                 <button

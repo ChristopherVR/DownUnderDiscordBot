@@ -63,6 +63,7 @@ function SearchResult({
 
   return (
     <div
+      data-testid="search-result-row"
       className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all"
       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--nav-hover-bg)')}
       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
@@ -219,6 +220,7 @@ export default function SearchPage() {
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-t-faint" />
           <input
             type="text"
+            data-testid="search-input"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="What do you want to listen to?"
@@ -228,6 +230,7 @@ export default function SearchPage() {
 
         <button
           type="submit"
+          data-testid="search-submit"
           disabled={!query.trim() || loading}
           className="btn-primary disabled:opacity-40 disabled:shadow-none"
         >
@@ -244,7 +247,7 @@ export default function SearchPage() {
       )}
 
       {!loading && results.length > 0 && (
-        <div className="card-glass rounded-xl p-2">
+        <div data-testid="search-results" className="card-glass rounded-xl p-2">
           <div className="mb-1 flex items-center justify-between px-3 py-2">
             <h2 className="text-[11px] font-semibold uppercase tracking-widest text-t-faint">
               Results ({results.length})

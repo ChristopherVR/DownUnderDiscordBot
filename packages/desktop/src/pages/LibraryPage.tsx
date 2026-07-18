@@ -187,7 +187,7 @@ export default function LibraryPage() {
   ];
 
   return (
-    <div>
+    <div data-testid="library-page">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-t-primary">Library</h1>
 
@@ -287,6 +287,7 @@ export default function LibraryPage() {
                     placeholder="Playlist name"
                     className="input-glass"
                     autoFocus
+                    data-testid="playlist-name-input"
                   />
                   <input
                     value={newDescription}
@@ -299,6 +300,7 @@ export default function LibraryPage() {
                       type="submit"
                       disabled={!newName.trim() || creating}
                       className="btn-glass flex items-center gap-1.5 text-xs text-spotify-green disabled:opacity-40"
+                      data-testid="playlist-create-confirm"
                     >
                       {creating ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                       Create
@@ -318,7 +320,11 @@ export default function LibraryPage() {
                 </form>
               </div>
             ) : (
-              <button onClick={() => setShowCreateForm(true)} className="btn-glass flex items-center gap-2 text-xs">
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="btn-glass flex items-center gap-2 text-xs"
+                data-testid="library-new-playlist"
+              >
                 <Plus size={14} /> Create Playlist
               </button>
             )}
@@ -337,6 +343,7 @@ export default function LibraryPage() {
                   key={pl.id}
                   className="card-glass-hover group flex cursor-pointer flex-col gap-3 rounded-xl !p-4"
                   onClick={() => navigate(`/library/playlist/${pl.id}`)}
+                  data-testid="playlist-card"
                 >
                   <div className="relative flex h-28 w-full items-center justify-center rounded-lg bg-gradient-to-br from-spotify-green/10 to-emerald-600/5">
                     <ListMusic size={36} className="text-spotify-green/50" />

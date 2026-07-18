@@ -20,12 +20,13 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-20 right-4 z-[100] flex flex-col gap-2">
+    <div data-testid="toast-container" className="fixed bottom-20 right-4 z-[100] flex flex-col gap-2">
       {toasts.map((t) => {
         const Icon = icons[t.type];
         return (
           <div
             key={t.id}
+            data-testid="toast"
             className="animate-in slide-in-from-right flex items-center gap-2.5 rounded-xl border px-4 py-2.5 shadow-xl backdrop-blur-md"
             style={{
               background: 'var(--surface)',

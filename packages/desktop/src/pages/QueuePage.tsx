@@ -30,6 +30,7 @@ function TrackRow({ track, index, onRemove }: { track: Track; index: number; onR
       value={track}
       dragListener={false}
       dragControls={dragControls}
+      data-testid="queue-item"
       className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors"
       style={{ background: 'transparent' }}
       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--nav-hover-bg)')}
@@ -67,6 +68,7 @@ function TrackRow({ track, index, onRemove }: { track: Track; index: number; onR
       </span>
       <button
         onClick={onRemove}
+        data-testid="queue-remove"
         className="rounded-full p-1.5 text-t-ghost opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100"
       >
         <Trash2 size={14} />
@@ -102,7 +104,7 @@ export default function QueuePage() {
   };
 
   return (
-    <div>
+    <div data-testid="queue-page">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-t-primary">Queue</h1>
@@ -111,10 +113,20 @@ export default function QueuePage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={shuffleQueue} disabled={queue.length < 2} className="btn-glass disabled:opacity-30">
+          <button
+            onClick={shuffleQueue}
+            disabled={queue.length < 2}
+            data-testid="queue-shuffle"
+            className="btn-glass disabled:opacity-30"
+          >
             <Shuffle size={14} /> Shuffle
           </button>
-          <button onClick={clearQueue} disabled={queue.length === 0} className="btn-glass disabled:opacity-30">
+          <button
+            onClick={clearQueue}
+            disabled={queue.length === 0}
+            data-testid="queue-clear"
+            className="btn-glass disabled:opacity-30"
+          >
             <ListX size={14} /> Clear
           </button>
         </div>

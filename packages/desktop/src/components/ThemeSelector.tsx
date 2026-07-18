@@ -21,7 +21,7 @@ export default function ThemeSelector() {
         <label className="mb-2.5 block text-[11px] font-semibold uppercase tracking-wider text-t-faint">
           Appearance
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div data-testid="settings-theme" className="grid grid-cols-3 gap-2">
           {MODE_OPTIONS.map(({ value, label, icon: Icon }) => (
             <button
               key={value}

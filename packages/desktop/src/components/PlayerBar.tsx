@@ -119,6 +119,7 @@ export default function PlayerBar() {
 
   return (
     <div
+      data-testid="player-bar"
       className="fixed bottom-0 left-0 right-0 z-40 flex h-20 items-center px-4 backdrop-blur-2xl"
       style={{
         borderTop: '1px solid var(--playerbar-border)',
@@ -158,10 +159,12 @@ export default function PlayerBar() {
           </div>
         )}
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold text-t-primary">
+          <p data-testid="player-track-title" className="truncate text-[13px] font-semibold text-t-primary">
             {player.currentTrack?.title ?? 'No track playing'}
           </p>
-          <p className="truncate text-[11px] text-t-faint">{player.currentTrack?.artist ?? '\u00A0'}</p>
+          <p data-testid="player-track-artist" className="truncate text-[11px] text-t-faint">
+            {player.currentTrack?.artist ?? '\u00A0'}
+          </p>
           {/* Stream status indicator (resolving / fallback) */}
           {streamStatus && (streamStatus.status === 'resolving' || streamStatus.status === 'fallback') && (
             <p className="flex items-center gap-1 truncate text-[10px] font-medium text-amber-400">
@@ -203,6 +206,7 @@ export default function PlayerBar() {
       <div className="flex flex-1 flex-col items-center gap-1.5">
         <div className="flex items-center gap-5">
           <button
+            data-testid="player-shuffle"
             onClick={shuffleQueue}
             disabled={!canControl}
             className="text-t-faint transition-all hover:scale-110 hover:text-t-secondary disabled:opacity-30 disabled:hover:scale-100"
@@ -210,6 +214,7 @@ export default function PlayerBar() {
             <Shuffle size={15} />
           </button>
           <button
+            data-testid="player-prev"
             onClick={playPrevious}
             disabled={!canControl}
             className={`transition-all hover:scale-110 disabled:opacity-30 disabled:hover:scale-100 ${
@@ -219,6 +224,8 @@ export default function PlayerBar() {
             <SkipBack size={17} />
           </button>
           <button
+            data-testid="player-play"
+            aria-label={player.isPlaying ? 'Pause' : 'Play'}
             onClick={() => {
               if (!canControl) return;
               if (player.isPlaying) {
@@ -244,6 +251,7 @@ export default function PlayerBar() {
             )}
           </button>
           <button
+            data-testid="player-skip"
             onClick={skip}
             disabled={!canControl}
             className={`transition-all hover:scale-110 disabled:opacity-30 disabled:hover:scale-100 ${
@@ -253,6 +261,7 @@ export default function PlayerBar() {
             <SkipForward size={17} />
           </button>
           <button
+            data-testid="player-loop"
             onClick={nextLoop}
             disabled={!canControl}
             className={`transition-all hover:scale-110 disabled:opacity-30 disabled:hover:scale-100 ${
@@ -270,6 +279,7 @@ export default function PlayerBar() {
             {formatTime(localPos)}
           </span>
           <div
+            data-testid="player-seek"
             className="group relative h-1 flex-1 cursor-pointer rounded-full bg-white/[0.08]"
             onMouseDown={(e) => {
               if (!canControl) return;
@@ -400,6 +410,7 @@ export default function PlayerBar() {
             }}
           />
           <input
+            data-testid="player-volume"
             type="range"
             min={0}
             max={100}

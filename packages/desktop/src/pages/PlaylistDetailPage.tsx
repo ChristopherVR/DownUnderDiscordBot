@@ -174,7 +174,7 @@ export default function PlaylistDetailPage() {
   const totalDuration = playlist.tracks.reduce((acc, t) => acc + t.duration, 0);
 
   return (
-    <div>
+    <div data-testid="playlist-detail-page">
       {/* Header */}
       <div className="mb-6 flex items-start gap-4">
         <button
@@ -218,7 +218,9 @@ export default function PlaylistDetailPage() {
           ) : (
             <>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-t-primary">{playlist.name}</h1>
+                <h1 className="text-2xl font-bold text-t-primary" data-testid="playlist-title">
+                  {playlist.name}
+                </h1>
                 <button onClick={startEdit} className="text-t-faint hover:text-t-tertiary">
                   <Pencil size={14} />
                 </button>
@@ -248,10 +250,15 @@ export default function PlaylistDetailPage() {
           onClick={handlePlayAll}
           disabled={playlist.tracks.length === 0}
           className="flex items-center gap-2 rounded-full bg-gradient-to-r from-spotify-green to-emerald-400 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-black shadow-glow-green transition-all hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
+          data-testid="playlist-play"
         >
           <Play size={14} fill="black" /> Play All
         </button>
-        <button onClick={() => setShowAddTrack(!showAddTrack)} className="btn-glass flex items-center gap-2 text-xs">
+        <button
+          onClick={() => setShowAddTrack(!showAddTrack)}
+          className="btn-glass flex items-center gap-2 text-xs"
+          data-testid="playlist-add-track"
+        >
           <Plus size={14} /> Add Tracks
         </button>
         <button
@@ -272,6 +279,7 @@ export default function PlaylistDetailPage() {
               onChange={(e) => setAddQuery(e.target.value)}
               placeholder="Search for a song or paste a URL..."
               className="input-glass flex-1"
+              data-testid="playlist-add-track-input"
             />
             <button type="submit" disabled={addSearching} className="btn-glass flex items-center gap-1.5 text-xs">
               {addSearching ? <Loader2 size={12} className="animate-spin" /> : 'Search'}
@@ -300,6 +308,7 @@ export default function PlaylistDetailPage() {
                   <span className="text-[10px] text-t-faint">{track.duration ? formatTime(track.duration) : ''}</span>
                   <button
                     onClick={() => handleAddTrackFromSearch(track)}
+                    data-testid="playlist-add-track-result"
                     className="rounded-full p-1.5 text-t-faint transition-colors hover:bg-white/[0.08] hover:text-spotify-green"
                     title="Add to playlist"
                   >
@@ -337,6 +346,7 @@ export default function PlaylistDetailPage() {
             <div
               key={track.id}
               className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/[0.04]"
+              data-testid="playlist-track"
             >
               <span className="w-7 text-center text-xs tabular-nums text-t-faint group-hover:hidden">{i + 1}</span>
               <button
@@ -381,6 +391,7 @@ export default function PlaylistDetailPage() {
                   onClick={() => handleRemoveTrack(track.id)}
                   className="rounded-full p-1.5 text-t-faint opacity-0 transition-all hover:text-red-400 group-hover:opacity-100"
                   title="Remove from playlist"
+                  data-testid="playlist-track-remove"
                 >
                   <Trash2 size={14} />
                 </button>

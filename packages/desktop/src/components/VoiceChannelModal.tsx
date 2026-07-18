@@ -69,12 +69,16 @@ export default function VoiceChannelModal({ open, onClose, onSelect }: Props) {
   // --- Guild picker step ---
   if (needsGuildPick) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div
+        data-testid="voice-channel-modal"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      >
         <div className="card-glass w-full max-w-sm rounded-2xl !p-0 shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
             <h2 className="text-sm font-semibold text-t-primary">Select Server</h2>
             <button
+              data-testid="voice-channel-modal-close"
               onClick={onClose}
               className="rounded-lg p-1 text-t-faint transition-colors hover:bg-white/[0.06] hover:text-t-secondary"
             >
@@ -116,7 +120,10 @@ export default function VoiceChannelModal({ open, onClose, onSelect }: Props) {
 
   // --- Voice channel picker step ---
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div
+      data-testid="voice-channel-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+    >
       <div className="card-glass w-full max-w-sm rounded-2xl !p-0 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
@@ -133,6 +140,7 @@ export default function VoiceChannelModal({ open, onClose, onSelect }: Props) {
             <h2 className="text-sm font-semibold text-t-primary">Select Voice Channel</h2>
           </div>
           <button
+            data-testid="voice-channel-modal-close"
             onClick={onClose}
             className="rounded-lg p-1 text-t-faint transition-colors hover:bg-white/[0.06] hover:text-t-secondary"
           >
@@ -152,6 +160,7 @@ export default function VoiceChannelModal({ open, onClose, onSelect }: Props) {
             channels.map((ch) => (
               <button
                 key={ch.id}
+                data-testid="voice-channel-item"
                 onClick={() => handleSelectChannel(ch.id)}
                 className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all hover:bg-white/[0.06]"
               >

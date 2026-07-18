@@ -34,6 +34,15 @@ const defaultNavItems: NavItem[] = [
 
 const navItemMap = new Map(defaultNavItems.map((item) => [item.to, item]));
 
+/** Maps a nav item's route to the `data-testid` E2E tests look for. */
+const navTestIds: Record<string, string> = {
+  '/dashboard': 'sidebar-nav-dashboard',
+  '/queue': 'sidebar-nav-queue',
+  '/search': 'sidebar-nav-search',
+  '/library': 'sidebar-nav-library',
+  '/logs': 'sidebar-nav-logs',
+};
+
 /** Single draggable nav item */
 function DraggableNavItem({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   return (
@@ -62,6 +71,7 @@ function DraggableNavItem({ item, collapsed }: { item: NavItem; collapsed: boole
         </div>
 
         <NavLink
+          data-testid={navTestIds[item.to]}
           draggable={false}
           to={item.to}
           title={collapsed ? item.label : undefined}
@@ -126,6 +136,7 @@ export default function Sidebar() {
 
   const renderSettingsLink = () => (
     <NavLink
+      data-testid="sidebar-nav-settings"
       to="/settings"
       title={collapsed ? 'Settings' : undefined}
       className={({ isActive }) =>
@@ -156,6 +167,7 @@ export default function Sidebar() {
 
   return (
     <aside
+      data-testid="app-sidebar"
       className={cn(
         'fixed left-0 top-9 z-30 flex flex-col backdrop-blur-2xl transition-all duration-300 ease-in-out',
         sidebarWidth,
