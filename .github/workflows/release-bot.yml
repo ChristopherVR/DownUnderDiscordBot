@@ -1,9 +1,10 @@
 name: Release Bot (npm)
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # Manual only: no NPM_TOKEN secret is configured yet, so this would fail
+  # the same way the old Azure deploy did if it ran on every tag push.
+  # Switch back to `push: tags: ['v*']` once npm publishing is wanted.
+  workflow_dispatch:
 
 permissions:
   contents: read
