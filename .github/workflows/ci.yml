@@ -119,6 +119,44 @@ jobs:
       - name: Build desktop frontend
         run: pnpm --filter discord-bot-desktop build:web
 
+  build-desktop-windows:
+    name: Build Desktop (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/desktop/src-tauri -> target
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter discord-dashboard-shared build
+
+      - name: Build Tauri app (debug, no installers)
+        # A real `tauri build` (not just build:web) — this is what actually
+        # catches things a frontend-only build can't, e.g. the npm package
+        # and Rust crate versions for tauri drifting out of sync.
+        # --debug --no-bundle keeps this fast: skips optimized codegen and
+        # MSI/NSIS installer generation, which aren't needed to validate the
+        # build itself.
+        run: pnpm --filter discord-bot-desktop tauri build --debug --no-bundle --ci
+
   test-shared:
     name: Test Shared
     runs-on: ubuntu-latest
@@ -190,3 +228,47 @@ jobs:
 
       - name: Run desktop tests
         run: pnpm --filter discord-bot-desktop test
+
+  test-e2e:
+    name: Test E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter discord-dashboard-shared build
+
+      - name: Generate Prisma client
+        run: pnpm --filter discord-bot exec prisma generate
+
+      - name: Push Prisma schema (E2E database)
+        working-directory: packages/bot
+        run: npx prisma db push
+        env:
+          DATABASE_URL: file:./prisma/e2e.db
+
+      - name: Install Playwright browsers
+        run: pnpm --filter discord-bot-e2e exec playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: pnpm --filter discord-bot-e2e test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: packages/e2e/playwright-report/
+          retention-days: 14
