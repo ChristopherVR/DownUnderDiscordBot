@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod bot_process;
 mod commands;
 mod config;
 mod file_scanner;
@@ -19,6 +20,7 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(Mutex::new(file_watcher::WatcherState::default()))
+        .manage(Mutex::new(bot_process::BotProcessState::default()))
         .invoke_handler(tauri::generate_handler![
             commands::connect_to_bot,
             commands::get_bot_status,
@@ -29,9 +31,14 @@ fn main() {
             file_scanner::get_default_music_folders,
             config::get_config,
             config::save_config,
+            config::get_local_bot_config,
+            config::save_local_bot_config,
             file_watcher::watch_folder,
             file_watcher::unwatch_folder,
             file_watcher::unwatch_all,
+            bot_process::start_local_bot,
+            bot_process::stop_local_bot,
+            bot_process::get_local_bot_status,
         ])
         .setup(|app| {
             // Build the right-click context menu for the tray icon

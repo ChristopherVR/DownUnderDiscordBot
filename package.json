@@ -53,6 +53,7 @@
       "@prisma/engines",
       "better-sqlite3",
       "esbuild",
+      "ffmpeg-static",
       "prisma",
       "mediaplex"
     ],

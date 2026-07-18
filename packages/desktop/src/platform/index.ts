@@ -12,6 +12,8 @@ export { libraryPlatform } from './library';
 export type { ScannedTrack, FolderChangeEvent } from './library';
 export { updaterPlatform } from './updater';
 export type { UpdateInfo, UpdateProgress } from './updater';
+export { botProcess } from './botProcess';
+export type { BotRunStatus, LocalBotConfig, BotLogLine } from './botProcess';
 
 export const platform = {
   isTauri: isTauri(),
@@ -20,4 +22,5 @@ export const platform = {
   canPickClientFolder: isTauri(),
   showCustomTitlebar: isTauri(),
   canCheckForUpdates: isTauri(),
+  canRunBotLocally: isTauri(),
 };

@@ -19,7 +19,7 @@ import SettingsPage from '@/pages/SettingsPage';
 import CommandLogsPage from '@/pages/CommandLogsPage';
 import LogsPage from '@/pages/LogsPage';
 import AuthCallbackPage from '@/pages/AuthCallbackPage';
-import { registerDeepLinkAuth, updaterPlatform, platform } from '@/platform';
+import { registerDeepLinkAuth, updaterPlatform, botProcess, platform } from '@/platform';
 import { toast } from '@/stores/useToastStore';
 import { MessageSquare } from 'lucide-react';
 
@@ -30,6 +30,7 @@ export default function App() {
   const setPendingPlaylistPlay = useBotStore((s) => s.setPendingPlaylistPlay);
   const playWithVoiceChannel = useBotStore((s) => s.playWithVoiceChannel);
   const restoreBotConnection = useBotStore((s) => s.restoreBotConnection);
+  const appendLocalBotLog = useBotStore((s) => s.appendLocalBotLog);
   const initSystemListener = useThemeStore((s) => s.initSystemListener);
   const sidebarCollapsed = useLayoutStore((s) => s.sidebarCollapsed);
   const chatOpen = useLayoutStore((s) => s.chatOpen);
@@ -59,6 +60,20 @@ export default function App() {
       });
     });
   }, []);
+
+  // Local bot sidecar log/crash streams. No-op in browser mode.
+  useEffect(() => {
+    let unlistenLog: (() => void) | null = null;
+    let unlistenCrash: (() => void) | null = null;
+    (async () => {
+      unlistenLog = await botProcess.onLog(appendLocalBotLog);
+      unlistenCrash = await botProcess.onCrash((message) => toast.error(`Local bot crashed: ${message}`));
+    })();
+    return () => {
+      unlistenLog?.();
+      unlistenCrash?.();
+    };
+  }, [appendLocalBotLog]);
 
   // Tauri deep-link auth listener. No-op in browser mode (web uses the
   // `/auth/callback` route below to pick the token out of the URL).

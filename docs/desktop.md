@@ -145,14 +145,19 @@ Config is stored at `~/.config/discord-music-bot/config.json` (or platform equiv
 
 ### Rust Dependencies
 
-| Crate                  | Purpose                              |
-| ---------------------- | ------------------------------------ |
-| `tauri` v2             | Desktop app framework                |
-| `serde` / `serde_json` | Serialization                        |
-| `reqwest`              | HTTP client for bot API              |
-| `walkdir`              | Recursive directory traversal        |
-| `audiotags`            | ID3 tag parsing                      |
-| `dirs`                 | Platform-specific config directories |
+| Crate                  | Purpose                                               |
+| ---------------------- | ----------------------------------------------------- |
+| `tauri` v2             | Desktop app framework                                 |
+| `tauri-plugin-shell`   | External links, sidecar process spawning              |
+| `tauri-plugin-dialog`  | Native file/folder pickers                            |
+| `tauri-plugin-updater` | Auto-update (checks a signed `latest.json`)           |
+| `tauri-plugin-process` | Relaunch after an update installs                     |
+| `serde` / `serde_json` | Serialization                                         |
+| `reqwest`              | HTTP client for bot API, sidecar health-check polling |
+| `walkdir`              | Recursive directory traversal                         |
+| `audiotags`            | ID3 tag parsing                                       |
+| `dirs`                 | Platform-specific config directories                  |
+| `rand`                 | Generates the local bot sidecar's JWT secret          |
 
 ---
 
@@ -541,6 +546,41 @@ Styled WebKit scrollbar: 8px width, transparent track, `#555` thumb with `#777` 
 - `glow-pulse`: Glow effect for active elements
 - `now-playing-bar`: Animated equalizer bars
 - Framer Motion page transitions (fade + slide)
+
+---
+
+## Bundled Local Bot
+
+Settings > "Run Bot Locally" (Tauri only, gated behind `platform.canRunBotLocally`)
+lets the desktop app spawn and manage its own copy of `packages/bot` as a
+Tauri sidecar, so a user doesn't need a separately-hosted bot at all.
+
+- `packages/bot/scripts/build-sidecar.mjs` produces the artifacts this
+  depends on: a bundled `index.js` + a **real** `node_modules` (installed
+  natively per-platform so `better-sqlite3`/`mediaplex` get correct
+  prebuilds), a static `ffmpeg` binary (via `ffmpeg-static`), and a copy of
+  the Node.js binary that ran the install (reused as the sidecar itself, so
+  its ABI matches the native addons that were just installed). Run
+  `pnpm --filter discord-bot run build:sidecar` before a Tauri build that
+  needs this feature - `tauri dev`/a build without this step first has
+  nothing to spawn.
+- `packages/desktop/src-tauri/src/bot_process.rs` spawns it via
+  `tauri-plugin-shell`'s sidecar API, injecting `CLIENT_TOKEN`/`JWT_SECRET`
+  (generated once, persisted)/`DATABASE_URL` (redirected to an absolute path
+  under the OS app-data dir)/`FFMPEG_PATH`/`DISABLE_SPA=1`/`STATE_BACKEND=memory`,
+  and polls `/api/health` before reporting the bot as running. Settings for
+  this (Discord token, guild ID, optional Spotify credentials) are persisted
+  in plaintext in the same `config.json` the rest of this app's settings
+  already live in (see "Config Persistence" above) - the token is the first
+  genuinely sensitive value stored there.
+- **No yt-dlp fallback in this mode.** The bundled bot doesn't ship yt-dlp
+  (it's an undocumented last-resort fallback in the bot itself, rarely hit
+  since youtubei.js is the primary streaming path); if you need it, run the
+  bot separately and connect the desktop app to it as a remote host instead.
+- Once the local bot reports a live port, the app connects to it exactly the
+  same way it connects to any remote bot - including automatically using the
+  bot's loopback-only quick-connect flow, since a locally-spawned bot has no
+  Discord OAuth app configured.
 
 ---
 

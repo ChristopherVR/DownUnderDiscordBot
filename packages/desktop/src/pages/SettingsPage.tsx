@@ -1,9 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useBotStore } from '@/stores/useBotStore';
 import ThemeSelector from '@/components/ThemeSelector';
-import { platform, updaterPlatform } from '@/platform';
+import BotProcessLogPanel from '@/components/BotProcessLogPanel';
+import { platform, updaterPlatform, botProcess } from '@/platform';
 import { toast } from '@/stores/useToastStore';
-import { Save, RefreshCw, Server, Bot, LogIn, LogOut, Loader2, Crown, Palette, DownloadCloud } from 'lucide-react';
+import {
+  Save,
+  RefreshCw,
+  Server,
+  Bot,
+  LogIn,
+  LogOut,
+  Loader2,
+  Crown,
+  Palette,
+  DownloadCloud,
+  Play,
+  Square,
+  HardDrive,
+} from 'lucide-react';
 
 interface Guild {
   id: string;
@@ -33,15 +48,53 @@ export default function SettingsPage() {
   const [port, setPort] = useState(connection.port.toString());
   const [checkingUpdate, setCheckingUpdate] = useState(false);
 
+  // Local bot sidecar
+  const localBotStatus = useBotStore((s) => s.localBotStatus);
+  const localBotLogs = useBotStore((s) => s.localBotLogs);
+  const startLocalBot = useBotStore((s) => s.startLocalBot);
+  const stopLocalBot = useBotStore((s) => s.stopLocalBot);
+  const [clientToken, setClientToken] = useState('');
+  const [guildId, setGuildId] = useState('');
+  const [localPort, setLocalPort] = useState('3000');
+  const [spotifyClientId, setSpotifyClientId] = useState('');
+  const [spotifyClientSecret, setSpotifyClientSecret] = useState('');
+
   // Fetch guilds when bot connects
   useEffect(() => {
     if (botUser) fetchGuilds();
   }, [botUser, fetchGuilds]);
 
+  // Load any previously-saved local bot settings
+  useEffect(() => {
+    if (!platform.canRunBotLocally) return;
+    botProcess.getConfig().then((saved) => {
+      if (!saved) return;
+      setClientToken(saved.clientToken);
+      setGuildId(saved.guildId ?? '');
+      setLocalPort(saved.port.toString());
+      setSpotifyClientId(saved.spotifyClientId ?? '');
+      setSpotifyClientSecret(saved.spotifyClientSecret ?? '');
+    });
+  }, []);
+
   const handleSaveConnection = () => {
     setConnection(host, parseInt(port, 10) || 3001);
     disconnect();
     setTimeout(() => connect(), 200);
+  };
+
+  const handleStartLocalBot = () => {
+    if (!clientToken.trim()) {
+      toast.error('A Discord bot token is required');
+      return;
+    }
+    startLocalBot({
+      clientToken: clientToken.trim(),
+      guildId: guildId.trim() || undefined,
+      port: parseInt(localPort, 10) || 3000,
+      spotifyClientId: spotifyClientId.trim() || undefined,
+      spotifyClientSecret: spotifyClientSecret.trim() || undefined,
+    });
   };
 
   const handleCheckForUpdates = async () => {
@@ -258,6 +311,123 @@ export default function SettingsPage() {
           </div>
         )}
       </section>
+
+      {/* Run Bot Locally (Tauri only - bundled sidecar) */}
+      {platform.canRunBotLocally && (
+        <section className="card-glass mb-6 rounded-xl !p-6">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-400/10">
+              <HardDrive size={18} className="text-emerald-400" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-t-primary">Run Bot Locally</h2>
+              <p className="text-[11px] text-t-faint">
+                Run a bundled copy of the bot on this machine instead of connecting to a separately-hosted one. No
+                yt-dlp fallback in this mode.
+              </p>
+            </div>
+            {localBotStatus.state === 'running' && (
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                <span className="text-[11px] font-medium text-emerald-400">Running on :{localBotStatus.port}</span>
+              </div>
+            )}
+            {localBotStatus.state === 'crashed' && (
+              <span className="text-[11px] font-medium text-red-400">Crashed</span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-t-faint">
+                Discord Bot Token
+              </label>
+              <input
+                type="password"
+                value={clientToken}
+                onChange={(e) => setClientToken(e.target.value)}
+                placeholder="Required"
+                className="input-glass"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-t-faint">
+                Guild ID (optional)
+              </label>
+              <input
+                type="text"
+                value={guildId}
+                onChange={(e) => setGuildId(e.target.value)}
+                placeholder="Optional"
+                className="input-glass"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-t-faint">Port</label>
+              <input
+                type="text"
+                value={localPort}
+                onChange={(e) => setLocalPort(e.target.value)}
+                placeholder="3000"
+                className="input-glass"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-t-faint">
+                Spotify Client ID (optional)
+              </label>
+              <input
+                type="text"
+                value={spotifyClientId}
+                onChange={(e) => setSpotifyClientId(e.target.value)}
+                placeholder="Optional"
+                className="input-glass"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-t-faint">
+                Spotify Client Secret (optional)
+              </label>
+              <input
+                type="password"
+                value={spotifyClientSecret}
+                onChange={(e) => setSpotifyClientSecret(e.target.value)}
+                placeholder="Optional"
+                className="input-glass"
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 flex gap-3">
+            {localBotStatus.state === 'running' || localBotStatus.state === 'starting' ? (
+              <button
+                onClick={() => stopLocalBot()}
+                disabled={localBotStatus.state === 'starting'}
+                className="btn-glass flex items-center gap-2 text-xs disabled:opacity-50"
+              >
+                {localBotStatus.state === 'starting' ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Square size={12} />
+                )}
+                {localBotStatus.state === 'starting' ? 'Starting...' : 'Stop Local Bot'}
+              </button>
+            ) : (
+              <button onClick={handleStartLocalBot} className="btn-primary flex items-center gap-2 text-xs">
+                <Play size={12} />
+                Start Local Bot
+              </button>
+            )}
+          </div>
+
+          {localBotStatus.state === 'crashed' && <p className="mt-3 text-xs text-red-400">{localBotStatus.message}</p>}
+
+          <div className="mt-4">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-t-faint">Output</label>
+            <BotProcessLogPanel logs={localBotLogs} />
+          </div>
+        </section>
+      )}
 
       {/* Application / Updates */}
       {platform.canCheckForUpdates && (

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { api, setAuthToken as setApiAuthToken, setAuthFailureHandler } from '@/lib/api';
 import { wsService } from '@/lib/ws';
-import { clientKind, startOAuth } from '@/platform';
+import { clientKind, startOAuth, botProcess } from '@/platform';
+import type { BotRunStatus, LocalBotConfig, BotLogLine } from '@/platform';
 import type { TrackMediaType, TrackPlatform } from 'discord-dashboard-shared';
 
 export type PlaybackMode = 'bot' | 'local' | 'sync';
@@ -98,6 +99,13 @@ interface BotStore {
   setConnection: (host: string, port: number) => void;
   connect: () => void;
   disconnect: () => void;
+
+  // Bundled local bot sidecar (Tauri only - platform.canRunBotLocally)
+  localBotStatus: BotRunStatus;
+  localBotLogs: BotLogLine[];
+  startLocalBot: (config: LocalBotConfig) => Promise<void>;
+  stopLocalBot: () => Promise<void>;
+  appendLocalBotLog: (line: BotLogLine) => void;
 
   // Playback mode: 'bot' (through Discord) or 'local' (through computer speakers)
   playbackMode: PlaybackMode;
@@ -501,6 +509,9 @@ export const useBotStore = create<BotStore>((set, get) => ({
     botOnline: false,
   },
 
+  localBotStatus: { state: 'stopped' },
+  localBotLogs: [],
+
   player: {
     isPlaying: false,
     currentTrack: null,
@@ -689,6 +700,35 @@ export const useBotStore = create<BotStore>((set, get) => ({
   },
 
   setConnection: (host, port) => set((s) => ({ connection: { ...s.connection, host, port } })),
+
+  appendLocalBotLog: (line) => set((s) => ({ localBotLogs: [...s.localBotLogs, line].slice(-500) })),
+
+  startLocalBot: async (config) => {
+    set({ localBotStatus: { state: 'starting' } });
+    try {
+      await botProcess.saveConfig(config);
+      const result = await botProcess.start();
+      if (result?.state === 'running') {
+        set({ localBotStatus: result });
+        // Once the local bot reports a live port, the existing connect flow
+        // (including its automatic quick-connect fallback) just works.
+        get().setConnection('localhost', result.port);
+        get().connect();
+        get().connectToBot();
+      } else {
+        set({ localBotStatus: result ?? { state: 'stopped' } });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start the local bot';
+      set({ localBotStatus: { state: 'crashed', message } });
+      import('./useToastStore').then(({ toast }) => toast.error(message));
+    }
+  },
+
+  stopLocalBot: async () => {
+    await botProcess.stop();
+    set({ localBotStatus: { state: 'stopped' } });
+  },
 
   connect: () => {
     const { host, port } = get().connection;
