@@ -90,7 +90,6 @@ pub async fn start_local_bot(
         .path()
         .resolve("resources/bot", tauri::path::BaseDirectory::Resource)
         .map_err(|e| e.to_string())?;
-    let index_js = resource_dir.join("index.js");
 
     let ffmpeg_path = resolve_ffmpeg_path(&app)?;
     #[cfg(unix)]
@@ -108,7 +107,14 @@ pub async fn start_local_bot(
         .shell()
         .sidecar("bot-node")
         .map_err(|e| e.to_string())?
-        .args([index_js.to_string_lossy().to_string()])
+        // Pass the entry point as a bare relative name resolved against
+        // current_dir (the bot resource dir) rather than an absolute path.
+        // An installed app lives under a path with spaces and backslashes
+        // (e.g. C:\Program Files\Discord Music Bot\resources\bot\index.js);
+        // handing that absolute string to the sidecar mangles the leading
+        // "C:\" into a drive-relative "C:...", so Node's realpath does
+        // lstat("C:") and dies with EISDIR before the bot ever starts.
+        .args(["index.js".to_string()])
         .current_dir(resource_dir)
         // The bot's logger loads pino-pretty (a devDependency, deliberately
         // not shipped alongside this sidecar) whenever NODE_ENV isn't

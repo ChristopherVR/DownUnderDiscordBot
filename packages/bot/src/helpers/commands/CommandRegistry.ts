@@ -5,7 +5,6 @@ import {
   DiscordCommandOption,
   DiscordCommandChoice,
 } from 'discord-dashboard-shared';
-import { URL } from 'node:url';
 import { v4 as uuid } from 'uuid';
 import { tCommands, tErrors } from 'discord-dashboard-shared/localization';
 import { StateCoordinator, InactiveInstanceError } from '../../state/StateCoordinator';
@@ -17,37 +16,9 @@ import {
   CommandExecutionRepository,
   type CommandHistoryFilters,
 } from '../../database/repositories/CommandExecutionRepository.js';
+import { COMMAND_MODULE_FACTORIES } from '../../commands/commandModules';
 
 const registryLog = createLogger('command-registry');
-
-const KNOWN_COMMAND_MODULES = [
-  'play',
-  'pause',
-  'resume',
-  'stop',
-  'skip',
-  'volume',
-  'loop',
-  'queue',
-  'nowplaying',
-  'shuffle',
-  'seek',
-  'jump',
-  'back',
-  'clear',
-  'remove',
-  'save',
-  'playnext',
-  'search',
-  'playlist',
-  'history',
-  'set-active',
-  'status',
-  'hello',
-  'meme',
-  'ask',
-  'shutdown',
-];
 
 const OPTION_TYPE_MAP: Record<number, CommandOption['type']> = {
   3: 'string',
@@ -128,10 +99,11 @@ export class CommandRegistry {
   }
 
   private async internalLoadKnownCommands(): Promise<void> {
-    registryLog.info({ moduleCount: KNOWN_COMMAND_MODULES.length }, 'Loading known command modules');
-    for (const moduleName of KNOWN_COMMAND_MODULES) {
+    const moduleNames = Object.keys(COMMAND_MODULE_FACTORIES);
+    registryLog.info({ moduleCount: moduleNames.length }, 'Loading known command modules');
+    for (const moduleName of moduleNames) {
       try {
-        await this.loadCommandModule(moduleName);
+        this.loadCommandModule(moduleName);
       } catch (error) {
         registryLog.warn({ module: moduleName, err: error }, 'Failed to load command module');
       }
@@ -139,33 +111,21 @@ export class CommandRegistry {
     registryLog.info({ registeredCount: this.commands.size }, 'Finished loading command modules');
   }
 
-  private async loadCommandModule(moduleName: string): Promise<void> {
-    const extensions = ['.js', '.ts', '.mjs', '.cjs'];
-
-    for (const extension of extensions) {
-      try {
-        const moduleUrl = new URL(`../../commands/${moduleName}${extension}`, import.meta.url);
-        const module = await import(moduleUrl.href);
-        const commandFactory = module.default;
-        if (typeof commandFactory !== 'function') {
-          continue;
-        }
-
-        const command = commandFactory();
-        if (!command || !command.name || typeof command.run !== 'function') {
-          continue;
-        }
-
-        this.registerCommand(command, moduleName);
-        // registryLog.debug({ module: moduleName, command: command.name }, 'Command module registered');
-
-        return;
-      } catch (error) {
-        registryLog.debug({ module: moduleName, extension, err: error }, 'Command module import failed');
-      }
+  // Resolves command factories from a statically-imported map (see
+  // commands/commandModules.ts) rather than importing files by path at
+  // runtime, so the full command set survives esbuild bundling.
+  private loadCommandModule(moduleName: string): void {
+    const commandFactory = COMMAND_MODULE_FACTORIES[moduleName];
+    if (typeof commandFactory !== 'function') {
+      throw new Error(`Unable to load command module '${moduleName}'`);
     }
 
-    throw new Error(`Unable to load command module '${moduleName}'`);
+    const command = commandFactory();
+    if (!command || !command.name || typeof command.run !== 'function') {
+      throw new Error(`Command module '${moduleName}' did not produce a valid command`);
+    }
+
+    this.registerCommand(command, moduleName);
   }
 
   public registerCommand(command: CommandHandler, alias?: string): void {

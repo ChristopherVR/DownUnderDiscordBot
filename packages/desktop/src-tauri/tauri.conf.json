@@ -23,10 +23,6 @@
         "transparent": false
       }
     ],
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true
-    },
     "security": {
       "csp": "default-src 'self'; connect-src 'self' ws://localhost:* http://localhost:* ws: wss: https://discord.com https://cdn.discordapp.com; img-src 'self' https: data:; media-src 'self' http://localhost:* blob:; style-src 'self' 'unsafe-inline'"
     }
