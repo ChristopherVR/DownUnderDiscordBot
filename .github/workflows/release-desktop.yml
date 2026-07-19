@@ -97,6 +97,6 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Down Under Bot Desktop ${{ github.ref_name }}'
           releaseBody: 'See the release notes for details.'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
