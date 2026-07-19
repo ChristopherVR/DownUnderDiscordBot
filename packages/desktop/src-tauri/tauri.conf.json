@@ -41,7 +41,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "PLACEHOLDER_UPDATER_PUBKEY_REPLACE_AFTER_RUNNING_TAURI_SIGNER_GENERATE",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlBQTAwMEMyNDdDMEU4Q0YKUldUUDZNQkh3Z0NnbWorWEpNVmJOUXhLSFlKTXVlRkdWWjZoT0lxVVhkYVRhWmNEQitNR0VuWTQK",
       "endpoints": ["https://github.com/ChristopherVR/DownUnderDiscordBot/releases/latest/download/latest.json"]
     }
   }
