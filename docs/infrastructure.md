@@ -247,12 +247,18 @@ Runs across four matrix entries in parallel:
 | Windows       | `windows-latest` | --                              |
 | Linux         | `ubuntu-22.04`   | --                              |
 | macOS (arm64) | `macos-latest`   | `--target aarch64-apple-darwin` |
-| macOS (Intel) | `macos-latest`   | `--target x86_64-apple-darwin`  |
+| macOS (Intel) | `macos-15-intel` | `--target x86_64-apple-darwin`  |
 
 macOS builds one native binary per architecture rather than a single
 universal one - the bundled bot sidecar's native addons and its Node.js
 binary aren't lipo'd by Tauri the way the main Rust binary is, so each
-arch needs its own fully-native build and its own DMG.
+arch needs its own fully-native build and its own DMG. Both jobs run on
+genuinely native hardware for their arch (`macos-latest` is Apple Silicon;
+`macos-15-intel` is GitHub's real x86_64 image, replacing the now-retired
+`macos-13`) rather than cross-compiling on one runner - `npm install`'s
+native addon prebuilds and the sidecar Node binary itself are picked based
+on the actual host, not the `--target` flag, so cross-compiling this job
+would silently ship the wrong architecture's native addons.
 
 Steps per platform:
 
