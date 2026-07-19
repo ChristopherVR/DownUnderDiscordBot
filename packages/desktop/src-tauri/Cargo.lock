@@ -627,7 +627,7 @@ dependencies = [
 
 [[package]]
 name = "discord-music-bot"
-version = "2.1.1"
+version = "2.1.2"
 dependencies = [
  "audiotags",
  "dirs",

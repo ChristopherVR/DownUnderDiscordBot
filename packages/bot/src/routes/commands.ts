@@ -123,10 +123,23 @@ const registerSlashCommandsWithDiscord = async (client: Client, registry: Comman
 
     const guildId = process.env.GUILD_ID;
     if (guildId) {
-      const guild = await client.guilds.fetch(guildId);
-      await guild.commands.set(slashCommands);
-      commandLog.info({ guildId, count: slashCommands.length }, 'Registered guild slash commands');
-    } else if (client.application) {
+      try {
+        const guild = await client.guilds.fetch(guildId);
+        await guild.commands.set(slashCommands);
+        commandLog.info({ guildId, count: slashCommands.length }, 'Registered guild slash commands');
+        return true;
+      } catch (guildError) {
+        // A stale/placeholder GUILD_ID, or the bot not being in that guild, would
+        // otherwise abort registration entirely. Fall back to global commands so
+        // the bot still gets its slash commands in every guild it's actually in.
+        commandLog.warn(
+          { guildId, err: guildError },
+          'Could not register guild slash commands; falling back to global registration',
+        );
+      }
+    }
+
+    if (client.application) {
       await client.application.commands.set(slashCommands);
       commandLog.info({ count: slashCommands.length }, 'Registered global slash commands');
     } else {

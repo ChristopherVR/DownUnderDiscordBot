@@ -8,6 +8,15 @@ import type { TrackMediaType, TrackPlatform } from 'discord-dashboard-shared';
 export type PlaybackMode = 'bot' | 'local' | 'sync';
 
 /**
+ * Timestamp of the last user-initiated volume change. Incoming `player_state`
+ * broadcasts can carry a stale volume that was emitted just before the bot
+ * applied the user's new value; within this window we keep the local volume so
+ * the slider doesn't jump back before the corrected echo arrives.
+ */
+let lastVolumeChangeAt = 0;
+const VOLUME_ECHO_GUARD_MS = 2000;
+
+/**
  * Desktop-side Track view. Every field is optional because the desktop
  * enriches partial track metadata from multiple sources (search, WS updates,
  * local file scan). The shared `Track` in `discord-dashboard-shared` is the
@@ -168,6 +177,7 @@ interface BotStore {
   previewTrack: Track | null;
   previewAudio: HTMLAudioElement | null;
   previewPlaying: boolean;
+  previewLoading: boolean;
   startPreview: (track: Track) => void;
   stopPreview: () => void;
 
@@ -536,6 +546,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
   previewTrack: null,
   previewAudio: null,
   previewPlaying: false,
+  previewLoading: false,
 
   // Dashboard
   dashboard: null,
@@ -750,6 +761,9 @@ export const useBotStore = create<BotStore>((set, get) => ({
         const guilds = get().guilds;
         const guildInfo = guilds.find((g) => g.id === guildId);
 
+        // Ignore a possibly-stale volume echo right after the user moved the slider.
+        const guardVolume = playerFields.volume !== undefined && Date.now() - lastVolumeChangeAt < VOLUME_ECHO_GUARD_MS;
+
         set((s) => {
           const prev = s.guildPlayers[guildId] ?? {
             isPlaying: false,
@@ -779,16 +793,20 @@ export const useBotStore = create<BotStore>((set, get) => ({
 
           // If this guild is the active one in the player bar, also sync the visible player
           const syncPlayer = (s.playbackMode === 'bot' || s.playbackMode === 'sync') && newActiveId === guildId;
+          const syncedFields = guardVolume ? { ...playerFields, volume: s.player.volume } : playerFields;
 
           return {
             guildPlayers: newGuildPlayers,
             activePlayerGuildId: newActiveId,
-            ...(syncPlayer ? { player: { ...s.player, ...playerFields } } : {}),
+            ...(syncPlayer ? { player: { ...s.player, ...syncedFields } } : {}),
           };
         });
       } else {
         // Legacy: no guildId in payload, update global player directly
-        set((s) => ({ player: { ...s.player, ...state } }));
+        const { volume: _v, ...rest } = state;
+        const legacyFields =
+          state.volume !== undefined && Date.now() - lastVolumeChangeAt < VOLUME_ECHO_GUARD_MS ? rest : state;
+        set((s) => ({ player: { ...s.player, ...legacyFields } }));
       }
     });
 
@@ -1000,12 +1018,22 @@ export const useBotStore = create<BotStore>((set, get) => ({
     const audio = new Audio(streamUrl);
     audio.volume = 0.5;
     audio.addEventListener('ended', () => {
-      set({ previewTrack: null, previewAudio: null, previewPlaying: false });
+      set({ previewTrack: null, previewAudio: null, previewPlaying: false, previewLoading: false });
+    });
+    // Clear the loading state only once audio is actually playing.
+    audio.addEventListener('playing', () => {
+      // Ignore late events from a preview that has since been replaced/stopped.
+      if (get().previewAudio === audio) set({ previewLoading: false, previewPlaying: true });
+    });
+    audio.addEventListener('error', () => {
+      if (get().previewAudio === audio)
+        set({ previewTrack: null, previewAudio: null, previewPlaying: false, previewLoading: false });
     });
     audio.play().catch(() => {
       /* autoplay may be blocked */
+      if (get().previewAudio === audio) set({ previewLoading: false });
     });
-    set({ previewTrack: track, previewAudio: audio, previewPlaying: true });
+    set({ previewTrack: track, previewAudio: audio, previewPlaying: false, previewLoading: true });
   },
 
   stopPreview: () => {
@@ -1015,7 +1043,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
       previewAudio.removeAttribute('src');
       previewAudio.load();
     }
-    set({ previewTrack: null, previewAudio: null, previewPlaying: false });
+    set({ previewTrack: null, previewAudio: null, previewPlaying: false, previewLoading: false });
   },
 
   playOnBot: async (track: Track) => {
@@ -1617,6 +1645,7 @@ export const useBotStore = create<BotStore>((set, get) => ({
     }
   },
   setVolume: async (volume) => {
+    lastVolumeChangeAt = Date.now();
     set((s) => ({ player: { ...s.player, volume } }));
     const { localAudio, activePlayerGuildId, focusedGuildId } = get();
     const guildId = activePlayerGuildId ?? focusedGuildId ?? undefined;

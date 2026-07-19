@@ -1,6 +1,6 @@
 {
   "name": "discord-bot",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,7 +15,7 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
-    "db:generate": "prisma generate",
+    "db:generate": "prisma generate && node scripts/generate-schema-sql.mjs",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio"

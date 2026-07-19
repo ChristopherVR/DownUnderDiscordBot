@@ -36,7 +36,7 @@ import { resolveI18nLoadPath } from './helpers/localesPath';
 import { LogMessage } from './types';
 import { startBot } from './bot';
 import { isE2EMode, registerTestRoutes } from './testMode/index';
-import { getDatabase } from './database/client';
+import { getDatabase, ensureSchema } from './database/client';
 import { getPlayerStateManager } from './helpers/discord/player';
 
 // index.ts (or the first file that runs)
@@ -62,6 +62,14 @@ const discordLog = serverLog.child({ layer: 'discord' });
 
 async function main() {
   serverLog.info('Bootstrapping Discord dashboard server');
+
+  // Make sure the database schema exists before anything queries it. A bundled
+  // or first-run bot points at an empty SQLite file with no `prisma db push`
+  // step, so create any missing tables/indexes up front.
+  serverLog.debug('Ensuring database schema');
+  await ensureSchema();
+  serverLog.info('Database schema ready');
+
   serverLog.debug('Initializing localization resources');
   // Initialize localization for server
   await initI18n({

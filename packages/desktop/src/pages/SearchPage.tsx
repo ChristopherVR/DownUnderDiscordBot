@@ -44,6 +44,7 @@ function SearchResult({
   track,
   index,
   isPreviewingThis,
+  isPreviewLoading,
   onPlay,
   onQueue,
   onAddToPlaylist,
@@ -53,6 +54,7 @@ function SearchResult({
   track: Track;
   index: number;
   isPreviewingThis: boolean;
+  isPreviewLoading: boolean;
   onPlay: () => void;
   onQueue: () => void;
   onAddToPlaylist: () => void;
@@ -69,14 +71,26 @@ function SearchResult({
       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
     >
       {/* Index / preview toggle */}
-      <span className="w-7 text-center text-xs tabular-nums text-t-ghost group-hover:hidden">{index + 1}</span>
+      <span
+        className={`w-7 text-center text-xs tabular-nums text-t-ghost ${
+          isPreviewingThis ? 'hidden' : 'group-hover:hidden'
+        }`}
+      >
+        {index + 1}
+      </span>
       <button
         onClick={isPreviewingThis ? onStopPreview : onPreview}
-        className="hidden h-7 w-7 items-center justify-center group-hover:flex"
+        className={`h-7 w-7 items-center justify-center group-hover:flex ${isPreviewingThis ? 'flex' : 'hidden'}`}
         style={{ color: isPreviewingThis ? 'var(--accent)' : 'var(--text-primary)' }}
-        title={isPreviewingThis ? 'Stop preview' : 'Preview'}
+        title={isPreviewLoading ? 'Loading preview…' : isPreviewingThis ? 'Stop preview' : 'Preview'}
       >
-        {isPreviewingThis ? <Square size={12} fill="currentColor" /> : <Headphones size={14} />}
+        {isPreviewLoading ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : isPreviewingThis ? (
+          <Square size={12} fill="currentColor" />
+        ) : (
+          <Headphones size={14} />
+        )}
       </button>
 
       {/* Thumbnail */}
@@ -168,6 +182,7 @@ export default function SearchPage() {
   const startPreview = useBotStore((s) => s.startPreview);
   const stopPreview = useBotStore((s) => s.stopPreview);
   const previewTrack = useBotStore((s) => s.previewTrack);
+  const previewLoading = useBotStore((s) => s.previewLoading);
 
   // Add-to-playlist modal
   const [playlistModalTrack, setPlaylistModalTrack] = useState<Track | null>(null);
@@ -258,37 +273,40 @@ export default function SearchPage() {
               </span>
             </div>
           </div>
-          {results.map((track, i) => (
-            <SearchResult
-              key={`${track.url ?? track.filePath ?? track.title}-${i}`}
-              track={track}
-              index={i}
-              isPreviewingThis={
-                previewTrack !== null &&
-                previewTrack.title === track.title &&
-                (previewTrack.url === track.url || previewTrack.filePath === track.filePath)
-              }
-              onPlay={() => {
-                if (playbackMode === 'local') playLocally(track);
-                else if (playbackMode === 'bot') playOnBot(track);
-                else {
-                  playLocally(track);
-                  playOnBot(track);
-                }
-              }}
-              onQueue={() => {
-                if (playbackMode === 'local') queueLocally(track);
-                else if (playbackMode === 'bot') queueOnBot(track);
-                else {
-                  queueLocally(track);
-                  queueOnBot(track);
-                }
-              }}
-              onAddToPlaylist={() => setPlaylistModalTrack(track)}
-              onPreview={() => startPreview(track)}
-              onStopPreview={() => stopPreview()}
-            />
-          ))}
+          {results.map((track, i) => {
+            const isPreviewingThis =
+              previewTrack !== null &&
+              previewTrack.title === track.title &&
+              (previewTrack.url === track.url || previewTrack.filePath === track.filePath);
+            return (
+              <SearchResult
+                key={`${track.url ?? track.filePath ?? track.title}-${i}`}
+                track={track}
+                index={i}
+                isPreviewingThis={isPreviewingThis}
+                isPreviewLoading={isPreviewingThis && previewLoading}
+                onPlay={() => {
+                  if (playbackMode === 'local') playLocally(track);
+                  else if (playbackMode === 'bot') playOnBot(track);
+                  else {
+                    playLocally(track);
+                    playOnBot(track);
+                  }
+                }}
+                onQueue={() => {
+                  if (playbackMode === 'local') queueLocally(track);
+                  else if (playbackMode === 'bot') queueOnBot(track);
+                  else {
+                    queueLocally(track);
+                    queueOnBot(track);
+                  }
+                }}
+                onAddToPlaylist={() => setPlaylistModalTrack(track)}
+                onPreview={() => startPreview(track)}
+                onStopPreview={() => stopPreview()}
+              />
+            );
+          })}
         </div>
       )}
 

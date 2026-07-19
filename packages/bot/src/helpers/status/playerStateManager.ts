@@ -29,6 +29,9 @@ export class PlayerStateManager {
   private guildStates: Map<string, ExtendedPlayerState> = new Map();
   private queueHistory: Map<string, QueueHistoryEntry[]> = new Map();
   private positionIntervals: Map<string, NodeJS.Timeout> = new Map();
+  // Last volume requested per guild, even before a queue exists. Re-applied when
+  // playback starts so a volume change made at play time isn't lost/overwritten.
+  private desiredVolumes: Map<string, number> = new Map();
   private localFilesPath: string;
 
   constructor(player: Player, localFilesPath: string = 'uploads/audio') {
@@ -44,6 +47,12 @@ export class PlayerStateManager {
   private initializeEventListeners(): void {
     // Listen for player events to update state
     this.player.events.on('playerStart', (queue: GuildQueue, track: Track) => {
+      // Re-apply a volume the user requested before this queue existed, so the
+      // state we broadcast reflects their choice instead of the queue default.
+      const desired = this.desiredVolumes.get(queue.guild.id);
+      if (typeof desired === 'number' && queue.node.volume !== desired) {
+        queue.node.setVolume(desired);
+      }
       this.updatePlayerState(queue.guild.id);
       this.addToHistory(queue.guild.id, track);
       this.startPositionBroadcast(queue.guild.id);
@@ -418,12 +427,17 @@ export class PlayerStateManager {
 
   public async setVolume(guildId: string, volume: number): Promise<boolean> {
     try {
+      const clamped = Math.max(0, Math.min(100, volume));
+      // Remember the request so it survives until a queue exists / playback starts.
+      this.desiredVolumes.set(guildId, clamped);
+
       const queue = this.player.nodes.get(guildId);
       if (!queue) {
-        return false;
+        // No active queue yet; the value is stored and applied on playerStart.
+        return true;
       }
 
-      queue.node.setVolume(Math.max(0, Math.min(100, volume)));
+      queue.node.setVolume(clamped);
       this.updatePlayerState(guildId);
       return true;
     } catch (error) {
