@@ -16,7 +16,9 @@ overrides:
   postcss: '>=8.5.23'
 
 patchedDependencies:
-  file-type@16.5.4: 3ec920c52afba2bbf3073fa0d9fc9aab3336353c36dbef748f060bf3ad3aad7f
+  file-type@16.5.4:
+    hash: 3ec920c52afba2bbf3073fa0d9fc9aab3336353c36dbef748f060bf3ad3aad7f
+    path: patches/file-type@16.5.4.patch
 
 importers:
 
