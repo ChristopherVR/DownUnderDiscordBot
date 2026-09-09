@@ -23,7 +23,7 @@
   "dependencies": {
     "@discord-player/extractor": "^7.2.0",
     "@discordjs/voice": "^0.19.2",
-    "@prisma/adapter-better-sqlite3": "^7.8.0",
+    "@prisma/adapter-better-sqlite3": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "better-sqlite3": "^12.11.1",
     "cors": "^2.8.6",
