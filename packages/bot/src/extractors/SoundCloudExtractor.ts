@@ -130,7 +130,8 @@ export class SoundCloudExtractor extends BaseExtractor<SoundCloudExtractorOption
       const results = await this.sc!.tracks.search({ q: query, limit: 10 });
       const collection = (results as unknown as { collection?: Array<Record<string, unknown>> })?.collection ?? [];
 
-      const tracks = collection.map((t) => this.scTrackToTrack(t, context));
+      // SNIP tracks are Go+ only: anonymous clients get a 30s preview stream.
+      const tracks = collection.filter((t) => t.policy !== 'SNIP').map((t) => this.scTrackToTrack(t, context));
       return this.createResponse(null, tracks);
     } catch (err) {
       log.error({ err, query }, 'SoundCloud search failed');

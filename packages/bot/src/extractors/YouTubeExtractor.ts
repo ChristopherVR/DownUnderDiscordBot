@@ -400,29 +400,59 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
     // to the Innertube ANDROID/WEB clients, so youtubei.js downloads fail with
     // "No valid URL to decipher". The Innertube paths are kept as fallbacks in
     // case yt-dlp is missing or temporarily broken.
-    const backends: Array<{ client: StreamClient; open: () => Promise<PassThrough> }> = [
-      { client: 'yt-dlp', open: () => ytDlpStreamAudio(track.url) },
-      { client: 'ANDROID', open: async () => this.pipeDownload(await this.getAndroidYt(), videoId, 'ANDROID') },
-      { client: 'WEB', open: async () => this.pipeDownload(await this.getWebYt(), videoId, 'WEB') },
+    //
+    // yt-dlp is never placed on cooldown and gets a retry: YouTube sporadically
+    // 403s a single googlevideo request, and a cooldown would then fail every
+    // YouTube track for the next 5 minutes.
+    const backends: Array<{
+      client: StreamClient;
+      attempts: number;
+      cooldown: boolean;
+      open: () => Promise<PassThrough>;
+    }> = [
+      { client: 'yt-dlp', attempts: 2, cooldown: false, open: () => ytDlpStreamAudio(track.url) },
+      {
+        client: 'ANDROID',
+        attempts: 1,
+        cooldown: true,
+        open: async () => this.pipeDownload(await this.getAndroidYt(), videoId, 'ANDROID'),
+      },
+      {
+        client: 'WEB',
+        attempts: 1,
+        cooldown: true,
+        open: async () => this.pipeDownload(await this.getWebYt(), videoId, 'WEB'),
+      },
     ];
 
     let lastError: unknown;
-    for (const { client, open } of backends) {
+    for (const { client, attempts, cooldown, open } of backends) {
       if (this.isClientDisabled(client)) {
         log.debug({ videoId, client }, 'Skipping stream client (on cooldown)');
         continue;
       }
-      try {
-        emitStatus({ videoId, status: 'resolving', client });
-        const stream = await open();
-        log.debug({ videoId, title: track.title, client }, 'Stream piped');
-        emitStatus({ videoId, status: 'streaming', client });
-        return stream;
-      } catch (err) {
-        lastError = err;
-        this.disableClient(client);
-        log.warn({ err, videoId, client }, 'Stream client failed - placed on cooldown, trying next');
-        emitStatus({ videoId, status: 'fallback', client, message: `${client} client placed on cooldown` });
+      for (let attempt = 1; attempt <= attempts; attempt++) {
+        try {
+          emitStatus({ videoId, status: 'resolving', client });
+          const stream = await open();
+          log.debug({ videoId, title: track.title, client, attempt }, 'Stream piped');
+          emitStatus({ videoId, status: 'streaming', client });
+          return stream;
+        } catch (err) {
+          lastError = err;
+          if (attempt < attempts) {
+            log.warn({ err, videoId, client, attempt }, 'Stream client failed - retrying');
+            continue;
+          }
+          if (cooldown) this.disableClient(client);
+          log.warn({ err, videoId, client }, 'Stream client failed - trying next');
+          emitStatus({
+            videoId,
+            status: 'fallback',
+            client,
+            message: cooldown ? `${client} client placed on cooldown` : `${client} failed`,
+          });
+        }
       }
     }
 

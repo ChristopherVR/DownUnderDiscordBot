@@ -111,6 +111,14 @@ export const initializePlayer = async (client: Client, wsManager?: WebSocketMana
     log.error(err);
   });
 
+  // When a track's own extractor can't stream it, discord-player's fallback
+  // searches the other extractors for a "matching" track and plays that
+  // instead (e.g. a 30s SoundCloud preview standing in for a YouTube video).
+  // Fail the track instead. Set here so every queue-creation path gets it.
+  player.events.on('queueCreate', (queue) => {
+    queue.options.disableFallbackStream = true;
+  });
+
   player.events.on('connection', (queue) => {
     log.debug(`Voice connection established for guild ${queue.guild.id}`);
   });
