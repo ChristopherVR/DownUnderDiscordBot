@@ -1,6 +1,7 @@
 import { Player, createAudioPlayer, AudioPlayer, GuildQueue } from 'discord-player';
 import { entersState, VoiceConnectionStatus } from 'discord-voip';
 import { Client } from 'discord.js';
+import { monitorEventLoopDelay } from 'node:perf_hooks';
 import { PlayerEventManager } from './playerEventManager';
 import { PlayerStateManager } from '../status/playerStateManager';
 import { WebSocketManager } from '../websocket';
@@ -86,6 +87,37 @@ export const isConnectionHealthy = (queue: GuildQueue): boolean => {
   return status !== VoiceConnectionStatus.Destroyed && status !== VoiceConnectionStatus.Disconnected;
 };
 
+/**
+ * Voice audio is sent as one 20ms Opus packet per timer tick, so any event
+ * loop stall longer than a few frames is heard as choppy playback. Sample the
+ * loop delay while something is playing and warn when it spikes, so stutter
+ * can be told apart from network jitter (which this won't show).
+ */
+const LAG_SAMPLE_MS = 10_000;
+const LAG_WARN_MS = 60;
+
+const startEventLoopLagMonitor = (): void => {
+  const histogram = monitorEventLoopDelay({ resolution: 10 });
+  histogram.enable();
+  const timer = setInterval(() => {
+    const playing = player?.nodes.cache.some((queue) => queue.isPlaying()) ?? false;
+    const maxMs = histogram.max / 1e6;
+    if (playing && maxMs >= LAG_WARN_MS) {
+      log.warn(
+        {
+          maxMs: Math.round(maxMs),
+          p99Ms: Math.round(histogram.percentile(99) / 1e6),
+          meanMs: Math.round(histogram.mean / 1e6),
+          windowMs: LAG_SAMPLE_MS,
+        },
+        'Event loop stalled during playback - audio may stutter',
+      );
+    }
+    histogram.reset();
+  }, LAG_SAMPLE_MS);
+  timer.unref();
+};
+
 export const initializePlayer = async (client: Client, wsManager?: WebSocketManager): Promise<Player> => {
   if (player) {
     return player;
@@ -118,6 +150,8 @@ export const initializePlayer = async (client: Client, wsManager?: WebSocketMana
   player.events.on('queueCreate', (queue) => {
     queue.options.disableFallbackStream = true;
   });
+
+  startEventLoopLagMonitor();
 
   player.events.on('connection', (queue) => {
     log.debug(`Voice connection established for guild ${queue.guild.id}`);
