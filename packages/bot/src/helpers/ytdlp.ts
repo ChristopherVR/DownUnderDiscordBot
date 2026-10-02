@@ -19,8 +19,13 @@ const YT_DLP_BIN = process.env.YT_DLP_PATH || 'yt-dlp';
 const COMMON_ARGS = [
   '--no-warnings',
   '--no-playlist',
+  // Required - YouTube needs a JS runtime for signature/n-challenge solving.
+  // yt-dlp's runtime id is `node` (an unknown id like `nodejs` is silently
+  // ignored, leaving only the android_vr format 18, which 403s). Point it at
+  // the Node binary running the bot so it also works when node isn't on PATH
+  // (e.g. the bundled desktop sidecar).
   '--js-runtimes',
-  'nodejs', // Required - YouTube needs a JS runtime for URL decryption
+  `node:${process.execPath}`,
 ];
 
 /**

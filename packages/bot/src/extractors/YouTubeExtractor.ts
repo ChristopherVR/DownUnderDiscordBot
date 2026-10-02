@@ -32,14 +32,14 @@ interface YouTubeExtractorOptions {
 }
 
 /**
- * Custom YouTube extractor using youtubei.js v16, with yt-dlp as a final
- * fallback when both Innertube streaming paths fail.
+ * Custom YouTube extractor using youtubei.js for search/metadata and yt-dlp
+ * as the primary streaming backend.
  *
  * Architecture:
  *  - WEB client      → search, metadata, playlist fetching (best data quality)
- *  - ANDROID client  → primary streaming (least rate-limited)
- *  - WEB client      → secondary streaming fallback
- *  - yt-dlp          → tertiary fallback (robust against signature regressions)
+ *  - yt-dlp          → primary streaming (handles SABR/n-challenge natively)
+ *  - ANDROID client  → secondary streaming fallback
+ *  - WEB client      → tertiary streaming fallback
  *
  * When any streaming backend fails it is placed on a 5-minute cooldown so
  * subsequent tracks skip it instead of timing out repeatedly.
@@ -387,7 +387,7 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
 
   /* ------------------------------------------------------------------ */
   /*  stream() - returns a Readable for audio playback                   */
-  /*  Tries ANDROID → WEB → yt-dlp, placing failures on cooldown.        */
+  /*  Tries yt-dlp → ANDROID → WEB, placing failures on cooldown.        */
   /* ------------------------------------------------------------------ */
 
   async stream(track: Track) {
@@ -396,78 +396,40 @@ export class CustomYouTubeExtractor extends BaseExtractor<YouTubeExtractorOption
 
     const emitStatus = (status: StreamStatusEvent) => this.events.emit('streamStatus', status);
 
-    // Primary: ANDROID client download.
-    if (!this.isClientDisabled('ANDROID')) {
-      try {
-        emitStatus({ videoId, status: 'resolving', client: 'ANDROID' });
-        const yt = await this.getAndroidYt();
-        const stream = await this.pipeDownload(yt, videoId, 'ANDROID');
-        log.debug({ videoId, title: track.title }, 'Stream piped via ANDROID client download');
-        emitStatus({ videoId, status: 'streaming', client: 'ANDROID' });
-        return stream;
-      } catch (err) {
-        this.disableClient('ANDROID');
-        log.warn({ err, videoId }, 'ANDROID client download failed - placed on cooldown, trying WEB fallback');
-        emitStatus({
-          videoId,
-          status: 'fallback',
-          client: 'ANDROID',
-          message: 'ANDROID client placed on cooldown',
-        });
-      }
-    } else {
-      log.debug({ videoId }, 'Skipping ANDROID client (on cooldown)');
-    }
+    // yt-dlp goes first: YouTube now serves SABR-only formats (no direct URLs)
+    // to the Innertube ANDROID/WEB clients, so youtubei.js downloads fail with
+    // "No valid URL to decipher". The Innertube paths are kept as fallbacks in
+    // case yt-dlp is missing or temporarily broken.
+    const backends: Array<{ client: StreamClient; open: () => Promise<PassThrough> }> = [
+      { client: 'yt-dlp', open: () => ytDlpStreamAudio(track.url) },
+      { client: 'ANDROID', open: async () => this.pipeDownload(await this.getAndroidYt(), videoId, 'ANDROID') },
+      { client: 'WEB', open: async () => this.pipeDownload(await this.getWebYt(), videoId, 'WEB') },
+    ];
 
-    // Secondary: WEB client download.
-    if (!this.isClientDisabled('WEB')) {
-      try {
-        emitStatus({ videoId, status: 'resolving', client: 'WEB' });
-        const yt = await this.getWebYt();
-        const stream = await this.pipeDownload(yt, videoId, 'WEB');
-        log.debug({ videoId, title: track.title }, 'Stream piped via WEB client download');
-        emitStatus({ videoId, status: 'streaming', client: 'WEB' });
-        return stream;
-      } catch (err) {
-        this.disableClient('WEB');
-        log.warn({ err, videoId }, 'WEB client download failed - placed on cooldown, trying yt-dlp fallback');
-        emitStatus({
-          videoId,
-          status: 'fallback',
-          client: 'WEB',
-          message: 'WEB client placed on cooldown',
-        });
+    let lastError: unknown;
+    for (const { client, open } of backends) {
+      if (this.isClientDisabled(client)) {
+        log.debug({ videoId, client }, 'Skipping stream client (on cooldown)');
+        continue;
       }
-    } else {
-      log.debug({ videoId }, 'Skipping WEB client (on cooldown)');
-    }
-
-    // Tertiary: yt-dlp subprocess - robust against Innertube signature regressions.
-    if (!this.isClientDisabled('yt-dlp')) {
       try {
-        emitStatus({ videoId, status: 'resolving', client: 'yt-dlp' });
-        const stream = await ytDlpStreamAudio(track.url);
-        log.debug({ videoId, title: track.title }, 'Stream piped via yt-dlp');
-        emitStatus({ videoId, status: 'streaming', client: 'yt-dlp' });
+        emitStatus({ videoId, status: 'resolving', client });
+        const stream = await open();
+        log.debug({ videoId, title: track.title, client }, 'Stream piped');
+        emitStatus({ videoId, status: 'streaming', client });
         return stream;
       } catch (err) {
-        this.disableClient('yt-dlp');
-        log.error({ err, videoId }, 'All stream methods failed');
-        emitStatus({
-          videoId,
-          status: 'error',
-          client: 'yt-dlp',
-          message: 'All stream methods failed',
-        });
-        throw err;
+        lastError = err;
+        this.disableClient(client);
+        log.warn({ err, videoId, client }, 'Stream client failed - placed on cooldown, trying next');
+        emitStatus({ videoId, status: 'fallback', client, message: `${client} client placed on cooldown` });
       }
     }
 
-    // All backends exhausted (on cooldown)
-    const msg = 'All stream methods disabled or on cooldown';
-    log.error({ videoId }, msg);
+    const msg = lastError ? 'All stream methods failed' : 'All stream methods disabled or on cooldown';
+    log.error({ err: lastError, videoId }, msg);
     emitStatus({ videoId, status: 'error', client: 'yt-dlp', message: msg });
-    throw new Error(msg);
+    throw lastError instanceof Error ? lastError : new Error(msg);
   }
 
   /**
