@@ -19,6 +19,13 @@
     "typescript/no-empty-object-type": "off",
     "react/react-in-jsx-scope": "off",
     "react/no-unstable-nested-components": "off",
+    "react/set-state-in-effect": "off",
+    "react/static-components": "off",
+    "react/purity": "off",
+    "react/immutability": "off",
+    "react/refs": "off",
+    "react/exhaustive-effect-dependencies": "off",
+    "react/memo-dependencies": "off",
     "import/no-unassigned-import": "off",
     "import/no-named-as-default-member": "off",
     "no-underscore-dangle": "off"

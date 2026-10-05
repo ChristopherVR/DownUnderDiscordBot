@@ -18,11 +18,11 @@ const pkgRoot = path.resolve(__dirname, '..');
 const schemaPath = path.join(pkgRoot, 'prisma', 'schema.prisma');
 const outFile = path.join(pkgRoot, 'src', 'database', 'schema.ts');
 
-const raw = execFileSync(
-  'npx',
-  ['prisma', 'migrate', 'diff', '--from-empty', '--to-schema', schemaPath, '--script'],
-  { cwd: pkgRoot, encoding: 'utf-8', shell: process.platform === 'win32' },
-);
+const raw = execFileSync('npx', ['prisma', 'migrate', 'diff', '--from-empty', '--to-schema', schemaPath, '--script'], {
+  cwd: pkgRoot,
+  encoding: 'utf-8',
+  shell: process.platform === 'win32',
+});
 
 // Split on the `-- CreateTable` / `-- CreateIndex` comment markers, dropping the
 // comments, and normalize each statement into an idempotent form.
