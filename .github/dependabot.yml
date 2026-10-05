@@ -1,12 +1,44 @@
-version: 3
+version: 2
 updates:
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'weekly'
+    groups:
+      github-actions:
+        patterns:
+          - '*'
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'weekly'
     reviewers:
       - 'ChristopherVR'
+    groups:
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
+      tauri:
+        patterns:
+          - '@tauri-apps/*'
+      lint-and-format:
+        patterns:
+          - 'oxlint'
+          - 'oxfmt'
+      testing:
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+          - '@playwright/*'
+          - 'playwright*'
+      prisma:
+        patterns:
+          - 'prisma'
+          - '@prisma/*'
+      minor-and-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
