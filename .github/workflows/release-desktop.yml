@@ -15,8 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: windows-latest
-            name: windows-latest
+          # Keep native addon builds on Visual Studio 2022 for node-gyp 11.
+          - platform: windows-2022
+            name: windows-2022
             args: ''
           - platform: ubuntu-22.04
             name: ubuntu-22.04
