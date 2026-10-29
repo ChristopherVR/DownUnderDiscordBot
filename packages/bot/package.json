@@ -37,7 +37,7 @@
     "i18next-http-backend": "^4.0.3",
     "jsonwebtoken": "^9.0.3",
     "mediaplex": "^1.0.0",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "music-metadata": "^12.2.3",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
