@@ -26,9 +26,9 @@
     "test:coverage": "vitest --coverage --passWithNoTests"
   },
   "dependencies": {
-    "i18next": "^26.4.7",
+    "i18next": "^26.5.7",
     "i18next-fs-backend": "^2.6.9",
-    "i18next-http-backend": "^4.0.3"
+    "i18next-http-backend": "^4.0.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

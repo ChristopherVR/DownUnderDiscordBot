@@ -31,10 +31,10 @@
     "discord-player": "^7.2.0",
     "discord-voip": "^7.2.0",
     "discord.js": "^14.27.0",
-    "dotenv": "^18.0.8",
+    "dotenv": "^18.0.9",
     "express": "^5.3.0",
-    "i18next": "^26.4.7",
-    "i18next-http-backend": "^4.0.3",
+    "i18next": "^26.5.7",
+    "i18next-http-backend": "^4.0.5",
     "jsonwebtoken": "^9.0.3",
     "mediaplex": "^1.0.0",
     "multer": "^2.5.0",
@@ -45,7 +45,7 @@
     "spotify-web-api-node": "^5.0.2",
     "uuid": "^14.0.3",
     "ws": "^8.22.0",
-    "youtubei.js": "^18.1.0"
+    "youtubei.js": "^18.3.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
